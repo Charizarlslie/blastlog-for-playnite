@@ -76,12 +76,17 @@ jobs:
         shell: pwsh
         run: |
           $stage = "obj/pext"
-          $sigs = Get-ChildItem $stage -Filter *.dll | ForEach-Object { Get-AuthenticodeSignature $_.FullName }
-          $sigs | ForEach-Object { "{0}: {1} {2}" -f (Split-Path -Leaf $_.Path), $_.Status, $_.SignerCertificate.Subject }
+          # The signature must be embedded in the file: a runner can vouch for a DLL through its own Windows catalogs,
+          # which don't travel with the package.
+          $sigs = Get-ChildItem $stage -Filter *.dll | ForEach-Object {
+            $embedded = try { [Security.Cryptography.X509Certificates.X509Certificate]::CreateFromSignedFile($_.FullName).Subject } catch { $null }
+            [pscustomobject]@{ Name = $_.Name; Status = (Get-AuthenticodeSignature $_.FullName).Status; Embedded = $embedded }
+          }
+          $sigs | ForEach-Object { "{0}: {1}, embedded signer: {2}" -f $_.Name, $_.Status, ($_.Embedded ?? "none") }
           if ($env:SIGN -ne 'true') { return }
-          if ($sigs | Where-Object Status -ne Valid) { throw "Unsigned or invalid DLLs in the package." }
-          $ours = $sigs | Where-Object { (Split-Path -Leaf $_.Path) -eq "Blastlog.Playnite.dll" }
-          if ($ours.SignerCertificate.Subject -notlike "*SignPath Foundation*") { throw "Blastlog.Playnite.dll is signed by $($ours.SignerCertificate.Subject)." }
+          if ($sigs | Where-Object { $_.Status -ne 'Valid' -or -not $_.Embedded }) { throw "Unsigned or invalid DLLs in the package." }
+          $ours = $sigs | Where-Object Name -eq "Blastlog.Playnite.dll"
+          if ($ours.Embedded -notlike "*SignPath Foundation*") { throw "Blastlog.Playnite.dll is signed by $($ours.Embedded)." }
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.SIGN == 'true' && 'blastlog-for-playnite-pext-signed' || 'blastlog-for-playnite-pext' }}
