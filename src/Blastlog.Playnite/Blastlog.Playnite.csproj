@@ -4,7 +4,14 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>Blastlog.Playnite</AssemblyName>
     <RootNamespace>Blastlog.Playnite</RootNamespace>
-    <!-- No XAML: the UI is built in code (docs/PLAN.md Â§2), so this builds with the plain SDK. -->
+    <!-- Keep Version in step with extension.yaml: the signing build checks both against the release tag. -->
+    <Version>0.2.2</Version>
+    <!-- Product version is exactly "0.2.2" (no "+commit"), which SignPath's product-version restriction matches. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>Blastlog for Playnite</Product>
+    <Company>Blastlog</Company>
+    <Copyright>Copyright (c) 2026 Blastlog</Copyright>
+    <!-- No XAML: the UI is built in code (docs/PLAN.md §2), so this builds with the plain SDK. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>

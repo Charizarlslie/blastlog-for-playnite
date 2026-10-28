@@ -13,18 +13,78 @@ jobs:
       - run: dotnet test tests/Blastlog.Sync.Core.Tests -c Release --logger "console;verbosity=normal"
   windows:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: read
+    env:
+      # Signing runs only for a version tag on main, once SignPath is set up (.signpath/README.md). Every other build
+      # stays unsigned, as before.
+      SIGN: ${{ startsWith(github.ref, 'refs/tags/v') && vars.SIGNPATH_PROJECT_SLUG != '' }}
+      BIN: src/Blastlog.Playnite/bin/Release/net462
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.426'
       - run: dotnet build src/Blastlog.Playnite -c Release
+      - name: Check the tag is on main and matches the plugin version
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) { throw "Only tags on main are signed (CODE_SIGNING_POLICY.md)." }
+          $version = ((Get-Content src/Blastlog.Playnite/extension.yaml) -match "^Version:" | Select-Object -First 1) -replace "^Version:\s*", ""
+          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME doesn't match extension.yaml version $version." }
+          $file = (Get-Item "$env:BIN/Blastlog.Playnite.dll").VersionInfo.ProductVersion
+          if ($file -ne $version) { throw "Blastlog.Playnite.dll says $file, extension.yaml says $version." }
+          "version=$version" >> $env:GITHUB_ENV
+      - name: Upload the unsigned DLL for signing
+        if: env.SIGN == 'true'
+        id: unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-dll
+          path: ${{ env.BIN }}/Blastlog.Playnite.dll
+          if-no-files-found: error
+      - name: Sign with SignPath (an approver approves the request in SignPath)
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          parameters: |
+            version: "${{ env.version }}"
+          wait-for-completion: true
+          # Manual approval: give the approver an hour.
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+      - name: Put the signed DLL back
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: Copy-Item signed/Blastlog.Playnite.dll "$env:BIN/Blastlog.Playnite.dll" -Force
       - name: Pack the plugin
         shell: pwsh
         run: ./tools/pack-plugin.ps1
+      # Every build lists the package's signatures; a signing build fails unless all are valid and ours is SignPath
+      # Foundation's (Smart App Control blocks any unsigned DLL Playnite loads).
+      - name: Check the signatures in the package
+        shell: pwsh
+        run: |
+          $stage = "obj/pext"
+          $sigs = Get-ChildItem $stage -Filter *.dll | ForEach-Object { Get-AuthenticodeSignature $_.FullName }
+          $sigs | ForEach-Object { "{0}: {1} {2}" -f (Split-Path -Leaf $_.Path), $_.Status, $_.SignerCertificate.Subject }
+          if ($env:SIGN -ne 'true') { return }
+          if ($sigs | Where-Object Status -ne Valid) { throw "Unsigned or invalid DLLs in the package." }
+          $ours = $sigs | Where-Object { (Split-Path -Leaf $_.Path) -eq "Blastlog.Playnite.dll" }
+          if ($ours.SignerCertificate.Subject -notlike "*SignPath Foundation*") { throw "Blastlog.Playnite.dll is signed by $($ours.SignerCertificate.Subject)." }
       - uses: actions/upload-artifact@v4
         with:
-          name: blastlog-for-playnite-pext
+          name: ${{ env.SIGN == 'true' && 'blastlog-for-playnite-pext-signed' || 'blastlog-for-playnite-pext' }}
           path: artifacts/*.pext
   secrets:
     runs-on: ubuntu-latest
