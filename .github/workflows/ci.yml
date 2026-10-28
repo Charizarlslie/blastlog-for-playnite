@@ -1,0 +1,40 @@
+name: Build and test
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.426'
+      - run: dotnet test tests/Blastlog.Sync.Core.Tests -c Release --logger "console;verbosity=normal"
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.426'
+      - run: dotnet build src/Blastlog.Playnite -c Release
+      - name: Pack the plugin
+        shell: pwsh
+        run: ./tools/pack-plugin.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blastlog-for-playnite-pext
+          path: artifacts/*.pext
+  secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

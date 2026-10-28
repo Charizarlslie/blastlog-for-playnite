@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.pext
+*.pthm
+TestResults/
+artifacts/
+.env
+.env.*

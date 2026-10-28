@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Blastlog.Playnite</AssemblyName>
+    <RootNamespace>Blastlog.Playnite</RootNamespace>
+    <!-- No XAML: the UI is built in code (docs/PLAN.md Â§2), so this builds with the plain SDK. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The sync core is compiled into this one assembly, not shipped as its own DLL: Windows Smart App Control blocks an
+         unsigned, never-seen DLL that Playnite loads by path (seen on a first real install). Fewer unsigned files, fewer
+         blocks; code-signing is the real fix for a public release (docs/DECISIONS.md). The core keeps its own project for
+         the Linux tests. -->
+    <Compile Include="../Blastlog.Sync.Core/*.cs" LinkBase="Core" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- Playnite supplies its SDK at run time: compile against it, don't ship a copy. -->
+    <PackageReference Include="PlayniteSDK" Version="6.18.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Net.Http" />
+    <None Update="extension.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="icon.png" CopyToOutputDirectory="PreserveNewest" Condition="Exists('icon.png')" />
+  </ItemGroup>
+</Project>
