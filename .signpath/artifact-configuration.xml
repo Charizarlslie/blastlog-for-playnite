@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What SignPath signs: Blastlog.Playnite.dll only, uploaded by CI as a zip (actions/upload-artifact). The live copy is
+     kept in the SignPath project; this file is the reference to paste there (.signpath/README.md). -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="Blastlog.Playnite.dll" product-name="Blastlog for Playnite" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
