@@ -20,6 +20,13 @@ free and open source (MIT).
 3. In Playnite: Add-ons → Extension settings → Blastlog → paste the token → **Test connection** → Save.
 4. Main menu → **Blastlog → Pair games…** → Apply, then **Blastlog → Preview sync** → Sync these.
 
+## Code signing
+
+This project uses the [SignPath Foundation](https://signpath.org) for code signing: free code signing provided by
+[SignPath.io](https://about.signpath.io), certificate by SignPath Foundation. The application is pending, so current
+releases are **unsigned**, and Windows Smart App Control blocks unsigned DLLs; signed releases will say so in their
+notes. Policy: [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
+
 ## Privacy and security
 
 - The token is encrypted with Windows' per-user protection (DPAPI) and only ever sent in the `Authorization` header to
