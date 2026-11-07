@@ -91,6 +91,16 @@
                                         <GradientStop Color="#00000000" Offset="1" />
                                     </LinearGradientBrush>
                                 </Grid.OpacityMask>
+                                <!-- ...and at its left edge, where it meets the game list, so no edge shows there either. -->
+                                <Grid>
+                                    <Grid.OpacityMask>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#00000000" Offset="0" />
+                                            <GradientStop Color="#FF000000" Offset="0.18" />
+                                            <GradientStop Color="#FF000000" Offset="0.85" />
+                                            <GradientStop Color="#00000000" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Grid.OpacityMask>
                                 <FadeImage x:Name="PART_ImageBackground" Stretch="UniformToFill"
                                            HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.6">
                                     <FadeImage.Effect>
@@ -122,6 +132,7 @@
                                         </RadialGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
+                                </Grid>
                             </Grid>
 
                             <StackPanel MaxWidth="1180" Margin="40,0,40,24">
