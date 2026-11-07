@@ -9,8 +9,7 @@ library in step, and brings Blastlog's Next up and Play next into Playnite.
 - **Shows Blastlog in Playnite:** a Blastlog sidebar view (Next up, Currently playing, Play next), Blastlog tags for
   Playnite's filters, and theme elements (`Blastlog_GamePanel`, `Blastlog_Fingerprint`, `Blastlog_Status`).
 
-Playnite sync is part of Blastlog's $10 supporter tier: the server only syncs for accounts with it. This extension is
-free and open source (MIT).
+Playnite sync is free for every Blastlog player, and this extension is free and open source (MIT).
 
 ## Install
 
