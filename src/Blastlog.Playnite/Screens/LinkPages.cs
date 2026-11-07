@@ -71,7 +71,7 @@ static class LinkPages {
     return c;
   }
 
-  /// <summary>"Alek", "Alek and Velvet", "Alek, Charlie and Velvet" (the site's and()).</summary>
+  /// <summary>"Maya", "Maya and Theo", "Maya, Sam and Theo" (the site's and()).</summary>
   public static string And(System.Collections.Generic.IList<string> names) =>
     names.Count < 2 ? string.Join("", names) : string.Join(", ", System.Linq.Enumerable.Take(names, names.Count - 1)) + " and " + names[names.Count - 1];
 }
