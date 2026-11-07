@@ -73,20 +73,20 @@ static class QuickStartPage {
     }
 
     UIElement Progress() {
-      var row = new DockPanel { Margin = new Thickness(0, -6, 0, 22), LastChildFill = true };
+      var row = new DockPanel { Margin = new Thickness(0, -6, 0, 22), LastChildFill = false };
       var words = Count < FirstGoal ? $"{Count} of {FirstGoal}" : Full ? $"{Count} rated" : $"{Count} rated · next stop {Goal}";
       var label = T(words, "Blastlog.Body", null, 15, FontWeights.Bold); label.Margin = new Thickness(14, 0, 0, 0); label.VerticalAlignment = VerticalAlignment.Center;
       var right = Row(label);
       if (Count >= FirstGoal) right.Children.Add(Link("See my picks", SeePicks).Also(b => b.Margin = new Thickness(8, 0, 0, 0)));
-      DockPanel.SetDock(right, Dock.Right); row.Children.Add(right);
       var share = Math.Min(1, Count / (double)Goal);
-      var track = new Border { Height = 8, CornerRadius = new CornerRadius(4), VerticalAlignment = VerticalAlignment.Center, MaxWidth = 420 };
+      var track = new Border { Height = 8, CornerRadius = new CornerRadius(4), VerticalAlignment = VerticalAlignment.Center, Width = 360 };
+      DockPanel.SetDock(track, Dock.Left); DockPanel.SetDock(right, Dock.Left);
       track.SetResourceReference(Border.BackgroundProperty, "Blastlog.GameBar");
       var fill = new Border { CornerRadius = new CornerRadius(4), HorizontalAlignment = HorizontalAlignment.Left };
       fill.SetResourceReference(Border.BackgroundProperty, "Blastlog.Game");
       track.Child = fill; track.SizeChanged += (s, e) => fill.Width = Math.Round(track.ActualWidth * share);
       AutomationProperties.SetName(track, words);
-      row.Children.Add(track);
+      row.Children.Add(track); row.Children.Add(right);
       return row;
     }
 
@@ -133,11 +133,11 @@ static class QuickStartPage {
       if (rated != null) art.Children.Add(PnKit.OverPill(new string('★', rated.Rating) + (rated.Finished ? "" : " · didn’t finish"), "Blastlog.Star", HorizontalAlignment.Left, VerticalAlignment.Bottom));
       var coverButton = Plain(art, () => { if (busy != null && busy != id) return; open = isOpen ? null : id; unfinished = rated != null && !rated.Finished; Render(); },
         rated != null ? $"{title}: {rated.Rating} stars. Change" : $"Rate {title}");
-      coverButton.Margin = new Thickness(0);
+      coverButton.Margin = new Thickness(0); coverButton.HorizontalAlignment = HorizontalAlignment.Left;
       coverButton.IsEnabled = busy == null || busy == id;
       var name = T(title, "Blastlog.Small", "Blastlog.Text", 0, FontWeights.SemiBold); name.Inlines.Clear(); name.Inlines.Add(new System.Windows.Documents.Run(title));
       if (year > 0) name.Inlines.Add(new System.Windows.Documents.Run(" " + year.ToString(CultureInfo.InvariantCulture)).Also(r => r.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "Blastlog.TextMuted")));
-      name.MaxWidth = 150; name.Margin = new Thickness(0, 8, 0, 0);
+      name.MaxWidth = 150; name.Margin = new Thickness(0, 8, 0, 0); name.HorizontalAlignment = HorizontalAlignment.Left;
       var card = Stack(new Thickness(0, 0, 18, 22), coverButton, name);
       card.Width = isOpen ? 236 : 150;
       if (isOpen) card.Children.Add(Rate(game, rated));
