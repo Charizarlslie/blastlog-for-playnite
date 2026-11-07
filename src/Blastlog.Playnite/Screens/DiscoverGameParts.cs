@@ -38,30 +38,14 @@ sealed partial class DiscoverGameView {
     await Load(true);
   }
 
-  /// <summary>"You said: on your wishlist. Undo", and Why not? after Not for me (its picks are Fine-tune stances).</summary>
+  /// <summary>"You said: on your wishlist. Undo" (Why not? comes with Not for me itself, as on the site).</summary>
   FrameworkElement AnsweredLine(JObject answer) {
     var line = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
     var kind = answer.S("answer"); var id = answer.S("id");
     line.Children.Add(PnKit.Text($"You said: {(AnswerText.TryGetValue(kind ?? "", out var words) ? words : kind)}.", "Blastlog.Body").Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.FontSize = 15; }));
     if (id != null) line.Children.Add(Fingerprint.LinkButton("Undo", async () => { try { await Undo(id); } catch (Exception e) { Log.Error(e, "Blastlog Discover undo"); } }, game: true)
       .Also(b => AutomationProperties.SetName(b, "Undo your answer on " + Title)));
-    if (kind == "not_for_me") line.Children.Add(Fingerprint.LinkButton("Why not?", async () => { try { await WhyNot(); } catch (Exception e) { Log.Error(e, "Blastlog Why not"); } }, game: true));
     return line;
-  }
-
-  async Task WhyNot() {
-    var choices = await DiscoverWhyNot.Ask(plugin, Game.Id, Title);
-    if (choices == null || choices.Count == 0) return;
-    // One that fails is counted and reported, not retried (the site's rule).
-    var said = new List<string>(); var failed = 0;
-    foreach (var c in choices) {
-      var ok = await plugin.WriteQuietly("taste/corrections", new JObject { ["characteristicId"] = c.TraitId, ["stance"] = c.Stance, ["note"] = c.Note ?? $"Said on Discover: not for me on {Title}" });
-      if (ok != null) said.Add($"{c.Label} → {DiscoverWhyNot.StanceLabel(c.Stance)}"); else failed++;
-    }
-    Changed = true; notice = null;
-    noticeText = (said.Count > 0 ? $"Fine-tune: {string.Join(", ", said)}." : "")
-      + (failed > 0 ? $"{(said.Count > 0 ? " " : "")}{(failed == 1 ? "One trait" : failed + " traits")} didn’t save. Set {(failed == 1 ? "it" : "them")} in Your Taste → Fine-tune." : "");
-    Build();
   }
 
   // ---- Cards ----
@@ -235,9 +219,21 @@ sealed partial class DiscoverGameView {
     Kit.GameScope(button, plugin, game);
     return button;
   }
-  /// <summary>Another game's Discover page in this window, from the top.</summary>
+  /// <summary>Another game's Discover page in this window, from the top; Back returns to this one (the site's origin).</summary>
   void OpenGame(string nextGameId) {
-    gameId = nextGameId; openedFrom = null; notice = null; noticeText = null; worn = false;
+    trail.Push(Tuple.Create(gameId, openedFrom, Title));
+    Go(nextGameId, null);
+  }
+  /// <summary>Back: the game this one was opened from in this window, else shut the window (back where it was opened).</summary>
+  void Back() {
+    if (trail.Count == 0) { window.Close(); return; }
+    var previous = trail.Pop();
+    Go(previous.Item1, previous.Item2);
+  }
+  string BackLabel => trail.Count > 0 ? "← Back to " + trail.Peek().Item3 : openedFrom != null ? "← Back to Discover" : "← Back";
+  readonly Stack<Tuple<string, string, string>> trail = new Stack<Tuple<string, string, string>>();
+  void Go(string nextGameId, string shelf) {
+    gameId = nextGameId; openedFrom = shelf; notice = null; noticeText = null; worn = false;
     body.Children.Clear(); body.Children.Add(PnKit.Text("Opening the game…", "Blastlog.Muted"));
     PnKit.FindAncestor<ScrollViewer>(this)?.ScrollToTop();
     _ = Load(false);

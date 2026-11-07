@@ -111,7 +111,7 @@ sealed partial class DiscoverGameView : UserControl {
       window.Title = Title;
       // The page wears its game: the page colour set on Blastlog, else its cover's (design.md 2.3).
       if (!worn) { worn = true; Kit.GameScope(body, plugin, Game); }
-      body.Children.Add(Fingerprint.LinkButton(openedFrom != null ? "← Back to Discover" : "← Back", () => window.Close()).Also(b => { b.Margin = new Thickness(-10, 0, 0, 0); b.HorizontalAlignment = HorizontalAlignment.Left; }));
+      body.Children.Add(Fingerprint.LinkButton(BackLabel, Back).Also(b => { b.Margin = new Thickness(-10, 0, 0, 0); b.HorizontalAlignment = HorizontalAlignment.Left; }));
       body.Children.Add(Hero());
       var fit = FitCard(); if (fit != null) body.Children.Add(fit);
       var friends = FriendsCard(); if (friends != null) body.Children.Add(friends);
