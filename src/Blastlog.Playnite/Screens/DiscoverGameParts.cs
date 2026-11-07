@@ -25,7 +25,7 @@ sealed partial class DiscoverGameView {
   Border NoticeBar() {
     var n = notice;
     var buttons = new List<Button>();
-    if (n?.Played == true && n.EntryId != null) buttons.Add(Kit.Button("Rate and review it", () => Nav.Review(plugin, n.EntryId)));
+    if (n?.Played == true && n.EntryId != null) buttons.Add(Kit.Button("Rate and review it", () => Nav.Review(plugin, n.EntryId, () => { Changed = true; _ = Load(true); })));
     if (n?.UndoId != null) buttons.Add(Kit.Button("Undo", async () => await Undo(n.UndoId), "Blastlog.Ghost"));
     return PnKit.Notice(noticeText, buttons, () => { notice = null; noticeText = null; Build(); });
   }
