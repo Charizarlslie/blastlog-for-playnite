@@ -172,9 +172,9 @@ sealed class DashboardView : StackPanel {
       var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
       actions.Children.Add(new DashboardSearch(plugin) { Width = 340 }.Margin(0, 0, 12, 0));
       if (data.FriendCount > 0) actions.Children.Add(Kit.Button("Find a co-op game", () => Nav.Together(plugin), "Blastlog.Ghost"));
-      // Adding a game is the site's search-and-add dialog, so it opens there.
-      var add = Kit.Button("+ New entry", () => Nav.AddGame(plugin)); add.Margin = new Thickness(0);
-      add.ToolTip = "Opens Blastlog to add a game";
+      // Adding a game is the native search-and-add window (AddGameWindow); the dashboard refreshes after each add or undo.
+      var add = Kit.Button("+ New entry", () => Nav.AddGame(plugin, done: () => Refresh(true))); add.Margin = new Thickness(0);
+      add.ToolTip = "Search for a game and add it to your Blastlog library";
       actions.Children.Add(add);
       Grid.SetColumn(actions, 1); grid.Children.Add(actions);
     }
