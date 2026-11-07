@@ -170,7 +170,7 @@ static class DashboardLibrary {
         foreach (var e in waiting) items.Children.Add(Item(plugin, e, true, fit.Width, knowledgeActions));
         if (waitingTotal > waiting.Count) {
           var moreButton = Kit.Button($"+{waitingTotal - waiting.Count} more", () => Dash.Site(plugin, "/recommendations#sharpen"), "Blastlog.Ghost");
-          moreButton.Width = 90; moreButton.VerticalAlignment = VerticalAlignment.Top; moreButton.Height = fit.Width * 4 / 3; moreButton.Margin = new Thickness(0);
+          moreButton.Width = 90; moreButton.Padding = new Thickness(4, 0, 4, 0); moreButton.VerticalAlignment = VerticalAlignment.Top; moreButton.Height = fit.Width * 4 / 3; moreButton.Margin = new Thickness(0);
           items.Children.Add(moreButton);
         }
         g.Children.Add(items); group.Child = g; line.Children.Add(group);
@@ -256,7 +256,7 @@ static class DashboardLibrary {
     var days = (int?)activity["days"] ?? 30; var items = Dash.Arr(activity["items"]).OfType<JObject>().ToList();
     var panel = new StackPanel();
     var head = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 14) };
-    head.Children.Add(Dash.Row(0, Dash.Text("Friends lately", "Blastlog.CardTitle").Margin(0, 0, 14, 0), Dash.Text($"Last {days} days", "Blastlog.Muted").Also(t => t.VerticalAlignment = VerticalAlignment.Center)));
+    head.Children.Add(Dash.Row(0, Dash.Text("Friends lately", "Blastlog.CardTitle").Margin(0, 0, 14, 0).Also(t => t.VerticalAlignment = VerticalAlignment.Center), Dash.Text($"Last {days} days", "Blastlog.Muted").Also(t => t.VerticalAlignment = VerticalAlignment.Center)));
     var friends = Dash.Link("Your friends →", () => Dash.Site(plugin, "/friends")); DockPanel.SetDock(friends, Dock.Right); head.Children.Add(friends);
     panel.Children.Add(head);
     if (items.Count == 0) { panel.Children.Add(Dash.Text($"Nothing new from your friends in the last {days} days.", "Blastlog.Muted")); return Dash.Card(panel); }
@@ -273,6 +273,7 @@ static class DashboardLibrary {
     Fill();
     list.SizeChanged += (s, e) => { try { list.Columns = e.NewSize.Width >= 900 ? 2 : 1; } catch (Exception) { } };
     panel.Children.Add(list);
+    more.HorizontalAlignment = HorizontalAlignment.Left;
     if (items.Count > 6) panel.Children.Add(more.Margin(0, 6, 0, 0));
     return Dash.Card(panel);
   }

@@ -64,8 +64,9 @@ sealed class DashboardNextUp : Border {
 
     // Art, scrim, glow.
     if (art != null) {
-      var blurred = new Image { Stretch = Stretch.UniformToFill, Opacity = 0.9, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1.25, 1.25), Effect = new BlurEffect { Radius = 48 } };
-      Dash.LoadImage(plugin, art, blurred, 480);
+      // A rectangle filled with the art takes the card's size instead of setting it (an Image would stretch the card to the cover's shape).
+      var blurred = new Rectangle { Opacity = 0.9, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1.25, 1.25), Effect = new BlurEffect { Radius = 48 } };
+      Dash.LoadFill(plugin, art, blurred, 480);
       layers.Children.Add(blurred);
     }
     var scrim = new Rectangle { OpacityMask = new LinearGradientBrush(new GradientStopCollection {

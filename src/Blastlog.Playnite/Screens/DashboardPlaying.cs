@@ -135,7 +135,7 @@ sealed class DashboardPlaying : Border {
       tail.MaxWidth = wide ? 380 : double.PositiveInfinity; tail.VerticalAlignment = VerticalAlignment.Center;
     }
     Lay(false);
-    grid.SizeChanged += (s, e) => { try { Lay(e.NewSize.Width >= 760); } catch (Exception) { } };
+    grid.SizeChanged += (s, e) => { try { Lay(e.NewSize.Width >= 640); } catch (Exception) { } };
     row.Child = grid;
     return row;
   }

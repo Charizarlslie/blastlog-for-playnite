@@ -282,15 +282,15 @@ static class Dash {
     return border;
   }
 
-  /// <summary>A Blastlog image, cached on disk, into an Image when it arrives (the hero's blurred art).</summary>
-  public static async void LoadImage(BlastlogPlugin plugin, string url, Image target, int decodeWidth) {
+  /// <summary>A Blastlog image, cached on disk, as a shape's fill (UniformToFill) when it arrives.</summary>
+  public static async void LoadFill(BlastlogPlugin plugin, string url, Shape target, int decodeWidth) {
     if (url == null) return;
     try {
       var file = await plugin.Theme.CachedFile(url);
       if (file == null) return;
       var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad; image.UriSource = new Uri(file);
       image.DecodePixelWidth = decodeWidth; image.EndInit(); image.Freeze();
-      target.Source = image;
+      target.Fill = new ImageBrush(image) { Stretch = Stretch.UniformToFill };
     } catch (Exception e) { Log.Warn(e, "Blastlog: couldn't show " + url); }
   }
 
