@@ -95,10 +95,9 @@ static class PnKit {
   /// gamepad tile when there's none (design.md 9).
   /// </summary>
   public static Border Art(BlastlogPlugin plugin, string gameId, string coverUrl, CornerRadius radius, double? width = null) {
-    var host = new Border { CornerRadius = radius, ClipToBounds = true };
+    var host = new CoverBox { CornerRadius = radius, ClipToBounds = true };
     host.SetResourceReference(Border.BackgroundProperty, "Blastlog.Surface2");
     if (width != null) { host.Width = width.Value; host.Height = width.Value * 4 / 3; }
-    else host.SizeChanged += (s, e) => { if (e.WidthChanged) host.Height = host.ActualWidth * 4 / 3; };
     var size = Math.Min(44, (width ?? 160) * 0.3);
     var icon = Icons.Make(Icons.Gamepad, size, new SolidColorBrush()); icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
     ((Shape)((Canvas)((Viewbox)icon).Child).Children[0]).SetResourceReference(Shape.StrokeProperty, "Blastlog.GameText");
@@ -277,6 +276,19 @@ static class PnKit {
   public static T FindAncestor<T>(DependencyObject start) where T : DependencyObject {
     for (var d = start == null ? null : VisualTreeHelper.GetParent(start); d != null; d = VisualTreeHelper.GetParent(d)) if (d is T t) return t;
     return null;
+  }
+}
+
+/// <summary>
+/// A 3:4 cover that takes its height from the width it's given in the same layout pass. Setting the height afterwards
+/// (on SizeChanged) left every new card flat for one pass, which shrank the page and threw the scroll position back up.
+/// </summary>
+sealed class CoverBox : Border {
+  protected override Size MeasureOverride(Size constraint) {
+    if (!double.IsNaN(Width) || double.IsInfinity(constraint.Width)) return base.MeasureOverride(constraint);
+    var size = new Size(constraint.Width, constraint.Width * 4 / 3);
+    base.MeasureOverride(size);
+    return size;
   }
 }
 
