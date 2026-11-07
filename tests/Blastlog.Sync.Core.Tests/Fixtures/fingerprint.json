@@ -1,0 +1,749 @@
+{
+ "note": "Generated from Blastlog's web fingerprint code (fingerprint-bars.ts, GameFingerprint.tsx, fingerprint-api.ts) over demo fingerprints.",
+ "cases": [
+  {
+   "input": {
+    "scopeGames": 117,
+    "typicalShares": {
+     "mode": 0.07069965510954723,
+     "challenge": 0.052618220832626315,
+     "theme": 0.06924623385424221,
+     "progression": 0.0647168629538601,
+     "genre": 0.06271481734414187,
+     "setting": 0.02365725449649144,
+     "presentation": 0.08299850855407229,
+     "tone": 0.031154940515832133,
+     "narrative": 0.09147741224563428,
+     "structure": 0.06422671518505989,
+     "gameplay": 0.38648937890849205
+    },
+    "active": [
+     {
+      "characteristicId": "de8d5c85-32f2-465c-bd17-20d976c0188e",
+      "label": "Single-player",
+      "family": "mode",
+      "role": "context",
+      "strength": 0.96999997,
+      "carriers": 107
+     },
+     {
+      "characteristicId": "24274ed3-b78f-411b-9779-00067cda6653",
+      "label": "Third-person perspective",
+      "family": "presentation",
+      "role": "taste",
+      "strength": 0.96,
+      "carriers": 62
+     },
+     {
+      "characteristicId": "b5f83996-ebb8-443d-9e2d-e0b9cc9ea40e",
+      "label": "Action",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.955,
+      "carriers": 79
+     },
+     {
+      "characteristicId": "3660c561-443f-42b8-810a-aa5708903280",
+      "label": "Close-Quarters Combat",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 67
+     },
+     {
+      "characteristicId": "34c22f85-8d21-47b4-8b60-9c9b0a3876cc",
+      "label": "Environmental Puzzles",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 28
+     },
+     {
+      "characteristicId": "b34b7627-b2bd-4af7-9dbf-549f795fa4f0",
+      "label": "Exploration",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 85
+     },
+     {
+      "characteristicId": "aac4f44d-bcdd-4938-87fa-8970763ffbe7",
+      "label": "Franchise: Silent Hill",
+      "family": "franchise",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 1
+     },
+     {
+      "characteristicId": "e074da35-7cd3-4672-a6d2-f3585a45ee86",
+      "label": "Resource Scarcity",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 24
+     },
+     {
+      "characteristicId": "a037e739-0a96-4b9c-86dd-86017c8a305d",
+      "label": "Story-driven",
+      "family": "narrative",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 80
+     },
+     {
+      "characteristicId": "ea6e240a-fb10-45ec-a912-3613d2da6120",
+      "label": "Survival Horror",
+      "family": "genre",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 8
+     },
+     {
+      "characteristicId": "74f5f5f2-7f78-46e0-9c1e-83affee4f1a2",
+      "label": "Adventure",
+      "family": "genre",
+      "role": "taste",
+      "strength": 0.838,
+      "carriers": 64
+     },
+     {
+      "characteristicId": "2f19fffe-2100-407a-aa0c-a9474041fe94",
+      "label": "Survival theme",
+      "family": "theme",
+      "role": "taste",
+      "strength": 0.81775004,
+      "carriers": 12
+     },
+     {
+      "characteristicId": "bdc17b63-5057-4180-b742-2fcca3f0f4f6",
+      "label": "3D Visuals",
+      "family": "presentation",
+      "role": "taste",
+      "strength": 0.7,
+      "carriers": 82
+     },
+     {
+      "characteristicId": "cb7ef2d5-bed3-4395-b88e-459004febe5a",
+      "label": "Adjustable Difficulty",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.7,
+      "carriers": 58
+     },
+     {
+      "characteristicId": "dd8480ee-87ec-4a02-baed-c4c63fc25222",
+      "label": "Environmental Storytelling",
+      "family": "narrative",
+      "role": "taste",
+      "strength": 0.7,
+      "carriers": 36
+     },
+     {
+      "characteristicId": "2705a520-124d-4d63-8482-2debf903b469",
+      "label": "Item-Gated Progression",
+      "family": "progression",
+      "role": "taste",
+      "strength": 0.7,
+      "carriers": 28
+     },
+     {
+      "characteristicId": "50375739-92a8-46e6-9161-2c251a38fe66",
+      "label": "Multiple Endings",
+      "family": "narrative",
+      "role": "taste",
+      "strength": 0.7,
+      "carriers": 31
+     },
+     {
+      "characteristicId": "afb51297-983b-46eb-9ba1-03e22eddca7e",
+      "label": "Ranged Combat",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.7,
+      "carriers": 70
+     },
+     {
+      "characteristicId": "93f181cd-31b0-46bd-8054-b3063335a92b",
+      "label": "Small-Town Setting",
+      "family": "setting",
+      "role": "taste",
+      "strength": 0.7,
+      "carriers": 9
+     },
+     {
+      "characteristicId": "77fd7709-27ee-4553-be77-2908fe85eb49",
+      "label": "Dark or grim tone",
+      "family": "tone",
+      "role": "taste",
+      "strength": 0.595,
+      "carriers": 22
+     },
+     {
+      "characteristicId": "cba3a510-f602-477e-be61-0a77487092da",
+      "label": "Mystery theme",
+      "family": "theme",
+      "role": "taste",
+      "strength": 0.595,
+      "carriers": 23
+     }
+    ]
+   },
+   "expected": {
+    "areas": [
+     {
+      "name": "How it plays",
+      "fill": 0.36647041431962474,
+      "sentence": "How it plays: less than most games. 42% of this game against 58% for a typical game. 8 traits; strongest: Action, Survival Horror, Environmental Puzzles.",
+      "order": [
+       "Action",
+       "Survival Horror",
+       "Environmental Puzzles",
+       "Close-Quarters Combat",
+       "Exploration",
+       "Adventure",
+       "Item-Gated Progression",
+       "Ranged Combat"
+      ]
+     },
+     {
+      "name": "What it feels like",
+      "fill": 0.6579367618288946,
+      "sentence": "What it feels like: more than most games. 27% of this game against 21% for a typical game. 6 traits; strongest: Third-person perspective, Survival theme, Small-Town Setting.",
+      "order": [
+       "Third-person perspective",
+       "Survival theme",
+       "Small-Town Setting",
+       "3D Visuals",
+       "Dark or grim tone",
+       "Mystery theme"
+      ]
+     },
+     {
+      "name": "The story",
+      "fill": 0.7842059410853659,
+      "sentence": "The story: more than most games. 14% of this game against 9% for a typical game. 3 traits; strongest: Story-driven, Multiple Endings, Environmental Storytelling.",
+      "order": [
+       "Story-driven",
+       "Multiple Endings",
+       "Environmental Storytelling"
+      ]
+     },
+     {
+      "name": "How you play it",
+      "fill": 0.6500148002829855,
+      "sentence": "How you play it: more than most games. 16% of this game against 12% for a typical game. 3 traits; strongest: Single-player, Resource Scarcity, Adjustable Difficulty.",
+      "order": [
+       "Single-player",
+       "Resource Scarcity",
+       "Adjustable Difficulty"
+      ]
+     }
+    ],
+    "defining": [
+     "Survival Horror",
+     "Resource Scarcity",
+     "Environmental Puzzles",
+     "Survival theme",
+     "Small-Town Setting",
+     "Item-Gated Progression",
+     "Multiple Endings",
+     "Environmental Storytelling"
+    ]
+   }
+  },
+  {
+   "input": {
+    "scopeGames": 117,
+    "typicalShares": {
+     "mode": 0.07069965510954723,
+     "challenge": 0.052618220832626315,
+     "theme": 0.06924623385424221,
+     "progression": 0.0647168629538601,
+     "genre": 0.06271481734414187,
+     "setting": 0.02365725449649144,
+     "presentation": 0.08299850855407229,
+     "tone": 0.031154940515832133,
+     "narrative": 0.09147741224563428,
+     "structure": 0.06422671518505989,
+     "gameplay": 0.38648937890849205
+    },
+    "active": [
+     {
+      "characteristicId": "f7d69edd-6c52-42d4-9a19-5f5aa8cddc18",
+      "label": "Ability-Gated World Exploration",
+      "family": "structure",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 10
+     },
+     {
+      "characteristicId": "b5f83996-ebb8-443d-9e2d-e0b9cc9ea40e",
+      "label": "Action",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 79
+     },
+     {
+      "characteristicId": "9d272451-1761-4f36-94e5-15876772ecaa",
+      "label": "Boss Battles",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 69
+     },
+     {
+      "characteristicId": "3660c561-443f-42b8-810a-aa5708903280",
+      "label": "Close-Quarters Combat",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 67
+     },
+     {
+      "characteristicId": "b34b7627-b2bd-4af7-9dbf-549f795fa4f0",
+      "label": "Exploration",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 85
+     },
+     {
+      "characteristicId": "bf6e586d-e953-4333-bf3a-e76b83fe63c0",
+      "label": "Fantasy theme",
+      "family": "theme",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 51
+     },
+     {
+      "characteristicId": "00245db0-2b3a-43f8-89c2-07bb6836a211",
+      "label": "Hand-drawn 2D",
+      "family": "presentation",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 7
+     },
+     {
+      "characteristicId": "6bc662da-32d3-4e54-8233-891729695943",
+      "label": "High challenge",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 17
+     },
+     {
+      "characteristicId": "787f66c1-8e15-4621-b01d-44d923dc2bbf",
+      "label": "Side-view perspective",
+      "family": "presentation",
+      "role": "taste",
+      "strength": 0.9,
+      "carriers": 15
+     },
+     {
+      "characteristicId": "de8d5c85-32f2-465c-bd17-20d976c0188e",
+      "label": "Single-player",
+      "family": "mode",
+      "role": "context",
+      "strength": 0.9,
+      "carriers": 107
+     },
+     {
+      "characteristicId": "bc055595-930a-42e5-9047-1955a03d1f84",
+      "label": "2D Platformer",
+      "family": "genre",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 10
+     },
+     {
+      "characteristicId": "c45cae83-a371-4097-b966-1e4759798c33",
+      "label": "2D Visuals",
+      "family": "presentation",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 18
+     },
+     {
+      "characteristicId": "6860f086-1ea0-4f29-ba22-e9a7fec7d904",
+      "label": "Ability Synergies",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 46
+     },
+     {
+      "characteristicId": "1106e3d2-72ed-4f7f-914b-ac264f08643a",
+      "label": "Anthropomorphic Animals",
+      "family": "theme",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 5
+     },
+     {
+      "characteristicId": "4a1b4f90-008f-4667-9a5d-bacc0a3e8570",
+      "label": "Backtracking",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 22
+     },
+     {
+      "characteristicId": "ff911a17-2449-4ed1-a277-f80b83084fd0",
+      "label": "Build-crafting",
+      "family": "progression",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 37
+     },
+     {
+      "characteristicId": "4edcc100-8809-49de-8c7c-776f415bcd2a",
+      "label": "Character Growth",
+      "family": "progression",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 75
+     },
+     {
+      "characteristicId": "a2ac5950-a1dd-4fb3-a1ec-bef9acef78c0",
+      "label": "Charged Special Abilities",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 14
+     },
+     {
+      "characteristicId": "28f3bca1-d4f2-47aa-af80-7d367e5622ea",
+      "label": "Combat Meters",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 20
+     },
+     {
+      "characteristicId": "793dad15-7aed-4812-a748-dd0c7b7c3bdf",
+      "label": "Combat-Driven Healing",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 9
+     },
+     {
+      "characteristicId": "3c03918a-f1e4-4ba0-93eb-88cb92a35544",
+      "label": "Death Recovery",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 22
+     },
+     {
+      "characteristicId": "73787b64-d0ad-4667-8015-1aef487a2ec4",
+      "label": "Dodge And Dash",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 37
+     },
+     {
+      "characteristicId": "4e5e8856-fe0c-4aa5-a54e-741f264dc218",
+      "label": "Enemy Pattern Reading",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 16
+     },
+     {
+      "characteristicId": "d0ca9ef6-5f3a-4651-bc69-ef2a1d50a84a",
+      "label": "Environmental Hazards",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 48
+     },
+     {
+      "characteristicId": "dd8480ee-87ec-4a02-baed-c4c63fc25222",
+      "label": "Environmental Storytelling",
+      "family": "narrative",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 36
+     },
+     {
+      "characteristicId": "2812152a-b5f2-41d4-b5b0-855ae5275b8a",
+      "label": "Failure Penalties",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 18
+     },
+     {
+      "characteristicId": "9c4df93e-10ba-4ce7-8507-4188af8f3a2d",
+      "label": "Fast Travel",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 31
+     },
+     {
+      "characteristicId": "bd2e8c89-2cf1-45ea-834b-f2c009b4322f",
+      "label": "Gear & Loadouts",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 36
+     },
+     {
+      "characteristicId": "9183449c-9bc3-4ede-a4fb-ca478ce044d2",
+      "label": "High Skill Ceiling",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 13
+     },
+     {
+      "characteristicId": "df4cf78b-e79e-481b-9ccd-fae5d8f11e72",
+      "label": "Interconnected World Design",
+      "family": "structure",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 16
+     },
+     {
+      "characteristicId": "2705a520-124d-4d63-8482-2debf903b469",
+      "label": "Item-Gated Progression",
+      "family": "progression",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 28
+     },
+     {
+      "characteristicId": "0d193f26-a9f5-4b06-8557-d0dfd40b9742",
+      "label": "Map Annotation",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 5
+     },
+     {
+      "characteristicId": "50375739-92a8-46e6-9161-2c251a38fe66",
+      "label": "Multiple Endings",
+      "family": "narrative",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 31
+     },
+     {
+      "characteristicId": "76ab3adb-0b4c-4ef7-8d7b-f244e34cd0b1",
+      "label": "Nonlinear Storytelling",
+      "family": "narrative",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 6
+     },
+     {
+      "characteristicId": "4f31ce7a-04c6-4120-b376-3d774ec8beb4",
+      "label": "Open world",
+      "family": "structure",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 37
+     },
+     {
+      "characteristicId": "77ea6140-674d-47b8-9181-47a0c993403d",
+      "label": "Optional Challenges",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 31
+     },
+     {
+      "characteristicId": "21ffaca5-cde8-4712-9772-7229ba23b5fa",
+      "label": "Optional Story Content",
+      "family": "narrative",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 35
+     },
+     {
+      "characteristicId": "75ae1d95-14c1-490d-84b4-1517b0c05ad0",
+      "label": "Permadeath",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 12
+     },
+     {
+      "characteristicId": "ec24767c-74f1-49f8-97a8-279e4cb9279e",
+      "label": "Platformer",
+      "family": "genre",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 16
+     },
+     {
+      "characteristicId": "720235aa-669e-415c-ba95-811b9a347cdb",
+      "label": "Post-apocalyptic setting",
+      "family": "setting",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 8
+     },
+     {
+      "characteristicId": "265fecbd-7db7-4df8-ab14-1fbfe2d70f20",
+      "label": "Practice Tools",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 4
+     },
+     {
+      "characteristicId": "6ea60a81-53ee-4ddc-829e-d662b9ca3a88",
+      "label": "Precision Platforming",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 8
+     },
+     {
+      "characteristicId": "78b0debb-5cae-4160-b4fc-e439624f9ebd",
+      "label": "Real-Time Combat",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 58
+     },
+     {
+      "characteristicId": "e074da35-7cd3-4672-a6d2-f3585a45ee86",
+      "label": "Resource Scarcity",
+      "family": "challenge",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 24
+     },
+     {
+      "characteristicId": "66d1206e-2e6c-4c3c-b72a-9316a5c27f81",
+      "label": "Semi-Open Areas",
+      "family": "structure",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 39
+     },
+     {
+      "characteristicId": "79dcfb67-fa90-4046-bd0f-bea49c923ab7",
+      "label": "Side Quests",
+      "family": "structure",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 51
+     },
+     {
+      "characteristicId": "176ccb23-4683-4a78-9fb8-48d20d42a736",
+      "label": "Spellcasting",
+      "family": "gameplay",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 26
+     },
+     {
+      "characteristicId": "6a87f847-9b3b-4591-9e3e-260aec6d9013",
+      "label": "Supernatural Theme",
+      "family": "theme",
+      "role": "taste",
+      "strength": 0.8,
+      "carriers": 18
+     }
+    ]
+   },
+   "expected": {
+    "areas": [
+     {
+      "name": "How it plays",
+      "fill": 0.5202154788822289,
+      "sentence": "How it plays: about typical. 60% of this game against 58% for a typical game. 29 traits; strongest: Ability-Gated World Exploration, Close-Quarters Combat, Boss Battles.",
+      "order": [
+       "Ability-Gated World Exploration",
+       "Close-Quarters Combat",
+       "Boss Battles",
+       "Action",
+       "Exploration",
+       "Practice Tools",
+       "Map Annotation",
+       "Precision Platforming",
+       "Combat-Driven Healing",
+       "2D Platformer",
+       "Charged Special Abilities",
+       "Enemy Pattern Reading",
+       "Interconnected World Design",
+       "Platformer",
+       "Combat Meters",
+       "Backtracking",
+       "Death Recovery",
+       "Spellcasting",
+       "Item-Gated Progression",
+       "Fast Travel",
+       "Gear & Loadouts",
+       "Build-crafting",
+       "Dodge And Dash",
+       "Open world",
+       "Semi-Open Areas",
+       "Ability Synergies",
+       "Side Quests",
+       "Real-Time Combat",
+       "Character Growth"
+      ]
+     },
+     {
+      "name": "What it feels like",
+      "fill": 0.36160631650121966,
+      "sentence": "What it feels like: less than most games. 15% of this game against 21% for a typical game. 7 traits; strongest: Hand-drawn 2D, Side-view perspective, Fantasy theme.",
+      "order": [
+       "Hand-drawn 2D",
+       "Side-view perspective",
+       "Fantasy theme",
+       "Anthropomorphic Animals",
+       "Post-apocalyptic setting",
+       "2D Visuals",
+       "Supernatural Theme"
+      ]
+     },
+     {
+      "name": "The story",
+      "fill": 0.44392529323844754,
+      "sentence": "The story: about typical. 8% of this game against 9% for a typical game. 4 traits; strongest: Nonlinear Storytelling, Multiple Endings, Optional Story Content.",
+      "order": [
+       "Nonlinear Storytelling",
+       "Multiple Endings",
+       "Optional Story Content",
+       "Environmental Storytelling"
+      ]
+     },
+     {
+      "name": "How you play it",
+      "fill": 0.6791906245363821,
+      "sentence": "How you play it: more than most games. 17% of this game against 12% for a typical game. 8 traits; strongest: High challenge, Single-player, Permadeath.",
+      "order": [
+       "High challenge",
+       "Single-player",
+       "Permadeath",
+       "High Skill Ceiling",
+       "Failure Penalties",
+       "Resource Scarcity",
+       "Optional Challenges",
+       "Environmental Hazards"
+      ]
+     }
+    ],
+    "defining": [
+     "Hand-drawn 2D",
+     "Ability-Gated World Exploration",
+     "Side-view perspective",
+     "High challenge",
+     "Fantasy theme",
+     "Practice Tools",
+     "Anthropomorphic Animals",
+     "Map Annotation"
+    ]
+   }
+  }
+ ]
+}
