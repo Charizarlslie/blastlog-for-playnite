@@ -134,8 +134,8 @@ sealed class DashboardPlaying : Border {
       Grid.SetRow(tail, wide ? 0 : 1); Grid.SetColumn(tail, wide ? 2 : 1); tail.Margin = new Thickness(wide ? 14 : 0, wide ? 0 : 10, 0, 0);
       tail.MaxWidth = wide ? 380 : double.PositiveInfinity; tail.VerticalAlignment = VerticalAlignment.Center;
     }
-    Lay(false);
-    grid.SizeChanged += (s, e) => { try { Lay(e.NewSize.Width >= 640); } catch (Exception) { } };
+    var wideNow = false; Lay(false);
+    grid.SizeChanged += (s, e) => { try { var w = e.NewSize.Width >= 640; if (w != wideNow) { wideNow = w; Lay(w); } } catch (Exception) { } };
     row.Child = grid;
     return row;
   }
