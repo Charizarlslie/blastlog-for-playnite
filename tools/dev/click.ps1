@@ -13,3 +13,5 @@ public static class C {
 $down = if ($Right) { 8 } else { 2 }; $up = if ($Right) { 16 } else { 4 }
 $n = if ($Double) { 2 } else { 1 }
 for ($i = 0; $i -lt $n; $i++) { [C]::mouse_event($down, 0, 0, 0, [UIntPtr]::Zero); [C]::mouse_event($up, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 60 }
+# Using Playnite keeps this checkout's lock fresh (tools/dev/playnite.ps1).
+$lock = Join-Path $env:TEMP "blastlog-playnite.lock"; if (Test-Path $lock) { (Get-Item $lock).LastWriteTime = Get-Date }

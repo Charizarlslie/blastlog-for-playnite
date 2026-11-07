@@ -26,15 +26,16 @@ function Stop-Playnite {
   Get-Process Playnite.DesktopApp, Playnite.FullscreenApp -ErrorAction SilentlyContinue | Stop-Process -Force
 }
 function Take-Lock {
-  for ($i = 0; $i -lt 120; $i++) {
-    if (Test-Path $lock) {
-      $owner = Get-Content $lock -ErrorAction SilentlyContinue
-      $age = (Get-Date) - (Get-Item $lock).LastWriteTime
-      if ($owner -eq $Who -or $age.TotalMinutes -gt 15) { break }
-      if ($i -eq 0) { Write-Host "Waiting for $owner to finish with Playnite..." }
-      Start-Sleep 10; continue
-    }
-    break
+  # Waits while another checkout holds the lock and has used Playnite in the last 15 minutes (deploy, shot.ps1 and
+  # click.ps1 all refresh it); gives up after 30 minutes without touching Playnite.
+  for ($i = 0; $i -lt 180; $i++) {
+    if (-not (Test-Path $lock)) { break }
+    $owner = Get-Content $lock -ErrorAction SilentlyContinue
+    $age = (Get-Date) - (Get-Item $lock).LastWriteTime
+    if ($owner -eq $Who -or $age.TotalMinutes -gt 15) { break }
+    if ($i -eq 0) { Write-Host "Waiting for $owner to finish with Playnite..." }
+    Start-Sleep 10
+    if ($i -eq 179) { throw "$owner has been using Playnite for 30 minutes; try again later (or ask them to run playnite.ps1 stop)." }
   }
   Set-Content $lock $Who
 }
@@ -102,8 +103,12 @@ switch ($Command) {
     "Playnite is running ($Dir). Screenshot: tools/dev/shot.ps1 -Out <png>. Errors: $Dir\playnite.log. Then: playnite.ps1 stop"
   }
   "stop" {
+    # Only close Playnite when it's ours: another checkout's session holds the lock.
+    if ((Test-Path $lock) -and ((Get-Content $lock) -ne $Who) -and ((Get-Date) - (Get-Item $lock).LastWriteTime).TotalMinutes -le 15) {
+      "Playnite belongs to $(Get-Content $lock) right now; left it running."; break
+    }
     Stop-Playnite
-    if ((Test-Path $lock) -and ((Get-Content $lock) -eq $Who)) { Remove-Item $lock }
+    if (Test-Path $lock) { Remove-Item $lock }
     "Stopped."
   }
 }

@@ -23,3 +23,5 @@ $g = [System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen($r.L, $r.T, 0
 $bmp.Save($Out)
 [W]::SetWindowPos($h, [IntPtr]::new(-2), 0, 0, 0, 0, 0x3) | Out-Null # not topmost again
 "saved $Out ($($bmp.Width)x$($bmp.Height))"
+# Using Playnite keeps this checkout's lock fresh (tools/dev/playnite.ps1).
+$lock = Join-Path $env:TEMP "blastlog-playnite.lock"; if (Test-Path $lock) { (Get-Item $lock).LastWriteTime = Get-Date }
