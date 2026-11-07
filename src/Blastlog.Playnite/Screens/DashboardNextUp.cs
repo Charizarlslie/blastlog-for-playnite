@@ -109,9 +109,10 @@ sealed class DashboardNextUp : Border {
 
   /// <summary>"Next up" and the three modes (a segmented control; the pressed one in the game's colour).</summary>
   FrameworkElement TopRow() {
-    var grid = new Grid(); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+    // The chip keeps its own width (Auto, no wrapping); the space between them gives way first.
+    var grid = new Grid(); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
     var label = new Border { Style = Kit.Style("Blastlog.NeutralChip"), Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center,
-      Child = Dash.Text("Next up", "Blastlog.Small", "Blastlog.Text", FontWeights.Bold) };
+      Child = Dash.Text("Next up", "Blastlog.Small", "Blastlog.Text", FontWeights.Bold).Also(t => t.TextWrapping = TextWrapping.NoWrap) };
     grid.Children.Add(label);
     var toggle = new StackPanel { Orientation = Orientation.Horizontal };
     foreach (var m in Modes) {
@@ -126,7 +127,18 @@ sealed class DashboardNextUp : Border {
     var box = new Border { Child = toggle, CornerRadius = new CornerRadius(14), Padding = new Thickness(3), BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center };
     box.SetResourceReference(BackgroundProperty, "Blastlog.Surface2"); box.SetResourceReference(BorderBrushProperty, "Blastlog.Line");
     System.Windows.Automation.AutomationProperties.SetName(box, "What kind of game");
-    Grid.SetColumn(box, 1); grid.Children.Add(box);
+    Grid.SetColumn(box, 2); grid.Children.Add(box);
+    // Beside the cover there may not be room for both: the modes then go under the chip instead of being cut off.
+    grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+    grid.SizeChanged += (s, e) => {
+      try {
+        label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); box.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var under = e.NewSize.Width < label.DesiredSize.Width + box.DesiredSize.Width + 12;
+        Grid.SetColumn(box, under ? 0 : 2); Grid.SetRow(box, under ? 1 : 0); Grid.SetColumnSpan(box, under ? 3 : 1);
+        box.HorizontalAlignment = under ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+        box.Margin = new Thickness(0, under ? 10 : 0, 0, 0);
+      } catch (Exception ex) { global::Playnite.SDK.LogManager.GetLogger().Error(ex, "Blastlog dashboard: next up modes layout"); }
+    };
     return grid;
   }
 
