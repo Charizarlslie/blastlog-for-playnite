@@ -16,7 +16,7 @@ public static class Nav {
   }
 
   /// <summary>Add a game to the Blastlog library. <paramref name="status"/> "playing" when added from Currently playing.</summary>
-  public static void AddGame(BlastlogPlugin plugin, string status = null, Action done = null) => Site(plugin, "/dashboard");
+  public static void AddGame(BlastlogPlugin plugin, string status = null, Action done = null) => global::Blastlog.Playnite.Screens.AddGameWindow.Show(plugin, status, done);
 
   /// <summary>A catalogue game's page (Discover's game page): for games that aren't in the library, or aren't in Playnite.</summary>
   public static void DiscoverGame(BlastlogPlugin plugin, string gameId, Action done = null) {
