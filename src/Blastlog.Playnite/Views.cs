@@ -12,37 +12,6 @@ using Playnite.SDK.Models;
 using Game = Playnite.SDK.Models.Game;
 
 namespace Blastlog.Playnite {
-/// <summary>Pairing (docs/PLAN.md §4.1): every Playnite game with what matching found; exact ones ticked; Apply is one push.</summary>
-public sealed class PairingWindow {
-  public static bool? Show(BlastlogPlugin plugin, List<PairingChoice> choices) {
-    var window = plugin.Api.Dialogs.CreateWindow(new WindowCreationOptions { ShowCloseButton = true, ShowMaximizeButton = true, ShowMinimizeButton = false });
-    window.Title = "Pair games with Blastlog"; window.Width = 820; window.Height = 640; window.Owner = plugin.Api.Dialogs.GetCurrentAppWindow(); window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-    var root = new DockPanel { Margin = new Thickness(20) };
-    var top = new StackPanel(); DockPanel.SetDock(top, Dock.Top);
-    top.Children.Add(UiKit.Text("Ticked rows are paired when you press Apply. Exact matches start ticked; check the rest. Nothing changes until Apply.", muted: true));
-    top.Children.Add(UiKit.Text($"{choices.Count(c => c.Match.Result == "entry")} in your Blastlog library · {choices.Count(c => c.Match.Result == "catalogue")} to add · {choices.Count(c => c.Match.Result == "unknown")} not found · {choices.Count(c => c.Match.Result == "linked")} already paired{(choices.Any(c => c.Match.Result == "skipped") ? $" · {choices.Count(c => c.Match.Result == "skipped")} couldn't be sent" : "")}", muted: true));
-    root.Children.Add(top);
-    var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right }; DockPanel.SetDock(buttons, Dock.Bottom);
-    buttons.Children.Add(UiKit.Button("Apply", () => { window.DialogResult = true; window.Close(); }));
-    buttons.Children.Add(UiKit.Button("Cancel", () => { window.DialogResult = false; window.Close(); }));
-    root.Children.Add(buttons);
-    var list = new StackPanel();
-    foreach (var group in choices.Where(c => c.Match.Result != "linked").GroupBy(c => c.Action)) {
-      UiKit.Heading(list, group.Key, 16);
-      foreach (var choice in group.OrderBy(c => c.Game.Name)) {
-        var label = choice.Game.Name + (choice.Match.Result == "catalogue" && !string.Equals(choice.Match.Title, choice.Game.Name, StringComparison.OrdinalIgnoreCase) ? $" → {choice.Match.Title}" : "")
-          + (choice.Match.Confidence == "likely" ? "  (likely: check it)" : "");
-        var c = choice;
-        if (choice.Match.Result == "skipped") list.Children.Add(UiKit.Text(choice.Game.Name + ": " + (choice.Problem ?? "Blastlog couldn't read it") + ". Fix it in Playnite and pair again.", muted: true));
-        else list.Children.Add(UiKit.Check(label, choice.Ticked, v => c.Ticked = v));
-      }
-    }
-    root.Children.Add(new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-    window.Content = root;
-    return window.ShowDialog();
-  }
-}
-
 /// <summary>The preview of a sync: what goes to Blastlog, what changes in Playnite, what's held back or needs you.</summary>
 public sealed class PreviewWindow {
   public static bool? Show(BlastlogPlugin plugin, SyncOutcome preview, Func<string,string> nameOf) {
