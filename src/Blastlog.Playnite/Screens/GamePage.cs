@@ -260,8 +260,12 @@ public sealed class GamePageElement : PluginUserControl {
       var s = new StackPanel();
       if (!string.IsNullOrEmpty(review)) s.Children.Add(Kit.Text("“" + review + "”").Also(t => { t.FontStyle = FontStyles.Italic; t.LineHeight = 25; }));
       else s.Children.Add(Kit.Text("No written review yet.", "Blastlog.Muted"));
-      if (canReview) s.Children.Add(Kit.Button(string.IsNullOrEmpty(review) ? "Add review" : "Edit review", () => Edit(), "Blastlog.Ghost").Also(b => { b.Margin = new Thickness(0, 12, 0, 0); b.HorizontalAlignment = HorizontalAlignment.Left; b.IsEnabled = !busy; }));
-      else s.Children.Add(Kit.Text("You can review it once you’ve finished it, quit, or didn’t finish.", "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 8, 0, 0)));
+      if (!canReview) s.Children.Add(Kit.Text("You can review it once you’ve finished it, quit, or didn’t finish.", "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 8, 0, 0)));
+      // Rate & review: the full form (status, stars, taps, the review questions), which can also mark it finished first.
+      var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+      actions.Children.Add(Kit.Button("Rate & review", () => Nav.Review(plugin, entryId), "Blastlog.Primary").Also(b => { b.Margin = new Thickness(0, 0, 10, 8); b.IsEnabled = !busy; }));
+      if (canReview) actions.Children.Add(Kit.Button(string.IsNullOrEmpty(review) ? "Add review" : "Edit review", () => Edit(), "Blastlog.Ghost").Also(b => { b.Margin = new Thickness(0, 0, 10, 8); b.IsEnabled = !busy; }));
+      s.Children.Add(actions);
       reviewHost.Content = s;
     }
     void Edit() {

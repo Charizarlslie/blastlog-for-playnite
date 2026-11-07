@@ -82,8 +82,8 @@ Recently finished with its next steps.
 button on Next up and Currently playing rows. One that isn't in Playnite shows "Not in Playnite" and its stores.
 **Built** (`Screens/Dashboard*.cs`): everything above runs natively, including Finished it / Set aside / Still playing /
 Start another (mirror writes), the boost's Not now / Undo, and Friends lately with its reactions. Some actions open the
-site because they are site flows the plugin has no screen for yet: + New entry and + Add a new game (the add dialog), Add
-review / Rate & review (the review page and its questions), the library links (the numbers, the star legend, Enter in
+site because they are site flows the plugin has no screen for yet: + New entry and + Add a new game (the add dialog), the
+library links (the numbers, the star legend, Enter in
 Search) and friends' or catalogue games from Search (Discover game pages). A paired game's View details selects it in
 Playnite's library. The earlier view's Sync now / Preview sync / Pair games / Refresh sit in a card at the bottom.
 
@@ -97,7 +97,7 @@ The game page hero: blurred background art under a scrim, glow, cover, title, an
 (Playnite's), then Blastlog's status and stars, editable in place (they sync at once as a panel push, with Undo).
 Below: the fingerprint card exactly as design.md §8 "Game page fingerprint" (caps label, watermark, glow, bars against a
 typical game with names inside the fill, "+N more", tap a group for every trait, "Why it's here"), how much you'd like
-it, length at your level, reasons and watch-outs, friends' stars and reviews, your review (edit in place), where you own
+it, length at your level, reasons and watch-outs, friends' stars and reviews, your review (edit in place, or Rate & review), where you own
 it, series, More like this as a row of small covers, and history with Undo. Playnite's own extras (playtime,
 achievements from other add-ons, description, links) sit underneath in the same style.
 

@@ -73,7 +73,7 @@ static class PlayNextSharpen {
     var body = new StackPanel();
     var title = action.S("title"); var entryId = action.S("entryId");
     body.Children.Add(PnKit.Text(title, "Blastlog.Body", null, FontWeights.Bold));
-    void Review() => Nav.Review(plugin, entryId);
+    void Review() => Nav.Review(plugin, entryId, reload);
     if (action.S("kind") == "rate") {
       var impact = (int)(action.D("impact") ?? 0);
       body.Children.Add(PnKit.Text($"{(action.S("status") == "done" ? "Finished" : "Stopped")}, not rated yet.{(impact > 0 ? $" Rating it could change {impact} of your top 10 picks." : " Every rating helps.")}", "Blastlog.Body").Also(t => t.FontSize = 15));
@@ -89,11 +89,11 @@ static class PlayNextSharpen {
         AutomationProperties.SetName(b, $"{n} star{(n == 1 ? "" : "s")}");
         stars.Children.Add(b);
       }
-      stars.Children.Add(Kit.Button("Rate & review ↗", Review, "Blastlog.Ghost").Also(b => b.Margin = new Thickness(8, 0, 0, 0)));
+      stars.Children.Add(Kit.Button("Rate & review", Review, "Blastlog.Ghost").Also(b => b.Margin = new Thickness(8, 0, 0, 0)));
       body.Children.Add(stars);
     } else {
       body.Children.Add(PnKit.Line("Blastlog.Body", PnKit.Run(action.S("prompt") + " "), PnKit.Run("Blastlog knows the score, not the why; a few lines teach it what you care about.", "Blastlog.TextMuted")).Also(t => t.FontSize = 15));
-      body.Children.Add(Kit.Button("Rate & review ↗", Review).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 8, 0, 0); }));
+      body.Children.Add(Kit.Button("Rate & review", Review).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 8, 0, 0); }));
     }
     row.Children.Add(body);
     return row;

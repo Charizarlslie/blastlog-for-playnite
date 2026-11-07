@@ -9,10 +9,10 @@ namespace Blastlog.Playnite.Ui {
 /// lands. <paramref name="done"/> callbacks run after a native dialog saved something (screens use them to refresh).
 /// </summary>
 public static class Nav {
-  /// <summary>Rate and review a library entry: stars, taps, review and its questions.</summary>
+  /// <summary>Rate and review a library entry: stars, taps, review and its questions (native, Screens/ReviewDialog.cs).</summary>
   public static void Review(BlastlogPlugin plugin, string entryId, Action done = null) {
     if (entryId == null) return;
-    Site(plugin, "/library/" + entryId + "/edit");
+    global::Blastlog.Playnite.Screens.ReviewDialog.Open(plugin, entryId, done);
   }
 
   /// <summary>Add a game to the Blastlog library. <paramref name="status"/> "playing" when added from Currently playing.</summary>
