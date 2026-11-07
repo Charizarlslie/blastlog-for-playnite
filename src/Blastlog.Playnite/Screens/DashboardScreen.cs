@@ -171,9 +171,9 @@ sealed class DashboardView : StackPanel {
     if (data != null) {
       var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
       actions.Children.Add(new DashboardSearch(plugin) { Width = 340 }.Margin(0, 0, 12, 0));
-      if (data.FriendCount > 0) actions.Children.Add(Kit.Button("Find a co-op game", () => Dash.Site(plugin, "/together"), "Blastlog.Ghost"));
+      if (data.FriendCount > 0) actions.Children.Add(Kit.Button("Find a co-op game", () => Nav.Together(plugin), "Blastlog.Ghost"));
       // Adding a game is the site's search-and-add dialog, so it opens there.
-      var add = Kit.Button("+ New entry", () => Dash.Site(plugin, "/dashboard")); add.Margin = new Thickness(0);
+      var add = Kit.Button("+ New entry", () => Nav.AddGame(plugin)); add.Margin = new Thickness(0);
       add.ToolTip = "Opens Blastlog to add a game";
       actions.Children.Add(add);
       Grid.SetColumn(actions, 1); grid.Children.Add(actions);
@@ -209,7 +209,7 @@ sealed class DashboardView : StackPanel {
     if (data.Stats != null && rated < 10)
       list.Children.Add(Prompt(total > 0 ? "Sharpen your picks in two minutes" : "Get your first picks in two minutes",
         "Tap the well-known games you've played and give them stars. Ten is enough" + (total > 0 ? "." : ", and you can bring in your whole library later."),
-        Kit.Button("Rate games I know", () => Dash.Site(plugin, "/quick-start")), total > 0 ? null : Kit.Button("Import my games", () => Dash.Site(plugin, "/library/import"), "Blastlog.Ghost")));
+        Kit.Button("Rate games I know", () => Nav.QuickStart(plugin)), total > 0 ? null : Kit.Button("Import my games", () => Dash.Site(plugin, "/library/import"), "Blastlog.Ghost")));
     // Steam sync's daily check found games to sort (only shows once the server sends the imports list).
     var steam = Dash.Arr(data.Imports?["batches"]).OfType<JObject>().Where(b => (string)b["origin"] == "steam_sync" && (string)b["status"] == "ready").ToList();
     if (steam.Count > 0) {

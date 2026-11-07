@@ -171,9 +171,9 @@ static class Dash {
     } catch (Exception e) { Log.Warn(e, "Blastlog: couldn't open the game in Playnite"); }
     Site(plugin, "/library/" + entryId);
   }
-  /// <summary>The site's rate-and-review page (its questions are what teach Blastlog).</summary>
-  public static void Review(BlastlogPlugin plugin, string entryId) => Site(plugin, "/library/" + entryId + "/edit");
-  public static void DiscoverGame(BlastlogPlugin plugin, string gameId) => Site(plugin, "/discover/game/" + gameId);
+  /// <summary>Rate and review (its questions are what teach Blastlog).</summary>
+  public static void Review(BlastlogPlugin plugin, string entryId) => Nav.Review(plugin, entryId);
+  public static void DiscoverGame(BlastlogPlugin plugin, string gameId) => Nav.DiscoverGame(plugin, gameId);
   public static void Library(BlastlogPlugin plugin, string query) => Site(plugin, "/library" + (string.IsNullOrEmpty(query) ? "" : "?" + query));
 
   /// <summary>

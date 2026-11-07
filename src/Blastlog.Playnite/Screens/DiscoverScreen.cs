@@ -116,7 +116,7 @@ sealed class DiscoverView : UserControl {
     var card = pick.Card; var gameId = card.S("gameId"); var title = card.S("title"); var tag = SourceTag(pick);
     var early = pick.Source != "friends" && card.B("earlyRead");
     var notOut = pick.Source != "friends" && !OutYet(card);
-    void Open() => UiKit.Open(plugin.ServerUrl + "/discover/game/" + gameId);
+    void Open() => Nav.DiscoverGame(plugin, gameId);
     var artGrid = new Grid();
     artGrid.Children.Add(PnKit.Art(plugin, gameId, card.S("coverUrl"), new CornerRadius(17, 17, 0, 0)));
     artGrid.Children.Add(PnKit.OverPill(tag.Item1, TagBrush(pick.Source), HorizontalAlignment.Left, VerticalAlignment.Top));
@@ -155,7 +155,7 @@ sealed class DiscoverView : UserControl {
   FrameworkElement NoticeBar() {
     var n = notice;
     var buttons = new List<Button>();
-    if (n?.Played == true && n.EntryId != null) buttons.Add(Kit.Button("Rate and review it ↗", () => UiKit.Open(plugin.ServerUrl + "/library/" + n.EntryId + "/edit")));
+    if (n?.Played == true && n.EntryId != null) buttons.Add(Kit.Button("Rate and review it", () => Nav.Review(plugin, n.EntryId)));
     if (n?.UndoId != null) buttons.Add(Kit.Button("Undo", async () => await Undo(n.UndoId, null), "Blastlog.Ghost"));
     if (n?.ReplayPickId != null) buttons.Add(Kit.Button("Undo", async () => await UndoReplay(n.ReplayPickId, n.ReplayTitle), "Blastlog.Ghost"));
     return PnKit.Notice(noticeText, buttons, () => { notice = null; noticeText = null; Build(); });
@@ -172,7 +172,7 @@ sealed class DiscoverView : UserControl {
   /// <summary>The comfort pick: one old favorite after a run of low ratings, apart from the picks, with Play it again and Not now.</summary>
   FrameworkElement ComfortPick(JObject pick) {
     var pickId = pick.S("pickId"); var title = pick.S("title"); var gameId = pick.S("gameId");
-    void Open() => UiKit.Open(plugin.ServerUrl + "/discover/game/" + gameId);
+    void Open() => Nav.DiscoverGame(plugin, gameId);
     var row = new DockPanel();
     var art = PnKit.Bare(PnKit.Art(plugin, gameId, pick.S("coverUrl"), new CornerRadius(14), 120), Open, title);
     art.Margin = new Thickness(0, 0, 20, 0); art.VerticalAlignment = VerticalAlignment.Top; art.HorizontalAlignment = HorizontalAlignment.Left;

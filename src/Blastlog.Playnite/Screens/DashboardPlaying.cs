@@ -77,7 +77,7 @@ sealed class DashboardPlaying : Border {
       empty.Children.Add(Dash.Text("Nothing on the go right now.", "Blastlog.Muted").Also(t => t.HorizontalAlignment = HorizontalAlignment.Center));
       if (!picking) empty.Children.Add(Dash.Row(0,
         Kit.Button("Pick from your backlog", () => { picking = true; Render(); }),
-        Kit.Button("+ Add a new game", () => Dash.Site(plugin, "/dashboard"), "Blastlog.Ghost")).Margin(0, 14, 0, 0));
+        Kit.Button("+ Add a new game", () => Nav.AddGame(plugin, "playing"), "Blastlog.Ghost")).Margin(0, 14, 0, 0));
       body.Children.Add(empty);
     }
     if (picking) body.Children.Add(StartPicker());
@@ -263,7 +263,7 @@ sealed class DashboardPlaying : Border {
     panel.Children.Add(Dash.FieldBox(box, "Find a game in your backlog…").Margin(0, 0, 0, 8));
     Dash.AutomationName(box, "Find a game in your backlog");
     panel.Children.Add(list);
-    panel.Children.Add(Dash.Row(0, Kit.Button("+ Add a new game", () => Dash.Site(plugin, "/dashboard"), "Blastlog.Ghost"),
+    panel.Children.Add(Dash.Row(0, Kit.Button("+ Add a new game", () => Nav.AddGame(plugin, "playing"), "Blastlog.Ghost"),
       Kit.Button("Cancel", () => { picking = false; Render(); }, "Blastlog.TextButton")).Margin(0, 10, 0, 0));
     return panel;
   }

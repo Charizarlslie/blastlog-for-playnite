@@ -140,7 +140,7 @@ static class DashboardLibrary {
     titles.Children.Add(Dash.Text("Your stars and reviews teach Blastlog your taste", "Blastlog.Muted").Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(0, 0, 12, 0); }));
     var badge = TasteBadge(data.TasteHelp?["knowledge"] as JObject); if (badge != null) titles.Children.Add(badge);
     head.Children.Add(titles);
-    var all = Dash.Link("All suggestions →", () => Dash.Site(plugin, "/recommendations#sharpen")); DockPanel.SetDock(all, Dock.Right); head.Children.Add(all);
+    var all = Dash.Link("All suggestions →", () => Nav.Sharpen(plugin)); DockPanel.SetDock(all, Dock.Right); head.Children.Add(all);
     panel.Children.Add(head);
 
     var shelf = data.Shelf;
@@ -169,7 +169,7 @@ static class DashboardLibrary {
         var items = new StackPanel { Orientation = Orientation.Horizontal };
         foreach (var e in waiting) items.Children.Add(Item(plugin, e, true, fit.Width, knowledgeActions));
         if (waitingTotal > waiting.Count) {
-          var moreButton = Kit.Button($"+{waitingTotal - waiting.Count} more", () => Dash.Site(plugin, "/recommendations#sharpen"), "Blastlog.Ghost");
+          var moreButton = Kit.Button($"+{waitingTotal - waiting.Count} more", () => Nav.Sharpen(plugin), "Blastlog.Ghost");
           moreButton.Width = 90; moreButton.Padding = new Thickness(4, 0, 4, 0); moreButton.VerticalAlignment = VerticalAlignment.Top; moreButton.Height = fit.Width * 4 / 3; moreButton.Margin = new Thickness(0);
           items.Children.Add(moreButton);
         }
@@ -257,7 +257,7 @@ static class DashboardLibrary {
     var panel = new StackPanel();
     var head = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 14) };
     head.Children.Add(Dash.Row(0, Dash.Text("Friends lately", "Blastlog.CardTitle").Margin(0, 0, 14, 0).Also(t => t.VerticalAlignment = VerticalAlignment.Center), Dash.Text($"Last {days} days", "Blastlog.Muted").Also(t => t.VerticalAlignment = VerticalAlignment.Center)));
-    var friends = Dash.Link("Your friends →", () => Dash.Site(plugin, "/friends")); DockPanel.SetDock(friends, Dock.Right); head.Children.Add(friends);
+    var friends = Dash.Link("Your friends →", () => Nav.Friends(plugin)); DockPanel.SetDock(friends, Dock.Right); head.Children.Add(friends);
     panel.Children.Add(head);
     if (items.Count == 0) { panel.Children.Add(Dash.Text($"Nothing new from your friends in the last {days} days.", "Blastlog.Muted")); return Dash.Card(panel); }
     var list = new UniformGrid { Columns = 2 };

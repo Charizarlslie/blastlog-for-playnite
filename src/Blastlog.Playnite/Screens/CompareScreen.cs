@@ -101,7 +101,7 @@ sealed class CompareView : Grid {
     if (insights == null) { page.Children.Add(Hero("How you all stack up", null)); page.Children.Add(T(loaded ? "Comparing everyone…" : "", "Blastlog.Muted")); return; }
     if (people.Count < 2) {
       page.Children.Add(Hero("How you stack up", null, "Compare puts your taste next to your friends’: who you match best, where you split, and games you’d both enjoy. It fills in once you have a friend on Blastlog."));
-      page.Children.Add(Kit.Button("Add a friend ↗", () => Site(plugin, "/friends")).Also(b => b.HorizontalAlignment = HorizontalAlignment.Left));
+      page.Children.Add(Kit.Button("Add a friend ↗", () => Nav.Friends(plugin)).Also(b => b.HorizontalAlignment = HorizontalAlignment.Left));
       return;
     }
     page.Children.Add(Hero("How you all stack up", GameLookup()));
@@ -109,7 +109,7 @@ sealed class CompareView : Grid {
     if (myGroups.Count > 0) {
       var row = Wrap(Toggle("Everyone", focus == null, () => ShowGroup(null)));
       foreach (var g in myGroups) { var id = S(g, "id"); row.Children.Add(Toggle(S(g, "name"), focus == id, () => ShowGroup(id))); }
-      row.Children.Add(Link("Edit groups ↗", () => Site(plugin, "/friends")));
+      row.Children.Add(Link("Edit groups ↗", () => Nav.Friends(plugin)));
       row.Margin = new Thickness(0, 18, 0, 0);
       page.Children.Add(row);
     }
@@ -260,7 +260,7 @@ sealed class CompareView : Grid {
       else body.Children.Add(Kit.Card(Stack(null, T(two ? "Co-op and multiplayer games you both have and haven’t played, best fit for both of you first. Online modes that have shut down don’t count."
         : "Co-op and multiplayer games waiting on two or more of your lists, the most of you first, then the best fit for everyone who has it. Online modes that have shut down don’t count.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, 0, 0, 12)),
         Waiting(together, shown))));
-      body.Children.Add(Row(Link("Find a co-op game ↗", () => Site(plugin, "/together?with=" + string.Join(",", detailIds))),
+      body.Children.Add(Row(Link("Find a co-op game ↗", () => Nav.Together(plugin, detailIds)),
         T($"for {(shown.Count > 2 ? "all of you" : "you two")}, including ones nobody has yet.", "Blastlog.Muted").Also(t => t.VerticalAlignment = VerticalAlignment.Center)));
     }
     panel.Children.Add(body);

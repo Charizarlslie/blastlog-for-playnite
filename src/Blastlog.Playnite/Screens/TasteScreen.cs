@@ -206,7 +206,7 @@ sealed class TasteView : Grid {
         : Box(Runs("Blastlog.Small", ("Taste level ", false, null), (level.Value.ToString("0", Inv), true, "Blastlog.GameText"), ("/" + I(k, "maxLevel"), false, null),
             (" · guesses " + Math.Round((D(k, "accuracy") ?? 0) * 100).ToString("0", Inv) + "% right", false, null)), null, 999, new Thickness(12, 4, 12, 4), "Blastlog.GameEdge");
       badge.VerticalAlignment = VerticalAlignment.Center; badge.Margin = new Thickness(0, 0, 10, 0);
-      var row = Row(badge, Link("Sharpen your picks →", () => Site(plugin, "/recommendations#sharpen")));
+      var row = Row(badge, Link("Sharpen your picks →", () => Nav.Sharpen(plugin)));
       row.Margin = new Thickness(0, 12, 0, 0);
       head.Children.Add(row);
     }

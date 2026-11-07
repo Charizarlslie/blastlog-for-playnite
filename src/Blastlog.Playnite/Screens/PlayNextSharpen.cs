@@ -73,7 +73,7 @@ static class PlayNextSharpen {
     var body = new StackPanel();
     var title = action.S("title"); var entryId = action.S("entryId");
     body.Children.Add(PnKit.Text(title, "Blastlog.Body", null, FontWeights.Bold));
-    void Review() => UiKit.Open(plugin.ServerUrl + "/library/" + entryId + "/edit");
+    void Review() => Nav.Review(plugin, entryId);
     if (action.S("kind") == "rate") {
       var impact = (int)(action.D("impact") ?? 0);
       body.Children.Add(PnKit.Text($"{(action.S("status") == "done" ? "Finished" : "Stopped")}, not rated yet.{(impact > 0 ? $" Rating it could change {impact} of your top 10 picks." : " Every rating helps.")}", "Blastlog.Body").Also(t => t.FontSize = 15));

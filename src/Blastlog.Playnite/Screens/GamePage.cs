@@ -420,7 +420,7 @@ public sealed class GamePageElement : PluginUserControl {
     button.Click += (s, e) => {
       try {
         if (inPlaynite != null) plugin.Api.MainView.SelectGame(inPlaynite.Id);
-        else UiKit.Open(plugin.ServerUrl + (entry != null ? "/library/" + entry : "/discover/game/" + game.Id));
+        else if (entry != null) UiKit.Open(plugin.ServerUrl + "/library/" + entry); else Nav.DiscoverGame(plugin, game.Id);
       } catch (Exception ex) { Log.Error(ex, "Blastlog more like this"); }
     };
     Kit.GameScope(button, plugin, game);

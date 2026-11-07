@@ -116,7 +116,7 @@ sealed class PlayNextView : UserControl {
     body.Children.Add(PnKit.Text("What to play next", "Blastlog.PageTitle").Also(t => t.FontSize = 32));
     var ranked = PnKit.Line("Blastlog.Muted", PnKit.Run($"Ranked from {(int)(data.D("ratedWithFingerprints") ?? 0)} rated games. "));
     var taste = new System.Windows.Documents.Hyperlink(PnKit.Run("See your taste", "Blastlog.GameText", FontWeights.SemiBold)) { TextDecorations = null };
-    taste.Click += (s, e) => UiKit.Open(plugin.ServerUrl + "/profile");
+    taste.Click += (s, e) => Nav.Taste(plugin);
     ranked.Inlines.Add(taste); ranked.Margin = new Thickness(0, 4, 0, 14);
     body.Children.Add(ranked);
 
