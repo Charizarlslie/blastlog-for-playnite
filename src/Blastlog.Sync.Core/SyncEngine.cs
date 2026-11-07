@@ -15,7 +15,12 @@ public interface IPlayniteLibrary {
   void Apply(IList<PlayniteWrite> writes);
 }
 
-public sealed class LastRun { public string RunId {get;set;} public DateTimeOffset At {get;set;} public PushCounts Counts {get;set;} public int PlayniteWrites {get;set;} public int Conflicts {get;set;} }
+public sealed class LastRun { public string RunId {get;set;} public List<string> RunIds {get;set;} = new List<string>(); public DateTimeOffset At {get;set;} public PushCounts Counts {get;set;} public int PlayniteWrites {get;set;} public int Conflicts {get;set;}
+  /// <summary>What the sync changed, for "What the last sync changed": Playnite's fields before and after, Blastlog's changes, playtime readings sent.</summary>
+  public List<RunChange> Changes {get;set;} = new List<RunChange>(); public int PlaytimeSent {get;set;} }
+/// <summary>One game a sync changed. Side is "playnite" or "blastlog"; statuses are Playnite status ids (playnite) or Blastlog statuses (blastlog).</summary>
+public sealed class RunChange { public string Side {get;set;} public string PlayniteGameId {get;set;} public string EntryId {get;set;} public string Name {get;set;}
+  public string StatusBefore {get;set;} public string StatusAfter {get;set;} public bool ScoreChanged {get;set;} public int? ScoreBefore {get;set;} public int? ScoreAfter {get;set;} }
 
 /// <summary>The plugin's local state (docs/PLAN.md §4.5): pairs, baselines, the library cursor and cache, the last run. No token.</summary>
 public sealed class SyncStore {
@@ -86,6 +91,16 @@ public sealed class SyncEngine {
         outcome.Notes.Add(second.Counts.Conflict > 0 ? $"{second.Counts.Conflict} game(s) changed on Blastlog while syncing; they'll sync next time." : "Re-read changed games and synced them.");
       }
     }
+    // What this sync changes, kept for "What the last sync changed" (Playnite's values are read before they're written).
+    var before = playnite.Games().ToDictionary(g => g.Id);
+    var changes = plan.PlayniteWrites.Select(w => { before.TryGetValue(w.GameId, out var g); return new RunChange { Side = "playnite", PlayniteGameId = w.GameId, Name = g?.Name,
+      StatusBefore = w.StatusId != null ? g?.StatusId : null, StatusAfter = w.StatusId, ScoreChanged = w.SetScore, ScoreBefore = g?.UserScore, ScoreAfter = w.Score }; }).ToList();
+    var applied = new HashSet<string>((outcome.Response?.Results ?? new List<PushResult>()).Where(r => r.Result == "applied").Select(r => r.Ref));
+    foreach (var c in plan.Push.Changes.Where(c => applied.Contains(c.EntryId))) {
+      store.Entries.TryGetValue(c.EntryId, out var was);
+      changes.Add(new RunChange { Side = "blastlog", EntryId = c.EntryId, Name = was?.Game?.Title, StatusBefore = c.Status != null ? was?.Status : null, StatusAfter = c.Status,
+        ScoreChanged = c.SetRating, ScoreBefore = was?.Rating == null ? (int?)null : (int)Math.Round(was.Rating.Value), ScoreAfter = c.RatingValue });
+    }
     playnite.Apply(plan.PlayniteWrites);
     outcome.PlayniteWrites = plan.PlayniteWrites.Count;
     await RefreshAsync(ct).ConfigureAwait(false);
@@ -102,7 +117,9 @@ public sealed class SyncEngine {
       store.Baselines[pair.Key] = next;
     }
     store.FirstSyncDone = true;
-    store.LastRun = new LastRun { RunId = outcome.Response?.RunId, At = DateTimeOffset.Now, Counts = outcome.Response?.Counts ?? new PushCounts(), PlayniteWrites = outcome.PlayniteWrites, Conflicts = plan.Conflicts.Count };
+    store.LastRun = new LastRun { RunId = outcome.Response?.RunId, RunIds = outcome.Response?.RunIds ?? new List<string>(), At = DateTimeOffset.Now, Counts = outcome.Response?.Counts ?? new PushCounts(),
+      PlayniteWrites = outcome.PlayniteWrites, Conflicts = plan.Conflicts.Count, Changes = changes,
+      PlaytimeSent = (outcome.Response?.Results ?? new List<PushResult>()).Count(r => r.Kind == "playtime" && r.Result == "applied") };
     return outcome;
   }
 
@@ -110,7 +127,7 @@ public sealed class SyncEngine {
   async Task<PushResponse> PushChunked(PushRequest push, CancellationToken ct) {
     const int max = 200;
     if (push.Changes.Count <= max && push.Playtime.Count <= max && push.Links.Count <= max && push.Adds.Count <= max && push.Unmatched.Count <= max)
-      return (await client.PushAsync(push, ct).ConfigureAwait(false)).Value;
+    { var single = (await client.PushAsync(push, ct).ConfigureAwait(false)).Value; if (single?.RunId != null) single.RunIds.Add(single.RunId); return single; }
     var total = new PushResponse { DryRun = push.DryRun };
     for (var i = 0; ; i++) {
       var part = new PushRequest { DryRun = push.DryRun, Client = push.Client, Origin = push.Origin,
@@ -118,6 +135,7 @@ public sealed class SyncEngine {
         Playtime = push.Playtime.Skip(i * max).Take(max).ToList(), Unmatched = push.Unmatched.Skip(i * max).Take(max).ToList() };
       if (part.Count == 0) break;
       var r = (await client.PushAsync(part, ct).ConfigureAwait(false)).Value;
+      if (r.RunId != null) total.RunIds.Add(r.RunId);
       total.RunId = total.RunId ?? r.RunId; total.Results.AddRange(r.Results);
       total.Counts.Applied += r.Counts.Applied; total.Counts.Unchanged += r.Counts.Unchanged; total.Counts.Conflict += r.Counts.Conflict; total.Counts.Rejected += r.Counts.Rejected;
     }

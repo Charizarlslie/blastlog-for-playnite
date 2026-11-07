@@ -75,6 +75,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     yield return new MainMenuItem { MenuSection = section, Description = "Sync now", Action = a => _ = SyncNow(interactive: true) };
     yield return new MainMenuItem { MenuSection = section, Description = "Preview sync", Action = a => _ = PreviewSync() };
     yield return new MainMenuItem { MenuSection = section, Description = "Pair games…", Action = a => _ = PairGames() };
+    yield return new MainMenuItem { MenuSection = section, Description = "What the last sync changed", Action = a => { try { LastSyncWindow.Show(this, store.LastRun); } catch (Exception e) { Log.Error(e, "Blastlog: what the last sync changed"); } } };
     yield return new MainMenuItem { MenuSection = section, Description = "Undo the last sync", Action = a => _ = UndoLast() };
     yield return new MainMenuItem { MenuSection = section, Description = "Open Blastlog", Action = a => UiKit.Open(ServerUrl + "/dashboard") };
     yield return new MainMenuItem { MenuSection = section, Description = "Remove Blastlog tags", Action = a => {
@@ -148,7 +149,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public async Task SyncNow(bool interactive) {
     if (!Configured) { PlayniteApi.Dialogs.ShowMessage("Add your Blastlog sync token first: Add-ons → Extension settings → Blastlog."); return; }
     if (!store.FirstSyncDone) { await PreviewSync(); return; }
-    try { var o = await RunSync(false); if (interactive && o != null) PlayniteApi.Dialogs.ShowMessage(Summary(o)); }
+    try { var o = await RunSync(false); if (interactive && o != null) ShowSummary(o); }
     catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage("Syncing: " + Words(e), "Blastlog"); }
     catch (Exception e) { PlayniteApi.Dialogs.ShowErrorMessage("Couldn't sync: " + e.Message, "Blastlog"); }
   }
@@ -158,7 +159,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     if (store.Pairs.Count == 0) { PlayniteApi.Dialogs.ShowMessage("Pair your games first: Blastlog → Pair games."); return; }
     try {
       var preview = await RunSync(true); if (preview == null) return;
-      if (PreviewWindow.Show(this, preview, EntryName) == true) { var o = await RunSync(false); if (o != null) PlayniteApi.Dialogs.ShowMessage(Summary(o)); }
+      if (PreviewWindow.Show(this, preview, EntryName) == true) { var o = await RunSync(false); if (o != null) ShowSummary(o); }
     } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage("Preview sync: " + Words(e), "Blastlog"); }
     catch (Exception e) { PlayniteApi.Dialogs.ShowErrorMessage("Couldn't sync: " + e.Message, "Blastlog"); }
   }
@@ -176,15 +177,22 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     catch (Exception e) { PlayniteApi.Dialogs.ShowErrorMessage("Couldn't pair: " + e.Message, "Blastlog"); }
   }
   async Task UndoLast() {
-    var run = store.LastRun?.RunId;
-    if (run == null) { PlayniteApi.Dialogs.ShowMessage("No sync to undo yet."); return; }
+    var last = store.LastRun;
+    var runs = (last?.RunIds?.Count > 0 ? last.RunIds : new List<string> { last?.RunId }).Where(r => r != null).ToList();
+    if (runs.Count == 0) { PlayniteApi.Dialogs.ShowMessage("No sync to undo yet."); return; }
     try {
-      var r = (await Task.Run(() => Client().UndoAsync(run))).Value;
-      PlayniteApi.Dialogs.ShowMessage($"Undone on Blastlog: {r.Undone} change(s).{(r.Kept.Count > 0 ? " Kept (changed since): " + string.Join(", ", r.Kept.Select(k => (string)k["title"])) : "")} Playnite's own copies stay as they are.");
-      store.LastRun.RunId = null; SaveStore();
-    } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(e.Error == "nothing_to_undo" ? "That sync is already undone." : Words(e), "Blastlog"); }
-  }
-  async Task Unpair(Game game) {
+      int undone = 0; var kept = new List<string>(); var already = 0;
+      foreach (var run in runs) {
+        try { var r = (await Task.Run(() => Client().UndoAsync(run))).Value; undone += r.Undone; kept.AddRange(r.Kept.Select(k => (string)k["title"])); }
+        catch (BlastlogException e) when (e.Error == "nothing_to_undo") { already++; }
+      }
+      Log.Warn($"Blastlog: undid {runs.Count - already} sync run(s): {undone} change(s), {last.PlaytimeSent} playtime reading(s) withdrawn.");
+      if (already == runs.Count) { PlayniteApi.Dialogs.ShowMessage("That sync is already undone."); return; }
+      PlayniteApi.Dialogs.ShowMessage($"Undone on Blastlog: {undone} status or star change(s)" + (last.PlaytimeSent > 0 ? $", and the {last.PlaytimeSent} playtime reading(s) it sent were withdrawn" : "") + "."
+        + (kept.Count > 0 ? " Kept (changed since): " + string.Join(", ", kept) + "." : "") + " Playnite's own status and scores stay as they are (Blastlog → What the last sync changed lists them).", "Blastlog");
+      last.RunId = null; last.RunIds = new List<string>(); SaveStore();
+    } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
+  }  async Task Unpair(Game game) {
     try { await Task.Run(() => Engine().UnpairAsync(game.Id.ToString())); SaveStore(); }
     catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
@@ -192,6 +200,13 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.2.10" } };
     push.CheckIns.Add(new JObject { ["entryId"] = entryId, ["answer"] = "still_playing" });
     try { await Task.Run(() => Client().PushAsync(push)); cache.Remove("now-playing"); } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
+  }
+  /// <summary>The sync's summary, offering the full list of what changed.</summary>
+  void ShowSummary(SyncOutcome o) {
+    try {
+      if (PlayniteApi.Dialogs.ShowMessage(Summary(o) + "\n\nSee what changed, game by game?", "Blastlog", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+        LastSyncWindow.Show(this, store.LastRun);
+    } catch (Exception e) { Log.Error(e, "Blastlog: sync summary"); }
   }
   static string Summary(SyncOutcome o) {
     var c = o.Response?.Counts ?? new PushCounts();

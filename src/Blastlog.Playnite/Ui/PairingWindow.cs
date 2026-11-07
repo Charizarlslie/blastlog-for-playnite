@@ -28,6 +28,15 @@ public sealed class PairingWindow {
     var linked = choices.Count(c => c.Match.Result == "linked");
     var skipped = choices.Where(c => c.Match.Result == "skipped").ToList();
 
+    // What a row pairs with on Blastlog: the entry in the player's library (title, year, platform), or the catalogue game.
+    string Target(PairingChoice c) {
+      if (c.Match.Result == "entry") {
+        var e = c.Match.EntryId != null ? plugin.CachedEntry(c.Match.EntryId) : null;
+        var t = e?.Game?.Title ?? c.Match.Title; if (t == null) return null;
+        return "your Blastlog entry: " + t + (e?.Game?.ReleaseYear != null ? $" ({e.Game.ReleaseYear})" : "") + (!string.IsNullOrEmpty(e?.Platform) ? $", {e.Platform}" : "");
+      }
+      return c.Match.Title != null ? "Blastlog's " + c.Match.Title : null;
+    }
     var summary = Kit.Text("", "Blastlog.Body"); summary.FontWeight = FontWeights.SemiBold; summary.VerticalAlignment = VerticalAlignment.Center;
     void Update() {
       try {
@@ -43,17 +52,17 @@ public sealed class PairingWindow {
     // Pairing is the job (Charlie, 2026-11-07): it's the one open section. Adding games or sending them to the import
     // are rare extras, tucked behind one small "Other games" link.
     body.Children.Add(Section("Already in your Blastlog library", inLibrary,
-      "Pairing just links them. Exact matches are ticked. A “check it” row is a close match: tick it only if it's the same game.",
-      expanded: true, Update));
+      "Pairing just links them. Each row shows the Playnite game and, under it, the entry in your Blastlog library it would pair with. Exact matches are ticked. A “close match” has a slightly different name: tick it if the two are the same game, or leave it for later.",
+      expanded: true, Update, Target));
     var others = toAdd.Count + unknown.Count;
     if (others > 0) {
       var extra = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 6, 0, 0) };
       extra.Children.Add(Section("Not in your Blastlog library", toAdd,
         "Blastlog knows these games, but you don't have them on Blastlog. Ticking one adds it to your Blastlog library as a game you own. Leave Game Pass and other games you don't own unticked.",
-        expanded: true, Update));
+        expanded: true, Update, Target));
       extra.Children.Add(Section("Blastlog doesn't recognise these", unknown,
         "Ticking one sends it to Blastlog's import page (Library, Import games) for you to sort out there. Nothing is added until you finish that import.",
-        expanded: true, Update));
+        expanded: true, Update, _ => null));
       var more = Kit.Button($"▸  Other games ({others}): add to Blastlog or send to the import", () => { }, "Blastlog.TextButton");
       more.HorizontalAlignment = HorizontalAlignment.Left;
       more.Click += (s, e) => {
@@ -88,7 +97,7 @@ public sealed class PairingWindow {
   }
 
   /// <summary>A card with a heading and count, what ticking means, Tick all / Untick all, and its rows (folded when not expanded).</summary>
-  static FrameworkElement Section(string title, List<PairingChoice> rows, string meaning, bool expanded, Action changed) {
+  static FrameworkElement Section(string title, List<PairingChoice> rows, string meaning, bool expanded, Action changed, Func<PairingChoice, string> describe) {
     var card = new StackPanel();
     var head = new DockPanel();
     var toggle = new Button { Style = Kit.Style("Blastlog.TextButton"), Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left, MinHeight = 44 };
@@ -105,21 +114,30 @@ public sealed class PairingWindow {
       bulk.Children.Add(Kit.Button("Untick all", () => { foreach (var b in boxes) b.IsChecked = false; }, "Blastlog.TextButton"));
       list.Children.Add(bulk);
     }
-    foreach (var choice in rows) {
-      var c = choice;
-      var renamed = !string.Equals(c.Match.Title, c.Game.Name, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(c.Match.Title);
+    // One row per game: the same game owned on two stores (two Playnite entries, one Blastlog game) is one tick.
+    foreach (var group in rows.GroupBy(r => r.Game.Name + "|" + (r.Match.EntryId ?? r.Match.GameId ?? r.Game.Id))) {
+      var copies = group.ToList(); var c = copies[0];
       var label = new TextBlock { TextWrapping = TextWrapping.Wrap, Style = Kit.Style("Blastlog.Body") };
-      label.Inlines.Add(new System.Windows.Documents.Run(c.Game.Name));
-      if (renamed) { var r = new System.Windows.Documents.Run($"  →  {c.Match.Title} on Blastlog"); r.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.TextMuted"); label.Inlines.Add(r); }
-      if (c.Match.Confidence == "likely") { var r = new System.Windows.Documents.Run("  ·  check it"); r.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.Warn"); label.Inlines.Add(r); }
-      var box = new CheckBox { Content = label, IsChecked = c.Ticked, Margin = new Thickness(0, 3, 0, 3), MinHeight = 36, VerticalContentAlignment = VerticalAlignment.Center };
-      box.Checked += (s, e) => { c.Ticked = true; changed(); Count(); };
-      box.Unchecked += (s, e) => { c.Ticked = false; changed(); Count(); };
+      label.Inlines.Add(new System.Windows.Documents.Run(c.Game.Name) { FontWeight = FontWeights.SemiBold });
+      var where = string.Join(", ", copies.Select(x => x.Game.Source).Where(x => !string.IsNullOrEmpty(x)).Distinct());
+      var mine = (copies.Count > 1 ? $"{copies.Count} copies in Playnite" : "in Playnite") + (where != "" ? $": {where}" : "") + (c.Game.ReleaseYear != null ? $", {c.Game.ReleaseYear}" : "");
+      var detail = new System.Windows.Documents.Run($"  ({mine})"); detail.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.TextMuted"); label.Inlines.Add(detail);
+      var target = describe(c);
+      if (target != null) {
+        label.Inlines.Add(new System.Windows.Documents.LineBreak());
+        var arrow = new System.Windows.Documents.Run("→  " + target); arrow.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.TextMuted"); label.Inlines.Add(arrow);
+      }
+      if (c.Match.Confidence == "likely") { var r = new System.Windows.Documents.Run("  ·  close match: same game?"); r.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.Warn"); label.Inlines.Add(r); }
+      var box = new CheckBox { Content = label, IsChecked = c.Ticked, Margin = new Thickness(0, 4, 0, 4), MinHeight = 36, VerticalContentAlignment = VerticalAlignment.Center };
+      void Set(bool on) { foreach (var x in copies) x.Ticked = on; changed(); Count(); }
+      box.Checked += (s, e) => Set(true);
+      box.Unchecked += (s, e) => Set(false);
+      if (copies.Any(x => x.Ticked != c.Ticked)) foreach (var x in copies) x.Ticked = c.Ticked;
       boxes.Add(box); list.Children.Add(box);
     }
     if (rows.Count == 0) list.Children.Add(Kit.Text("None.", "Blastlog.Small"));
     card.Children.Add(list);
-    void Count() { heading.Text = $"{(list.Visibility == Visibility.Visible ? "▾" : "▸")}  {title} ({rows.Count}{(rows.Count > 0 ? $", {rows.Count(r => r.Ticked)} ticked" : "")})"; }
+    void Count() { heading.Text = $"{(list.Visibility == Visibility.Visible ? "▾" : "▸")}  {title} ({rows.Count}{(rows.Count > 0 ? $", {rows.Where(r => r.Ticked).Select(r => r.Game.Name + "|" + (r.Match.EntryId ?? r.Match.GameId)).Distinct().Count()} ticked" : "")})"; }
     toggle.Click += (s, e) => { try { list.Visibility = list.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; Count(); } catch (Exception ex) { Log.Error(ex, "Blastlog pairing section"); } };
     System.Windows.Automation.AutomationProperties.SetName(toggle, title);
     Count();

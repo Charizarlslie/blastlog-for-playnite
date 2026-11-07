@@ -48,7 +48,8 @@ public sealed class PushRequest {
 /// <summary>kind: link | change | add | playtime | unmatched | checkIn; result: applied | unchanged | conflict | rejected.</summary>
 public sealed class PushResult { public string Kind {get;set;} public string Ref {get;set;} public string Result {get;set;} public string Reason {get;set;} public int? CurrentVersion {get;set;} public JObject Entry {get;set;} }
 public sealed class PushCounts { public int Applied {get;set;} public int Unchanged {get;set;} public int Conflict {get;set;} public int Rejected {get;set;} }
-public sealed class PushResponse { public string RunId {get;set;} public bool DryRun {get;set;} public List<PushResult> Results {get;set;} = new List<PushResult>(); public PushCounts Counts {get;set;} = new PushCounts(); }
+public sealed class PushResponse { public string RunId {get;set;} /// <summary>Every run a chunked push made (one per 200 items).</summary>
+  [JsonIgnore] public List<string> RunIds {get;set;} = new List<string>(); public bool DryRun {get;set;} public List<PushResult> Results {get;set;} = new List<PushResult>(); public PushCounts Counts {get;set;} = new PushCounts(); }
 public sealed class UndoResponse { public int Undone {get;set;} public List<JObject> Kept {get;set;} = new List<JObject>(); }
 
 /// <summary>A refused request. Details: the server's "issues" (field paths and codes) when it sent them, never request data.</summary>
