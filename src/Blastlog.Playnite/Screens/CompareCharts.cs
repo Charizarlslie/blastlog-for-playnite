@@ -255,7 +255,8 @@ static class CompareCharts {
     Text(c, Label("← " + xa.left, 14, "Blastlog.TextMuted"), pad, s - pad + 24, "start"); Text(c, Label(xa.right + " →", 14, "Blastlog.TextMuted"), s - pad, s - pad + 24, "end");
     Text(c, Label("↑ " + ya.right, 14, "Blastlog.TextMuted"), s / 2, pad - 16); Text(c, Label("↓ " + ya.left, 14, "Blastlog.TextMuted"), s / 2, s - pad + 24);
     var dots = people.Select(p => new { p, cx = Spot(Axis(p, xKey), xKey), cy = s - Spot(Axis(p, yKey), yKey) }).ToList();
-    var boxes = new List<Rect>();
+    // The axis names count as taken space, so a player's name never sits on top of one.
+    var boxes = new List<Rect> { new Rect(pad, s - pad + 14, s - pad * 2, 20), new Rect(s / 2 - 70, pad - 26, 140, 20) };
     bool Hits(Rect r) => boxes.Any(o => o.IntersectsWith(r)) || dots.Any(d => new Rect(d.cx - 17, d.cy - 17, 34, 34).IntersectsWith(r));
     foreach (var d in dots) {
       var dot = new Ellipse { Width = 34, Height = 34, Fill = d.p.Brush, StrokeThickness = 4 }; dot.SetResourceReference(Shape.StrokeProperty, "Blastlog.Bg");

@@ -277,7 +277,7 @@ sealed class CompareView : Grid {
       var left = Stack(new Thickness(0, 0, 32, 0), T($"{shared.Count} games you’ve both rated. Dots on the line, you agree; above it {b.Name} liked it more, below it {a.Name} did.", "Blastlog.Muted")
         .Also(t => { t.MaxWidth = 520; t.HorizontalAlignment = HorizontalAlignment.Left; t.Margin = new Thickness(0, 0, 0, 10); }),
         CompareCharts.Scatter(shared.Select(Duel).ToList(), a, b, Lookup));
-      var side = new StackPanel { Width = 340 };
+      var side = new StackPanel { Width = 340, Margin = new Thickness(0, 8, 0, 24) };
       side.Children.Add(T("Biggest disagreements", "Blastlog.CardTitle").Also(t => t.Margin = new Thickness(0, 0, 0, 10)));
       var dis = Arr(detail["disagreements"]).Take(4).Select(Duel).ToList();
       if (dis.Count == 0) side.Children.Add(T("None — you rate the games you share about the same.", "Blastlog.Muted"));
@@ -299,7 +299,7 @@ sealed class CompareView : Grid {
     var main = Stack(new Thickness(0, 0, 32, 0), T($"{games.Count} games two or more of you rated, furthest apart first. Each dot is one person’s stars; tap a game for everyone’s take.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, 0, 0, 10)),
       CompareCharts.Strips(plugin, games, shownPeople, allStrips, () => { allStrips = !allStrips; Render(); }, Lookup));
     main.Width = 600;
-    var right = new StackPanel { Width = 340 };
+    var right = new StackPanel { Width = 340, Margin = new Thickness(0, 8, 0, 24) };
     right.Children.Add(T("How closely each pair rates", "Blastlog.CardTitle").Also(t => t.Margin = new Thickness(0, 0, 0, 10)));
     if (gaps.Count == 0) right.Children.Add(T("No pair has rated the same game yet.", "Blastlog.Muted"));
     foreach (var p in gaps) {

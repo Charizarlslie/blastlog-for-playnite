@@ -256,7 +256,9 @@ sealed class TasteView : Grid {
     head.Children.Add(T(t.Label, "Blastlog.CardTitle"));
     card.Children.Add(head);
 
-    var steps = new UniformGrid { Rows = 1, Columns = CardSteps.Length };
+    // Five across when they fit, otherwise two rows (the site wraps them the same way on narrow cards).
+    var steps = new UniformGrid { Columns = CardSteps.Length };
+    steps.SizeChanged += (o, e) => { var n = e.NewSize.Width >= CardSteps.Length * 76 ? CardSteps.Length : 3; if (steps.Columns != n) steps.Columns = n; };
     foreach (var s in CardSteps) {
       var on = current == s.key;
       var b = Kit.Button(s.label, () => OnStance(t.Id, s.key), on ? "Blastlog.Primary" : "Blastlog.TextButton");
@@ -289,14 +291,12 @@ sealed class TasteView : Grid {
       card.Children.Add(Runs("Blastlog.Body", ("Unless", true, null), (" it’s like " + string.Join(", ", exceptionGames.Take(3).Select(g => S(g, "title")))
         + (shared.Count > 0 ? " (" + string.Join(", ", shared).ToLowerInvariant() + ")" : "") + ".", false, null)).Also(x => x.Margin = new Thickness(0, 0, 0, 12)));
     }
-    var foot = new DockPanel { LastChildFill = true };
     var correct = Kit.Button("Correct this", () => fineTune?.BringIntoView(new Rect(0, 0, 1, 400)), "Blastlog.Ghost");
-    DockPanel.SetDock(correct, Dock.Right); foot.Children.Add(correct);
     var lean = Row(gameCount < 6 ? (UIElement)Pill("Early signal", dashed: true) : T("Clear lean", "Blastlog.Small"),
       T($" · {Plural(gameCount, "game")}{(reviews > 0 ? ", " + Plural(reviews, "review") : "")}", "Blastlog.Small").Also(x => x.VerticalAlignment = VerticalAlignment.Center));
-    lean.VerticalAlignment = VerticalAlignment.Center;
-    foot.Children.Add(lean);
-    card.Children.Add(foot);
+    lean.VerticalAlignment = VerticalAlignment.Center; lean.Margin = new Thickness(0, 0, 14, 8);
+    correct.Margin = new Thickness(0);
+    card.Children.Add(Wrap(lean, correct));
 
     var border = Kit.Card(card);
     border.Margin = new Thickness(0);
@@ -324,8 +324,9 @@ sealed class TasteView : Grid {
       var summary = $"{word} · {Plural(a.games, "game")}{(early ? " · early" : "")}";
       var label = FamilyLabel.TryGetValue(a.family, out var l) ? l : a.family;
       var row = new Grid { Margin = new Thickness(0, 0, 0, 14) };
-      foreach (var w in new[] { 210.0, W + 24, 230 }) row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(w) });
+      foreach (var w in new[] { 200.0, W + 24 }) row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(w) });
       row.ColumnDefinitions.Add(new ColumnDefinition());
+      row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
       var name = T(label, "Blastlog.Body", null, 0, FontWeights.SemiBold); name.VerticalAlignment = VerticalAlignment.Center;
       var track = new Grid { Width = W, Height = 14, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left };
       track.Children.Add(Box(null, "Blastlog.Surface2", 7, new Thickness(0)));
@@ -339,10 +340,11 @@ sealed class TasteView : Grid {
       track.Children.Add(fill);
       AutomationProperties.SetName(track, $"{label}: {summary}");
       var wordText = T(summary, "Blastlog.Small", early ? "Blastlog.TextMuted" : "Blastlog.Text"); wordText.VerticalAlignment = VerticalAlignment.Center;
-      var chips = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
+      // The strongest pulls either way sit on their own line under the bar, so they wrap at any width.
+      var chips = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
       foreach (var t in a.loves) chips.Children.Add(Kit.Chip("+ " + t.Label));
       foreach (var t in a.avoids) chips.Children.Add(Kit.Chip("− " + t.Label, neutral: true));
-      Grid.SetColumn(track, 1); Grid.SetColumn(wordText, 2); Grid.SetColumn(chips, 3);
+      Grid.SetColumn(track, 1); Grid.SetColumn(wordText, 2); Grid.SetRow(chips, 1); Grid.SetColumn(chips, 1); Grid.SetColumnSpan(chips, 2);
       row.Children.Add(name); row.Children.Add(track); row.Children.Add(wordText); row.Children.Add(chips);
       list.Children.Add(row);
     }
