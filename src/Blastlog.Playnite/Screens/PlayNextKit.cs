@@ -223,11 +223,7 @@ static class PnKit {
   }
 
   /// <summary>A Blastlog entry's page: Playnite's own game page when it's paired, else Blastlog's.</summary>
-  public static void OpenEntry(BlastlogPlugin plugin, string entryId) {
-    var game = plugin.GameFor(entryId);
-    if (game != null) { plugin.Api.MainView.SwitchToLibraryView(); plugin.Api.MainView.SelectGame(game.Id); }
-    else UiKit.Open(plugin.ServerUrl + "/library/" + entryId);
-  }
+  public static void OpenEntry(BlastlogPlugin plugin, string entryId) => Nav.Entry(plugin, entryId);
 
   /// <summary>"~8h", "~8h main story" from another level, "~8h (estimate)", "No end" (domain lengthText).</summary>
   public static string LengthText(JToken length) {

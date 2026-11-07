@@ -163,14 +163,7 @@ static class Dash {
   // ---- Going places ----
   public static void Site(BlastlogPlugin plugin, string path) => UiKit.Open(plugin.ServerUrl + path);
   /// <summary>A game's page: Playnite's own (selected in the library) when it's paired, else Blastlog's.</summary>
-  public static void OpenEntry(BlastlogPlugin plugin, string entryId) {
-    if (entryId == null) return;
-    try {
-      var game = plugin.GameFor(entryId);
-      if (game != null) { plugin.Api.MainView.SwitchToLibraryView(); plugin.Api.MainView.SelectGame(game.Id); return; }
-    } catch (Exception e) { Log.Warn(e, "Blastlog: couldn't open the game in Playnite"); }
-    Site(plugin, "/library/" + entryId);
-  }
+  public static void OpenEntry(BlastlogPlugin plugin, string entryId) => Nav.Entry(plugin, entryId);
   /// <summary>Rate and review (its questions are what teach Blastlog).</summary>
   public static void Review(BlastlogPlugin plugin, string entryId) => Nav.Review(plugin, entryId);
   public static void DiscoverGame(BlastlogPlugin plugin, string gameId) => Nav.DiscoverGame(plugin, gameId);

@@ -292,6 +292,8 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public string EntryFor(Guid gameId) => store.Pairs.TryGetValue(gameId.ToString(), out var e) ? e : null;
   public Entry CachedEntry(string entryId) => store.Entries.TryGetValue(entryId, out var e) ? e : null;
   public Game GameFor(string entryId) { var id = store.Pairs.FirstOrDefault(p => p.Value == entryId).Key; return id != null && Guid.TryParse(id, out var g) ? PlayniteApi.Database.Games.Get(g) : null; }
+  /// <summary>The Blastlog game id of one of the player's entries, from the synced library (null when it isn't there).</summary>
+  public string BlastlogGameIdFor(string entryId) => entryId != null && store.Entries.TryGetValue(entryId, out var e) ? e.Game?.Id : null;
   public string GameName(string gameId) => Guid.TryParse(gameId, out var g) ? PlayniteApi.Database.Games.Get(g)?.Name ?? gameId : gameId;
   public string StatusName(string statusId) => Guid.TryParse(statusId, out var s) ? PlayniteApi.Database.CompletionStatuses.Get(s)?.Name ?? statusId : statusId;
   string EntryName(string entryId) => store.Entries.TryGetValue(entryId, out var e) ? e.Game?.Title ?? entryId : entryId;

@@ -186,12 +186,10 @@ static class QuickStartPage {
       return list;
     }
 
-    /// <summary>A game in Playnite opens its page there; one that isn't opens it on Blastlog.</summary>
+    /// <summary>A game in Playnite opens its page there; one that isn’t opens its native game page (Nav.Entry).</summary>
     void OpenEntry(string entryId) {
       if (entryId == null) return;
-      var game = plugin.GameFor(entryId);
-      if (game != null) { close(); plugin.Api.MainView.SwitchToLibraryView(); plugin.Api.MainView.SelectGame(game.Id); return; }
-      Nav.Site(plugin, "/library/" + entryId);
+      close(); Nav.Entry(plugin, entryId);
     }
 
     void SeePicks() { close(); if (!ScreenJump.To("Discover")) Nav.Site(plugin, "/discover"); }

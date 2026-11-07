@@ -140,7 +140,7 @@ static class DashboardLibrary {
     titles.Children.Add(Dash.Text("Your stars and reviews teach Blastlog your taste", "Blastlog.Muted").Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(0, 0, 12, 0); }));
     var badge = TasteBadge(data.TasteHelp?["knowledge"] as JObject); if (badge != null) titles.Children.Add(badge);
     head.Children.Add(titles);
-    var all = Dash.Link("All suggestions →", () => Nav.Sharpen(plugin)); DockPanel.SetDock(all, Dock.Right); head.Children.Add(all);
+    var all = Dash.Link("All suggestions →", () => Nav.PlayNext(plugin)); DockPanel.SetDock(all, Dock.Right); head.Children.Add(all);
     panel.Children.Add(head);
 
     var shelf = data.Shelf;
