@@ -80,6 +80,12 @@ choices, Still playing check-in, Guides ↗, Reddit ↗, the pager), Your librar
 Recently finished with its next steps.
 **Playnite adds:** a game you have in Playnite shows **Play** (installed) or **Install** (not installed) as the primary
 button on Next up and Currently playing rows. One that isn't in Playnite shows "Not in Playnite" and its stores.
+**Built** (`Screens/Dashboard*.cs`): everything above runs natively, including Finished it / Set aside / Still playing /
+Start another (mirror writes), the boost's Not now / Undo, and Friends lately with its reactions. Some actions open the
+site because they are site flows the plugin has no screen for yet: + New entry and + Add a new game (the add dialog), Add
+review / Rate & review (the review page and its questions), the library links (the numbers, the star legend, Enter in
+Search) and friends' or catalogue games from Search (Discover game pages). A paired game's View details selects it in
+Playnite's library. The earlier view's Sync now / Preview sync / Pair games / Refresh sit in a card at the bottom.
 
 ### 4.2 Library (Playnite's grid, restyled)
 Blastlog's cover tiles (3:4, big, rounded 14–18, game-tinted card, status pill with icon and word, stars), title under
