@@ -17,7 +17,8 @@ namespace Blastlog.Playnite.Screens {
 /// <summary>
 /// A Discover game's own page (apps/web DiscoverGame.tsx), natively, in a Playnite window, laid out as the site's: Back,
 /// the hero (cover, title, facts, summary, answers with Undo, Play / Install when the game is in Playnite, the price
-/// link), then For you, the fingerprint, friends who played it, accessibility, more about the game and More like this.
+/// link), then For you, friends who played it, accessibility, more about the game and More like this. No fingerprint card:
+/// the site's Discover page has none (Blastlog is the reference).
 /// A game already in the player's library that's paired in Playnite opens Playnite's own game page instead (the site opens its library page).
 /// </summary>
 static class DiscoverGamePage {
@@ -113,9 +114,6 @@ sealed partial class DiscoverGameView : UserControl {
       body.Children.Add(Fingerprint.LinkButton(openedFrom != null ? "← Back to Discover" : "← Back", () => window.Close()).Also(b => { b.Margin = new Thickness(-10, 0, 0, 0); b.HorizontalAlignment = HorizontalAlignment.Left; }));
       body.Children.Add(Hero());
       var fit = FitCard(); if (fit != null) body.Children.Add(fit);
-      if (data["fingerprint"] is JObject fingerprint)
-        // No Flag it / Suggest a trait here: the site has them on library pages only (SiteGameUrl null hides them).
-        body.Children.Add(Fingerprint.Card(FingerprintData.Parse(fingerprint), new FingerprintOptions { ServerUrl = plugin.ServerUrl }));
       var friends = FriendsCard(); if (friends != null) body.Children.Add(friends);
       var access = AccessibilityCard(); if (access != null) body.Children.Add(access);
       var more = MoreCard(); if (more != null) body.Children.Add(more);
