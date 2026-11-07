@@ -32,8 +32,13 @@ public static class Screens {
     .Where(t => typeof(IBlastlogScreen).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface && t.GetConstructor(Type.EmptyTypes) != null)
     .Select(t => (IBlastlogScreen)Activator.CreateInstance(t)).OrderBy(s => s.Order);
 
-  public static SidebarItem SidebarItem(IBlastlogScreen screen, BlastlogPlugin plugin) => new SidebarItem {
-    Title = screen.Title, Type = SiderbarItemType.View, Icon = Icons.Make(screen.Icon, 18),
+  /// <summary>
+  /// The sidebar item for a screen. Playnite lists add-on items sorted by title, which would put Compare first; a run
+  /// of zero-width spaces (U+200B) in front makes the sort follow <see cref="IBlastlogScreen.Order"/>
+  /// (more spaces sort earlier under Playnite's culture-aware sort) without changing what the label shows.
+  /// </summary>
+  public static SidebarItem SidebarItem(IBlastlogScreen screen, BlastlogPlugin plugin, int rank, int count) => new SidebarItem {
+    Title = new string('\u200B', Math.Max(0, count - rank)) + screen.Title, Type = SiderbarItemType.View, Icon = Icons.Make(screen.Icon, 18),
     Opened = () => Kit.Page(screen.Create(plugin)),
   };
 }

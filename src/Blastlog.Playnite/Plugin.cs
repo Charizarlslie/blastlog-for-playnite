@@ -90,7 +90,8 @@ public sealed class BlastlogPlugin : GenericPlugin {
   }
   public override IEnumerable<SidebarItem> GetSidebarItems() {
     // Every Blastlog screen (Ui/Kit.cs IBlastlogScreen), in the site's menu order.
-    foreach (var screen in Ui.Screens.All()) yield return Ui.Screens.SidebarItem(screen, this);
+    var screens = Ui.Screens.All().ToList();
+    for (var i = 0; i < screens.Count; i++) yield return Ui.Screens.SidebarItem(screens[i], this, i, screens.Count);
   }
   public override Control GetGameViewControl(GetGameViewControlArgs args) => args.Name == "GamePanel" || args.Name == "Fingerprint" || args.Name == "Status" ? new GameElement(this, args.Name) : null;
 

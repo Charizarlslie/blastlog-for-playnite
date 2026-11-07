@@ -116,12 +116,29 @@ public sealed class ThemeBridge {
   }
 
   /// <summary>A Blastlog image, downloaded once and kept in the plugin's data folder.</summary>
-  public async Task<string> CachedFile(string url) {
+  public Task<string> CachedFile(string url) {
+    if (string.IsNullOrEmpty(url)) return Task.FromResult<string>(null);
+    // One download per picture however many ask (a card's cover and its colour), at most six at a time: .NET Framework
+    // allows two connections per host by default, so a page asking for a hundred covers at once timed most of them out.
+    lock (fetches) {
+      if (fetches.TryGetValue(url, out var running)) return running;
+      var task = Download(url);
+      fetches[url] = task;
+      task.ContinueWith(_ => { lock (fetches) fetches.Remove(url); }, TaskScheduler.Default);
+      return task;
+    }
+  }
+  readonly Dictionary<string, Task<string>> fetches = new Dictionary<string, Task<string>>();
+  static readonly System.Threading.SemaphoreSlim Downloads = new System.Threading.SemaphoreSlim(6, 6);
+  static ThemeBridge() { try { System.Net.ServicePointManager.FindServicePoint(new Uri("https://images.igdb.com/")).ConnectionLimit = 8; } catch (Exception) { } }
+  async Task<string> Download(string url) {
     Directory.CreateDirectory(coverCache);
     string name; using (var sha = SHA256.Create()) name = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(url))).Replace("-", "").Substring(0, 32) + ".jpg";
     var path = Path.Combine(coverCache, name);
     if (File.Exists(path)) return path;
+    await Downloads.WaitAsync().ConfigureAwait(false);
     try {
+      if (File.Exists(path)) return path;
       var bytes = await Http.GetByteArrayAsync(url).ConfigureAwait(false);
       // Two callers can fetch the same picture at once (a card's colour and its cover): each writes its own temp file,
       // and whoever finishes second keeps the first one's copy.
@@ -131,6 +148,7 @@ public sealed class ThemeBridge {
       try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { }
       return path;
     } catch (Exception e) { Log.Warn(e, "Blastlog: couldn't download " + url); return null; }
+    finally { Downloads.Release(); }
   }
 
   /// <summary>The cover shrunk to 36x48 (covers are 3:4), opaque pixels only: the site's canvas step.</summary>
