@@ -38,17 +38,33 @@ public sealed class PairingWindow {
     }
 
     var body = new StackPanel { Margin = new Thickness(28, 24, 28, 12) };
-    body.Children.Add(Kit.Text("Pairing links a game in Playnite to the same game in your Blastlog library, so its status and stars sync and Blastlog's screens can show Play and Install. It adds nothing to your Blastlog library unless you tick a game in the second or third section.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, 0, 0, 18)));
+    body.Children.Add(Kit.Text("Pairing links a game in Playnite to the same game in your Blastlog library, so its status and stars sync and Blastlog's screens can show Play and Install. Nothing is added to your Blastlog library.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, 0, 0, 18)));
 
+    // Pairing is the job (Charlie, 2026-11-07): it's the one open section. Adding games or sending them to the import
+    // are rare extras, tucked behind one small "Other games" link.
     body.Children.Add(Section("Already in your Blastlog library", inLibrary,
-      "Pairing just links them; nothing is added. Exact matches are ticked. A “check it” row is a close match: tick it only if it's the same game.",
+      "Pairing just links them. Exact matches are ticked. A “check it” row is a close match: tick it only if it's the same game.",
       expanded: true, Update));
-    body.Children.Add(Section("Not in your Blastlog library", toAdd,
-      "Blastlog knows these games, but you don't have them on Blastlog. Ticking one adds it to your Blastlog library as a game you own. Leave Game Pass and other games you don't own unticked.",
-      expanded: false, Update));
-    body.Children.Add(Section("Blastlog doesn't recognise these", unknown,
-      "Ticking one sends it to Blastlog's import page (Library, Import games) for you to sort out there. Nothing is added until you finish that import.",
-      expanded: false, Update));
+    var others = toAdd.Count + unknown.Count;
+    if (others > 0) {
+      var extra = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 6, 0, 0) };
+      extra.Children.Add(Section("Not in your Blastlog library", toAdd,
+        "Blastlog knows these games, but you don't have them on Blastlog. Ticking one adds it to your Blastlog library as a game you own. Leave Game Pass and other games you don't own unticked.",
+        expanded: true, Update));
+      extra.Children.Add(Section("Blastlog doesn't recognise these", unknown,
+        "Ticking one sends it to Blastlog's import page (Library, Import games) for you to sort out there. Nothing is added until you finish that import.",
+        expanded: true, Update));
+      var more = Kit.Button($"▸  Other games ({others}): add to Blastlog or send to the import", () => { }, "Blastlog.TextButton");
+      more.HorizontalAlignment = HorizontalAlignment.Left;
+      more.Click += (s, e) => {
+        try {
+          var open = extra.Visibility != Visibility.Visible;
+          extra.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+          more.Content = $"{(open ? "▾" : "▸")}  Other games ({others}): add to Blastlog or send to the import";
+        } catch (Exception ex) { Log.Error(ex, "Blastlog pairing other games"); }
+      };
+      body.Children.Add(more); body.Children.Add(extra);
+    }
     var notes = new List<string>();
     if (linked > 0) notes.Add($"{linked} game{(linked == 1 ? " is" : "s are")} already paired.");
     if (skipped.Count > 0) notes.Add($"{skipped.Count} couldn't be checked: " + string.Join(", ", skipped.Take(8).Select(s => s.Game.Name + (s.Problem != null ? $" ({s.Problem})" : ""))) + (skipped.Count > 8 ? "…" : "") + ". Fix them in Playnite and pair again.");

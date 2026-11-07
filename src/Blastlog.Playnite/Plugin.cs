@@ -165,7 +165,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public async Task PairGames() {
     if (!Configured) { PlayniteApi.Dialogs.ShowMessage("Add your Blastlog sync token first: Add-ons → Extension settings → Blastlog."); return; }
     try {
-      var engine = Engine(); await Task.Run(() => engine.RefreshAsync());
+      var engine = Engine(); await Task.Run(() => engine.RefreshAsync()); SaveStore(); // pairs already made on Blastlog count even if this is cancelled
       var choices = await Task.Run(() => engine.PairingAsync());
       if (PairingWindow.Show(this, choices) != true) return;
       var result = await Task.Run(() => engine.ApplyPairingAsync(choices)); SaveStore();

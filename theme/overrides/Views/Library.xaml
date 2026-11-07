@@ -26,7 +26,16 @@
 
                         <FadeImage x:Name="PART_ImageBackground"
                                    Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
-                                   HorizontalAlignment="Center" VerticalAlignment="Top" />
+                                   HorizontalAlignment="Center" VerticalAlignment="Top">
+                            <!-- The art fades out at its bottom edge instead of ending in a hard line. -->
+                            <FadeImage.OpacityMask>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#FF000000" Offset="0" />
+                                    <GradientStop Color="#FF000000" Offset="0.45" />
+                                    <GradientStop Color="#00000000" Offset="1" />
+                                </LinearGradientBrush>
+                            </FadeImage.OpacityMask>
+                        </FadeImage>
                         <Rectangle Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" IsHitTestVisible="False"
                                    Fill="{DynamicResource Blastlog.Bg}">
                             <Rectangle.OpacityMask>

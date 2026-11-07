@@ -29,7 +29,7 @@ public sealed class ThemeBridge {
   static readonly string[] Keys = { "Blastlog.Game", "Blastlog.OnGame", "Blastlog.GameText", "Blastlog.GameTint", "Blastlog.GameTint2", "Blastlog.GameEdge", "Blastlog.GameBar" };
   readonly BlastlogPlugin plugin; readonly string coverCache;
   readonly ConcurrentDictionary<string, string> seeds = new ConcurrentDictionary<string, string>();
-  Guid? selected; bool installed, themed;
+  Guid? selected, lastSelected; bool installed, themed;
 
   public ThemeBridge(BlastlogPlugin plugin) {
     this.plugin = plugin;
@@ -77,6 +77,13 @@ public sealed class ThemeBridge {
   public void RestoreSelection() {
     try {
       var games = plugin.Api.MainView.SelectedGames?.ToList();
+      // Playnite drops the selection while a sidebar screen is open; put the last selected game back, so the library
+      // shows it and wears its colour again.
+      if ((games == null || games.Count == 0) && lastSelected != null && plugin.Api.Database.Games.Get(lastSelected.Value) != null) {
+        plugin.Api.MainView.SelectGame(lastSelected.Value);
+        Select(plugin.Api.Database.Games.Get(lastSelected.Value)); // the view reports the selection a moment later
+        return;
+      }
       Select(games != null && games.Count == 1 ? games[0] : null);
     } catch (Exception e) { Log.Warn(e, "Blastlog: couldn't restore the selected game's colour"); }
   }
@@ -84,7 +91,7 @@ public sealed class ThemeBridge {
   /// <summary>The selected game changed: wear its colour (Blastlog green until it's known).</summary>
   public void Select(Game game) {
     if (!installed) return;
-    selected = game?.Id;
+    selected = game?.Id; if (game != null) lastSelected = game.Id;
     if (game == null) { Apply(GameColour.BrandGreen, true); return; }
     if (seeds.TryGetValue(game.Id.ToString(), out var known)) { Apply(known, true); return; }
     _ = Task.Run(async () => {
