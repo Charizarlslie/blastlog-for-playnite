@@ -37,6 +37,7 @@ sealed class PlayNextView : UserControl {
   readonly BlastlogPlugin plugin; readonly StackPanel body = new StackPanel();
   JObject data, help, subs; int limit = Batch; bool autoLoad = true, loaded;
   string doneText; Func<Task> doneUndo; Button more; FrameworkElement comingShelf; ScrollViewer viewer;
+  CardGrid grid; StackPanel moreHost; List<JObject> picksShown = new List<JObject>(); bool picksReady;
 
   public PlayNextView(BlastlogPlugin plugin) {
     this.plugin = plugin; Content = body;
@@ -169,7 +170,8 @@ sealed class PlayNextView : UserControl {
         () => { doneText = null; doneUndo = null; Build(); }));
     }
 
-    var grid = new CardGrid { Scaled = true, Masonry = true, Margin = new Thickness(0, 4, 0, 16) };
+    grid = new CardGrid { Scaled = true, Masonry = true, Margin = new Thickness(0, 4, 0, 16) };
+    picksShown = shown; picksReady = ready;
     for (var i = 0; i < Math.Min(limit, shown.Count); i++) {
       var card = Pick(shown[i], i, ready);
       if (i == 0) CardGrid.SetWide(card, true);
@@ -177,22 +179,35 @@ sealed class PlayNextView : UserControl {
       if (i == 0 && help != null) { var sharpen = PlayNextSharpen.Build(plugin, help, () => _ = Load(true)); if (sharpen != null) { CardGrid.SetWide(sharpen, true); grid.Children.Add(sharpen); } }
     }
     body.Children.Add(grid);
-    if (shown.Count > limit) {
-      more = Kit.Button($"Show more ({shown.Count - limit} left)", () => { autoLoad = true; limit += Batch; Build(); }, "Blastlog.Ghost");
-      more.HorizontalAlignment = HorizontalAlignment.Left; more.Margin = new Thickness(0, 0, 0, 16);
-      body.Children.Add(more);
-    }
-    if (shown.Count > Batch && limit >= shown.Count) body.Children.Add(PnKit.Text($"That’s all {shown.Count} picks.", "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 0, 0, 16)));
+    body.Children.Add(moreHost = new StackPanel());
+    ShowMoreLine();
     if (comingUp.Count > 0) body.Children.Add(comingShelf = ComingUp(comingUp, ready));
     body.Children.Add(PnKit.Text(plugin.CacheLine(), "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 12, 0, 0)));
   }
 
+  /// <summary>Show more (N left), or "That's all N picks." once every pick is on the page.</summary>
+  void ShowMoreLine() {
+    moreHost.Children.Clear(); more = null;
+    var count = picksShown.Count;
+    if (count > limit) {
+      more = Kit.Button($"Show more ({count - limit} left)", () => { autoLoad = true; LoadMore(); }, "Blastlog.Ghost");
+      more.HorizontalAlignment = HorizontalAlignment.Left; more.Margin = new Thickness(0, 0, 0, 16);
+      moreHost.Children.Add(more);
+    }
+    if (count > Batch && limit >= count) moreHost.Children.Add(PnKit.Text($"That’s all {count} picks.", "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 0, 0, 16)));
+  }
+  /// <summary>The next batch goes onto the end of the grid; nothing above it is rebuilt, so the page stays where it is.</summary>
+  void LoadMore() {
+    var from = limit; limit += Batch;
+    for (var i = from; i < Math.Min(limit, picksShown.Count); i++) grid.Children.Add(Pick(picksShown[i], i, picksReady));
+    ShowMoreLine();
+  }
   /// <summary>Presses Show more when it comes within a screen of view (the site's automatic batches).</summary>
   void NearEnd() {
     try {
       if (!autoLoad || more == null || viewer == null || !more.IsVisible) return;
       var y = more.TranslatePoint(new Point(0, 0), viewer).Y;
-      if (y < viewer.ViewportHeight * 2) { more = null; limit += Batch; Dispatcher.BeginInvoke(new Action(() => { try { Build(); } catch (Exception e) { Log.Error(e, "Blastlog Play next"); } })); }
+      if (y < viewer.ViewportHeight * 2) { more = null; Dispatcher.BeginInvoke(new Action(() => { try { LoadMore(); } catch (Exception e) { Log.Error(e, "Blastlog Play next"); } })); }
     } catch (Exception e) { Log.Error(e, "Blastlog Play next scroll"); }
   }
 
