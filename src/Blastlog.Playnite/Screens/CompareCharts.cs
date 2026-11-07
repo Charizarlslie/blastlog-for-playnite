@@ -63,7 +63,11 @@ static class CompareCharts {
     foreach (var pair in scored) {
       if (!spots.TryGetValue(S(pair, "a"), out var a) || !spots.TryGetValue(S(pair, "b"), out var b)) continue;
       var on = isSelected(pair); var st = Strength(D(pair, "score") ?? 0);
-      var line = Ln(a.x, a.y, b.x, b.y, on ? "Blastlog.Text" : "Blastlog.Game", 2 + st * 9, on ? .95 : anySelected ? .18 + st * .3 : .3 + st * .5);
+      // Lines stop at each circle's edge, so they never run over a person's mark or initial.
+      var len = Math.Sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)); var ux = len > 0 ? (b.x - a.x) / len : 0; var uy = len > 0 ? (b.y - a.y) / len : 0;
+      const double edge = 30;
+      var line = Ln(a.x + ux * edge, a.y + uy * edge, b.x - ux * edge, b.y - uy * edge, on ? "Blastlog.Text" : "Blastlog.Game", 2 + st * 9, on ? .95 : anySelected ? .18 + st * .3 : .3 + st * .5);
+      Panel.SetZIndex(line, 0);
       var hit = new Line { X1 = a.x, Y1 = a.y, X2 = b.x, Y2 = b.y, Stroke = Brushes.Transparent, StrokeThickness = 22, Cursor = Cursors.Hand };
       var captured = pair;
       hit.MouseLeftButtonUp += (s, e) => { try { select(captured); } catch (Exception) { } };
@@ -71,14 +75,18 @@ static class CompareCharts {
     }
     foreach (var p in people) {
       var at = spots[p.Id]; var dim = focus != null && p.Id != S(focus, "a") && p.Id != S(focus, "b");
+      // An opaque disc in the page colour under each mark, so a dimmed (see-through) mark still hides the lines.
+      var backing = new Ellipse { Width = 52, Height = 52, IsHitTestVisible = false };
+      backing.SetResourceReference(Shape.FillProperty, "Blastlog.Bg");
+      Place(c, backing, at.x - 26, at.y - 26); Panel.SetZIndex(backing, 2);
       var dot = new Ellipse { Width = 52, Height = 52, Fill = p.Brush, StrokeThickness = 5, Opacity = dim ? .45 : 1, IsHitTestVisible = false };
       dot.SetResourceReference(Shape.StrokeProperty, "Blastlog.Bg");
-      Place(c, dot, at.x - 26, at.y - 26);
+      Place(c, dot, at.x - 26, at.y - 26); Panel.SetZIndex(dot, 3);
       var initial = new TextBlock { Text = p.Initial, FontSize = 20, FontWeight = FontWeights.ExtraBold, Foreground = Hex(InkOn(p.Colour)), Opacity = dim ? .45 : 1, IsHitTestVisible = false };
       initial.SetResourceReference(TextBlock.FontFamilyProperty, "Blastlog.Font");
-      Text(c, initial, at.x, at.y);
+      Text(c, initial, at.x, at.y); Panel.SetZIndex(initial, 4);
       var name = Label(p.Name, 15); name.Opacity = dim ? .45 : 1; name.IsHitTestVisible = false;
-      Text(c, name, at.x, at.y + (at.y > centre + 1 ? 46 : at.y < centre - 1 ? -42 : 46));
+      Text(c, name, at.x, at.y + (at.y > centre + 1 ? 46 : at.y < centre - 1 ? -42 : 46)); Panel.SetZIndex(name, 4);
     }
     AutomationProperties.SetName(c, "Matches between players");
     return c;
