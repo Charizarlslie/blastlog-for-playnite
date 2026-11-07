@@ -88,6 +88,14 @@
                                     <FadeImage.Effect>
                                         <BlurEffect Radius="48" KernelType="Gaussian" RenderingBias="Performance" />
                                     </FadeImage.Effect>
+                                    <!-- The art fades out before the backdrop ends, so its bottom edge never shows (Blastlog Light showed a hard line). -->
+                                    <FadeImage.OpacityMask>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#FF000000" Offset="0" />
+                                            <GradientStop Color="#FF000000" Offset="0.35" />
+                                            <GradientStop Color="#00000000" Offset="0.9" />
+                                        </LinearGradientBrush>
+                                    </FadeImage.OpacityMask>
                                 </FadeImage>
                                 <Rectangle Fill="{DynamicResource Blastlog.Bg}">
                                     <Rectangle.OpacityMask>
