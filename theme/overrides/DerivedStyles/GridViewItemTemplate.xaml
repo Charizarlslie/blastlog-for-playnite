@@ -87,16 +87,16 @@
                                                 <ScaleTransform ScaleX="1" ScaleY="1.3333333" />
                                             </Border.LayoutTransform>
                                         </Border>
-                                        <Border Background="{DynamicResource Blastlog.Surface2}" />
-                                        <!-- The image sits in a canvas so it never sizes the box. It fills the box, centred, so a 2:3 cover loses only a
-                                             sliver at the top and bottom and never its logo. -->
+                                        <Border Background="{DynamicResource Blastlog.GameTint2}" />
+                                        <!-- The image sits in a canvas so it never sizes the box. The whole cover shows, centred: covers come in many shapes
+                                             (2:3, 3:4, wide banners), and filling the box cut logos off; any space left over is the tile's own game tint. -->
                                         <Canvas>
                                             <Image Name="PART_ImageCover"
                                                    RenderOptions.BitmapScalingMode="Fant" StretchDirection="Both"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                                    Width="{Binding ActualWidth, ElementName=CoverArea}"
                                                    Height="{Binding ActualHeight, ElementName=CoverArea}"
-                                                   Stretch="UniformToFill" />
+                                                   Stretch="Uniform" />
                                         </Canvas>
                                         <!-- No cover: the gamepad mark in Blastlog green and the title (design.md 9). -->
                                         <Border Background="{DynamicResource Blastlog.Surface2}" x:Name="TextGameName" Visibility="Collapsed">

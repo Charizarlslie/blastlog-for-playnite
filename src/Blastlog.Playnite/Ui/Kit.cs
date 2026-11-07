@@ -55,6 +55,18 @@ public static class Kit {
   /// <summary>A screen's root: Blastlog's page background, Kit styles in scope, the site's page padding, scrolling.</summary>
   public static Control Page(FrameworkElement content) {
     var scroll = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(40, 34, 40, 40) };
+    // The page scrolls the wheel itself, by the wheel's own distance: on long pages something else could swallow or
+    // slow the wheel (a nested control, or another add-on's scrolling), so it could take dozens of notches to move.
+    // A scrollable box under the mouse (a search list, a text box) still scrolls first while it can.
+    scroll.PreviewMouseWheel += (s, e) => {
+      try {
+        for (var d = e.OriginalSource as DependencyObject; d != null && d != scroll; d = d is Visual || d is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+          if (d is ScrollViewer inner && inner.ScrollableHeight > 0 && (e.Delta > 0 ? inner.VerticalOffset > 0 : inner.VerticalOffset < inner.ScrollableHeight)) return;
+        var lines = SystemParameters.WheelScrollLines > 0 ? SystemParameters.WheelScrollLines : 3;
+        scroll.ScrollToVerticalOffset(scroll.VerticalOffset - e.Delta / 120.0 * lines * 16 * 1.5);
+        e.Handled = true;
+      } catch (Exception ex) { LogManager.GetLogger().Error(ex, "Blastlog page scroll"); }
+    };
     var root = new Border { Child = scroll };
     root.Resources.MergedDictionaries.Add(Styles);
     root.SetResourceReference(Border.BackgroundProperty, "Blastlog.Bg");
