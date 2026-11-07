@@ -162,16 +162,19 @@
                                         Style="{StaticResource SimpleButton}"
                                         Name="PART_ButtonClear"/>
                             </DockPanel>
-                            <DockPanel DockPanel.Dock="Top" Margin="16,0,12,8">
-                                <Button x:Name="PART_ButtonDeleteFilter"
-                                        Content="&#xec53;" Style="{DynamicResource FilterPresetButtonAction}" />
-                                <Button x:Name="PART_ButtonRenameFilter"
-                                        Content="&#xec55;" Style="{DynamicResource FilterPresetButtonAction}"/>
-                                <Button x:Name="PART_ButtonSaveFilter"
-                                        Content="&#xee00;" Style="{DynamicResource FilterPresetButtonAction}" />
-                                <ComboBox x:Name="PART_ComboFilterPresets"
-                                          DockPanel.Dock="Left" VerticalAlignment="Center" />
-                            </DockPanel>
+                            <!-- Saved filters: the preset list gets the full width (names were cut off beside the buttons), then
+                                 save, rename and delete underneath, right-aligned. -->
+                            <StackPanel DockPanel.Dock="Top" Margin="16,0,12,8">
+                                <ComboBox x:Name="PART_ComboFilterPresets" HorizontalAlignment="Stretch" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                    <Button x:Name="PART_ButtonSaveFilter"
+                                            Content="&#xee00;" Style="{DynamicResource FilterPresetButtonAction}" ToolTip="{DynamicResource LOCSaveLabel}" />
+                                    <Button x:Name="PART_ButtonRenameFilter"
+                                            Content="&#xec55;" Style="{DynamicResource FilterPresetButtonAction}" ToolTip="{DynamicResource LOCRenameTitle}" />
+                                    <Button x:Name="PART_ButtonDeleteFilter"
+                                            Content="&#xec53;" Style="{DynamicResource FilterPresetButtonAction}" ToolTip="{DynamicResource LOCRemoveTitle}" />
+                                </StackPanel>
+                            </StackPanel>
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                                       DockPanel.Dock="Top" Padding="0,0,0,18">
                                 <StackPanel x:Name="PART_PanelItemsHost" />

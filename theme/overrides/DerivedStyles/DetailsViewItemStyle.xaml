@@ -1,6 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Details list rows: the selected row marked in the game colour, its title in the game's checked text colour. Based on Playnite's default theme (MIT, see CREDITS.md). -->
+    <!-- Details list rows: the selected row marked in the game colour, its title in the game's checked text colour; a hovered row gets a surface fill and an edge mark. Based on Playnite's default theme (MIT, see CREDITS.md). -->
 
     <Style x:Key="DetailsViewItemStyle" TargetType="{x:Type ListBoxItem}">
         <Setter Property="Foreground" Value="{DynamicResource TextBrushDarker}" />
@@ -14,7 +14,8 @@
                         <Border x:Name="SelectedRectangle" IsHitTestVisible="False" Visibility="Collapsed"
                                                         BorderThickness="4,0,0,0" BorderBrush="{DynamicResource Blastlog.Game}"/>
                         <Border x:Name="HoverRectangle" IsHitTestVisible="False" Visibility="Collapsed"
-                                                        BorderThickness="4,0,0,0" BorderBrush="{DynamicResource Blastlog.Game}"/>
+                                                        BorderThickness="4,0,0,0" BorderBrush="{DynamicResource Blastlog.Edge}"
+                                                        Background="{DynamicResource Blastlog.Surface}"/>
                         <Border Padding="{TemplateBinding Padding}" Background="Transparent">
                             <ContentPresenter />
                         </Border>
@@ -26,11 +27,12 @@
                         <DataTrigger Binding="{Binding IsInstalled}" Value="False">
                             <Setter Property="Foreground" Value="{DynamicResource TextBrushDarker}" />
                         </DataTrigger>                        
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Visibility" Value="Visible" TargetName="SelectedRectangle" />
-                            <Setter Property="Foreground" Value="{DynamicResource Blastlog.GameText}" />
-                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Visibility" Value="Visible" TargetName="HoverRectangle" />
+                            <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="HoverRectangle" />
                             <Setter Property="Visibility" Value="Visible" TargetName="SelectedRectangle" />
                             <Setter Property="Foreground" Value="{DynamicResource Blastlog.GameText}" />
                         </Trigger>

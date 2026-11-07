@@ -4,7 +4,7 @@
                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     mc:Ignorable="d">
-    <!-- Blastlog's top bar over the Library: page background, a line under it, the site's search field (360px), quiet icon
+    <!-- Blastlog's top bar over the Library: page background, a line under it, the site's search field (320px), quiet icon
          buttons; Filters and other toggles in the game colour when on. Based on Playnite's default theme (MIT, see
          CREDITS.md); every PART_ element is kept. -->
 
@@ -218,7 +218,7 @@
                             <SearchBox x:Name="PART_TextMainSearch"
                                         Margin="8,10,8,10" DockPanel.Dock="Left"
                                         WindowChrome.IsHitTestVisibleInChrome="True"
-                                        Width="360" />
+                                        Width="320" />
 
                             <StackPanel x:Name="PART_PanelMainItems" Orientation="Horizontal"
                                         VerticalAlignment="Stretch" Margin="0,12,0,12"/>

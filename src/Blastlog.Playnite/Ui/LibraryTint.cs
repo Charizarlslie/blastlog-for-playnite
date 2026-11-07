@@ -23,7 +23,7 @@ public sealed class LibraryTile : PluginUserControl {
   static readonly ILogger Log = LogManager.GetLogger();
   static readonly ConcurrentDictionary<string, string> Seeds = new ConcurrentDictionary<string, string>();
   static readonly SemaphoreSlim Working = new SemaphoreSlim(3, 3);
-  readonly BlastlogPlugin plugin; readonly WrapPanel row = new WrapPanel { Orientation = Orientation.Horizontal };
+  readonly BlastlogPlugin plugin; readonly StackPanel row = new StackPanel { Orientation = Orientation.Horizontal };
   int version;
 
   public LibraryTile(BlastlogPlugin plugin) {
@@ -65,8 +65,8 @@ public sealed class LibraryTile : PluginUserControl {
     var entry = entryId != null ? plugin.CachedEntry(entryId) : null;
     if (entry == null) { Visibility = Visibility.Collapsed; return; }
     var status = entry.Ownership == "wishlist" && (entry.Status == null || entry.Status == "not_started") ? "wishlist" : entry.Status;
-    var pill = Kit.StatusPill(status); pill.Margin = new Thickness(0, 0, 8, 4); row.Children.Add(pill);
-    if (entry.Rating != null) { var stars = Kit.Stars(entry.Rating, 15); stars.VerticalAlignment = VerticalAlignment.Center; stars.Margin = new Thickness(0, 0, 0, 4); row.Children.Add(stars); }
+    var pill = Kit.StatusPill(status); pill.Margin = new Thickness(0, 0, 8, 0); row.Children.Add(pill);
+    if (entry.Rating != null) { var stars = Kit.Stars(entry.Rating, 15); stars.VerticalAlignment = VerticalAlignment.Center; stars.Margin = new Thickness(0); row.Children.Add(stars); }
     Visibility = Visibility.Visible;
   }
 
