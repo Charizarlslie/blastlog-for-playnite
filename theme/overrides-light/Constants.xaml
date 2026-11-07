@@ -1,0 +1,99 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!--
+      Blastlog Light. Based on Playnite's default desktop theme (MIT, see CREDITS.md); every key the default theme
+      defines is kept. Values are Blastlog's light tokens (Blastlog design.md 2.1). The Blastlog.* keys at the end are
+      Blastlog's own: the plugin replaces the Blastlog.Game* brushes with the selected game's colours and animates them.
+    -->
+    <sys:Double x:Key="FontSizeSmall">14</sys:Double>
+    <sys:Double x:Key="FontSize">15</sys:Double>
+    <sys:Double x:Key="FontSizeLarge">16</sys:Double>
+    <sys:Double x:Key="FontSizeLarger">22</sys:Double>
+    <sys:Double x:Key="FontSizeLargest">32</sys:Double>
+    <FontFamily x:Key="FontFamily">Outfit, Segoe UI</FontFamily>
+    <FontFamily x:Key="MonospaceFontFamily">Consolas</FontFamily>
+    <Thickness x:Key="PopupBorderThickness">1</Thickness>
+    <Thickness x:Key="ControlBorderThickness">1</Thickness>
+    <sys:Double x:Key="EllipseBorderThickness">1</sys:Double>
+    <CornerRadius x:Key="ControlCornerRadius">10</CornerRadius>
+    <Thickness x:Key="SidebarItemPadding">8</Thickness>
+
+    <Color x:Key="BlackColor">#FF000000</Color>
+    <Color x:Key="WhiteColor">#FFFFFFFF</Color>
+    <Color x:Key="TextColor">#141418</Color>
+    <Color x:Key="TextColorDarker">#55555f</Color>
+    <Color x:Key="TextColorDark">#141418</Color>
+    <Color x:Key="MainColor">#ececf1</Color>
+    <Color x:Key="MainColorDark">#f3f3f6</Color>
+    <Color x:Key="HoverColor">#e0e0e7</Color>
+    <Color x:Key="GlyphColor">#016e50</Color>
+    <Color x:Key="HighlightGlyphColor">#33016e50</Color>
+    <Color x:Key="PopupBackgroundColor">#ffffff</Color>
+    <Color x:Key="PopupBorderColor">#8b8b97</Color>
+    <Color x:Key="BackgroundToneColor">#ececf1</Color>
+    <Color x:Key="GridItemBackgroundColor">#ffffff</Color>
+    <Color x:Key="PanelSeparatorColor">#e0e0e7</Color>
+    <Color x:Key="WindowPanelSeparatorColor">#e0e0e7</Color>
+    <Color x:Key="DataChangeNotifColor">#a14f00</Color>
+
+    <SolidColorBrush x:Key="ControlBackgroundBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="TextBrush" Color="{DynamicResource TextColor}" />
+    <SolidColorBrush x:Key="TextBrushDarker" Color="{DynamicResource TextColorDarker}" />
+    <SolidColorBrush x:Key="TextBrushDark" Color="{DynamicResource TextColorDark}" />
+    <SolidColorBrush x:Key="NormalBrush" Color="{DynamicResource MainColor}" />
+    <SolidColorBrush x:Key="NormalBrushDark" Color="{DynamicResource MainColorDark}" />
+    <SolidColorBrush x:Key="NormalBorderBrush" Color="#8b8b97" />
+    <SolidColorBrush x:Key="HoverBrush" Color="{DynamicResource HoverColor}" />
+    <SolidColorBrush x:Key="GlyphBrush" Color="{DynamicResource GlyphColor}" />
+    <SolidColorBrush x:Key="HighlightGlyphBrush" Color="{DynamicResource HighlightGlyphColor}" />
+    <SolidColorBrush x:Key="PopupBorderBrush" Color="{DynamicResource PopupBorderColor}" />
+    <SolidColorBrush x:Key="TooltipBackgroundBrush" Color="#ffffff" />
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#ececf1" />
+    <SolidColorBrush x:Key="GridItemBackgroundBrush" Color="{DynamicResource GridItemBackgroundColor}" />
+    <SolidColorBrush x:Key="PanelSeparatorBrush" Color="{DynamicResource PanelSeparatorColor}" />
+    <SolidColorBrush x:Key="WindowPanelSeparatorBrush" Color="{DynamicResource WindowPanelSeparatorColor}" />
+    <SolidColorBrush x:Key="PopupBackgroundBrush" Color="#ffffff" />
+    <SolidColorBrush x:Key="CheckBoxCheckMarkBkBrush" Color="{DynamicResource MainColorDark}" />
+    <SolidColorBrush x:Key="DataChangeNotifBrush" Color="{DynamicResource DataChangeNotifColor}" />
+
+    <SolidColorBrush x:Key="PositiveRatingBrush" Color="#1c8a5a" />
+    <SolidColorBrush x:Key="NegativeRatingBrush" Color="#c0262f" />
+    <SolidColorBrush x:Key="MixedRatingBrush" Color="#9a6b00" />
+
+    <SolidColorBrush x:Key="WarningBrush" Color="#c0262f" />
+
+    <SolidColorBrush x:Key="ExpanderBackgroundBrush" Color="#ffffff" />
+    <!-- The misspelling is Playnite's own key name. -->
+    <SolidColorBrush x:Key="WindowBackgourndBrush" Color="#f3f3f6" />
+
+    <!-- Which board the plugin builds game colours for. -->
+    <sys:String x:Key="Blastlog.Mode">Light</sys:String>
+
+    <!-- Blastlog tokens (design.md 2.1, light). -->
+    <SolidColorBrush x:Key="Blastlog.Bg" Color="#f3f3f6" />
+    <SolidColorBrush x:Key="Blastlog.Side" Color="#fbfbfd" />
+    <SolidColorBrush x:Key="Blastlog.Surface" Color="#ffffff" />
+    <SolidColorBrush x:Key="Blastlog.Surface2" Color="#ececf1" />
+    <SolidColorBrush x:Key="Blastlog.Line" Color="#e0e0e7" />
+    <SolidColorBrush x:Key="Blastlog.Edge" Color="#8b8b97" />
+    <SolidColorBrush x:Key="Blastlog.Text" Color="#141418" />
+    <SolidColorBrush x:Key="Blastlog.TextMuted" Color="#55555f" />
+    <SolidColorBrush x:Key="Blastlog.Star" Color="#9a6b00" />
+    <SolidColorBrush x:Key="Blastlog.Ok" Color="#13663f" />
+    <SolidColorBrush x:Key="Blastlog.Warn" Color="#a14f00" />
+    <SolidColorBrush x:Key="Blastlog.Danger" Color="#c0262f" />
+    <SolidColorBrush x:Key="Blastlog.Brand" Color="#00e4a8" />
+    <SolidColorBrush x:Key="Blastlog.Focus" Color="#141418" />
+
+    <!-- The selected game's colours (design.md 2.2). Blastlog green until the plugin sets them. -->
+    <SolidColorBrush x:Key="Blastlog.Game" Color="#00e4a8" />
+    <SolidColorBrush x:Key="Blastlog.OnGame" Color="#141418" />
+    <SolidColorBrush x:Key="Blastlog.GameText" Color="#007252" />
+    <SolidColorBrush x:Key="Blastlog.GameTint" Color="#d8f9ea" />
+    <SolidColorBrush x:Key="Blastlog.GameTint2" Color="#cbecdd" />
+    <SolidColorBrush x:Key="Blastlog.GameEdge" Color="#449c7b" />
+    <SolidColorBrush x:Key="Blastlog.GameBar" Color="#a5e9cb" />
+    <Color x:Key="Blastlog.GlowColor">#1A00E4A8</Color>
+    <Color x:Key="Blastlog.GlowClearColor">#0000E4A8</Color>
+</ResourceDictionary>

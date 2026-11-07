@@ -37,6 +37,8 @@ public sealed class ThemeBridge {
 
   public static bool BlastlogThemeActive => Application.Current?.TryFindResource("Blastlog.Game") != null;
   public static FontFamily Outfit { get; private set; }
+  /// <summary>Which board game colours are built for: Blastlog Light says Light (its Blastlog.Mode); anything else is dark.</summary>
+  public static Mode CurrentMode => Application.Current?.TryFindResource("Blastlog.Mode") as string == "Light" ? Mode.Light : Mode.Dark;
 
   /// <summary>
   /// Call once Playnite's window and theme are up. Under the Blastlog theme, Outfit becomes Playnite's font; under any
@@ -145,7 +147,7 @@ public sealed class ThemeBridge {
   Color[] shown; DispatcherTimer fade;
   void Apply(string seed, bool animate) {
     try {
-      var t = GameColour.For(seed, Mode.Dark);
+      var t = GameColour.For(seed, CurrentMode);
       var target = new[] { t.Game, t.OnGame, t.GameText, t.GameTint, t.GameTint2, t.GameEdge, t.GameBar }
         .Select(v => (Color)ColorConverter.ConvertFromString(v)).ToArray();
       var from = shown ?? target;

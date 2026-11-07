@@ -104,7 +104,7 @@ public static class Kit {
 
   /// <summary>Sets <paramref name="element"/>'s own game colours (design.md 2.3 "every card wears its own game").</summary>
   public static void GameScope(FrameworkElement element, string seed) {
-    var t = GameColour.For(seed, Mode.Dark);
+    var t = GameColour.For(seed, ThemeBridge.CurrentMode);
     void Set(string key, string hex) { var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); b.Freeze(); element.Resources[key] = b; }
     Set("Blastlog.Game", t.Game); Set("Blastlog.OnGame", t.OnGame); Set("Blastlog.GameText", t.GameText); Set("Blastlog.GameTint", t.GameTint);
     Set("Blastlog.GameTint2", t.GameTint2); Set("Blastlog.GameEdge", t.GameEdge); Set("Blastlog.GameBar", t.GameBar);

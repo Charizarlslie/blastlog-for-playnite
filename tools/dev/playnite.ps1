@@ -73,14 +73,21 @@ switch ($Command) {
       & $dotnet build src/Blastlog.Playnite -c Release -v q -p:EnableSourceControlManagerQueries=false | Select-String " error " | ForEach-Object { throw "Build failed: $_" }
       & powershell -NoProfile -ExecutionPolicy Bypass -File tools/pack-plugin.ps1 | Out-Null
       # git writes progress to stderr, which Windows PowerShell would treat as an error here.
-      $ErrorActionPreference = "Continue"; & powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-theme.ps1 2>&1 | Out-Null; $ErrorActionPreference = "Stop"
+      $ErrorActionPreference = "Continue"
+      foreach ($variant in "Dark", "Light") { & powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-theme.ps1 -Variant $variant 2>&1 | Out-Null; if ($LASTEXITCODE) { break } }
+      $ErrorActionPreference = "Stop"
       if ($LASTEXITCODE) { throw "The theme didn't build: run tools/build-theme.ps1 to see why." }
     } finally { Pop-Location }
     Take-Lock
     Stop-Playnite
-    $ext = Join-Path $Dir "Extensions/BlastlogForPlaynite"; $theme = Join-Path $Dir "Themes/Desktop/Blastlog"
-    Remove-Item -Recurse -Force $ext, $theme -ErrorAction SilentlyContinue
-    foreach ($pair in @(@("*.pext", $ext), @("*.pthm", $theme))) {
+    $ext = Join-Path $Dir "Extensions/BlastlogForPlaynite"
+    $themes = @("Blastlog_Desktop_Theme", "Blastlog_Light_Desktop_Theme")
+    Remove-Item -Recurse -Force $ext -ErrorAction SilentlyContinue
+    $themes | ForEach-Object { Remove-Item -Recurse -Force (Join-Path $Dir "Themes/Desktop/$_"), (Join-Path $Dir "Themes/Desktop/Blastlog") -ErrorAction SilentlyContinue }
+    $installs = New-Object System.Collections.ArrayList
+    [void]$installs.Add(@("Blastlog_for_Playnite_*.pext", $ext))
+    foreach ($t in $themes) { [void]$installs.Add(@("$($t)_*.pthm", (Join-Path $Dir "Themes/Desktop/$t"))) }
+    foreach ($pair in $installs) {
       $file = Get-ChildItem (Join-Path $root "artifacts") -Filter $pair[0] | Sort-Object LastWriteTime | Select-Object -Last 1
       $zip = Join-Path $env:TEMP ("bl-" + [guid]::NewGuid() + ".zip"); Copy-Item $file.FullName $zip; Expand-Archive $zip $pair[1] -Force; Remove-Item $zip
     }

@@ -67,6 +67,9 @@
     <!-- The misspelling is Playnite's own key name. -->
     <SolidColorBrush x:Key="WindowBackgourndBrush" Color="#0b0b0d" />
 
+    <!-- Which board the plugin builds game colours for. -->
+    <sys:String x:Key="Blastlog.Mode">Dark</sys:String>
+
     <!-- Blastlog tokens (design.md 2.1, dark). -->
     <SolidColorBrush x:Key="Blastlog.Bg" Color="#0b0b0d" />
     <SolidColorBrush x:Key="Blastlog.Side" Color="#0e0e11" />
