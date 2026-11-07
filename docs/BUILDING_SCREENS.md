@@ -37,7 +37,7 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   gamepad tile when there's none), `Kit.GameScope`. `Icons.Make(svg)` draws the site's icons: paste the inner SVG
   elements from `apps/web/src/Icons.tsx`.
 - **Data:** `plugin.Mirror("<path>", fresh)` reads `GET /sync/v1/<path>` with a disk cache (show the cached copy, then
-  refresh). `plugin.Write("<path>", body)` posts and clears the cache, telling the player in words when it fails. Routes
+  refresh). `plugin.Write("<path>", body)` posts (or `plugin.Write(path, body, method)` for PATCH and DELETE; net462 has no `HttpMethod.Patch`, so use `new HttpMethod("PATCH")`) and clears the cache, telling the player in words when it fails. Routes
   and response shapes: `docs/PLAYNITE_SYNC.md` in the Blastlog repo ("Reads for the native screens", "Mirror writes").
   Paired games: `plugin.EntryFor(playniteGameId)`, `plugin.GameFor(entryId)`; Play/Install go through
   `plugin.Api.StartGame(id)` / `plugin.Api.InstallGame(id)`.

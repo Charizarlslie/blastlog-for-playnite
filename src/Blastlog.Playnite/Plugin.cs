@@ -242,9 +242,11 @@ public sealed class BlastlogPlugin : GenericPlugin {
   /// A write through the token API (POST /sync/v1/&lt;path&gt;), for screen actions. Returns the answer, or null after
   /// telling the player in words what went wrong. Clears the cached reads so the screens show the change.
   /// </summary>
-  public async Task<JObject> Write(string path, object body) {
+  public Task<JObject> Write(string path, object body) => Write(path, body, HttpMethod.Post);
+  /// <summary>The same with another method (PATCH, DELETE) for the mirror writes that need one.</summary>
+  public async Task<JObject> Write(string path, object body, HttpMethod method) {
     if (!Configured) { PlayniteApi.Dialogs.ShowMessage("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog first.", "Blastlog"); return null; }
-    try { var r = await Task.Run(() => Client().PostAsync(path, body)); cache.Clear(); SaveCache(); return r.Value ?? new JObject(); }
+    try { var r = await Task.Run(() => Client().SendAsync(method, path, body)); cache.Clear(); SaveCache(); return r.Value ?? new JObject(); }
     catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); return null; }
     catch (Exception e) { PlayniteApi.Dialogs.ShowErrorMessage("Couldn't reach Blastlog: " + e.Message, "Blastlog"); return null; }
   }
