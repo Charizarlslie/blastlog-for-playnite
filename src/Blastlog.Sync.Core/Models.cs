@@ -30,6 +30,8 @@ public sealed class ChangeItem {
   public bool ShouldSerializeRating() => SetRating;
   [JsonProperty(NullValueHandling=NullValueHandling.Ignore)] public string FinishedOn {get;set;}
   [JsonProperty(NullValueHandling=NullValueHandling.Ignore)] public string Ownership {get;set;}
+  /// <summary>Review text from the game page (panel pushes only; "" clears it). Sync never sets it.</summary>
+  [JsonProperty(NullValueHandling=NullValueHandling.Ignore)] public string Review {get;set;}
 }
 public sealed class AddGame { public string Title {get;set;} public string Source {get;set;} public string StoreGameId {get;set;} public int? ReleaseYear {get;set;} public string[] Platforms {get;set;} = new string[0]; }
 public sealed class AddItem { public string PlayniteGameId {get;set;} public string GameId {get;set;} public AddGame Game {get;set;} public string Status {get;set;} = "not_started"; public string Ownership {get;set;} = "library"; }

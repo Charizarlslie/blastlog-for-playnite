@@ -17,6 +17,12 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   copy of the same file from Playnite's default desktop theme (MIT, pinned at 10.63 in `tools/build-theme.ps1`) changed
   to Blastlog's look. The build copies the default theme, then these files over it; an override whose original no longer
   exists fails the build. Keep every `PART_*` element Playnite's file has: Playnite wires behaviour to them.
+- **The game page** is both: `theme/overrides/Views/DetailsViewGameOverview.xaml` and `GridViewGameOverview.xaml` lay out
+  the hero and place the plugin's elements (`src/Blastlog.Playnite/Screens/GamePage.cs`) by name:
+  `<ContentControl x:Name="Blastlog_GameActions" />` (status and stars beside Play / Install) and
+  `<ContentControl x:Name="Blastlog_GamePage" />` (fingerprint, For you, your take, friends, where you own it, More like
+  this, history). `Blastlog_GamePanel`, `Blastlog_Fingerprint` and `Blastlog_Status` stay for other themes. Status, stars
+  and review edits are one panel push each (`plugin.PanelChange`), undoable as a run (`plugin.UndoPanel`).
 
 ## The kit (`src/Blastlog.Playnite/Ui/`)
 
@@ -36,6 +42,10 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   `Kit.StatusPill` (icon + word, fixed colours), `Kit.Cover(plugin, game, width, context)` (IGDB art, cached, with the
   gamepad tile when there's none), `Kit.GameScope`. `Icons.Make(svg)` draws the site's icons: paste the inner SVG
   elements from `apps/web/src/Icons.tsx`.
+- **Fingerprint:** `Ui.Fingerprint.Card(FingerprintData.Parse(json["fingerprint"]), options)` is the game page card;
+  `Ui.Fingerprint.Bars(data)` is an early fingerprint for a card. The maths (bars against a typical game, trait order,
+  What defines it) are `Blastlog.Sync.Core.Design.FingerprintBars`, tested against the site (`FingerprintTests`).
+  `Ui.Tint.OnGame(element, (game, line, surface) => ...)` does the site's `color-mix()` game tints.
 - **Data:** `plugin.Mirror("<path>", fresh)` reads `GET /sync/v1/<path>` with a disk cache (show the cached copy, then
   refresh). `plugin.Write("<path>", body)` posts (or `plugin.Write(path, body, method)` for PATCH and DELETE; net462 has no `HttpMethod.Patch`, so use `new HttpMethod("PATCH")`) and clears the cache, telling the player in words when it fails. Routes
   and response shapes: `docs/PLAYNITE_SYNC.md` in the Blastlog repo ("Reads for the native screens", "Mirror writes").

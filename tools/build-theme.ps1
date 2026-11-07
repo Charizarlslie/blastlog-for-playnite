@@ -1,6 +1,6 @@
 # Builds the Blastlog desktop theme (.pthm) from Playnite's own default desktop theme (MIT, credited in CREDITS.md):
-# fetches that theme at a pinned Playnite release, applies Blastlog's colours and type (docs/design.md), places the
-# plugin's custom elements in the game details, and zips it. Runs on the Windows CI job; needs only git and PowerShell.
+# fetches that theme at a pinned Playnite release, applies Blastlog's own views over it (theme/overrides, which
+# place the plugin's custom elements in the game details), and zips it. Runs on the Windows CI job; needs only git and PowerShell.
 # Playnite's files are never committed here: they are fetched at build time from the public JosefNemec/Playnite repo.
 param(
   [string]$PlayniteRef = "10.63",
@@ -42,19 +42,7 @@ Get-ChildItem -Recurse -File $overrides | ForEach-Object {
 }
 }
 
-
-# 3. The plugin's elements in the game details, above the description: status line, then the Blastlog panel.
-$elements = '<StackPanel Margin="0,0,0,15"><ContentControl x:Name="Blastlog_Status" /><ContentControl x:Name="Blastlog_GamePanel" /></StackPanel>'
-foreach ($view in "DetailsViewGameOverview.xaml", "GridViewGameOverview.xaml") {
-  $path = Join-Path $theme "Views/$view"
-  if (-not (Test-Path $path)) { Write-Warning "$view not in the base theme"; continue }
-  $text = Get-Content -Raw -Encoding UTF8 $path
-  if ($text -notmatch "<StackPanel\s+Name=""PART_ElemDescription""") { throw "$view has no PART_ElemDescription to place the Blastlog panel by" }
-  $text = [regex]::Replace($text, "(<StackPanel\s+Name=""PART_ElemDescription"")", "$elements`r`n`${1}", 1)
-  [IO.File]::WriteAllText($path, $text)
-}
-
-# 4. Its own manifest, the credit and Playnite's licence.
+# 3. Its own manifest, the credit and Playnite's licence.
 $baseYaml = Get-Content -Raw (Join-Path $base "theme.yaml")
 $api = ([regex]::Match($baseYaml, "ThemeApiVersion:\s*(\S+)")).Groups[1].Value
 if (-not $api) { throw "No ThemeApiVersion in Playnite's theme.yaml" }
@@ -70,7 +58,7 @@ Website: https://blastlog.games
 Copy-Item (Join-Path $root "theme/CREDITS.md") (Join-Path $theme "CREDITS.md")
 Copy-Item (Join-Path $repo "LICENSE.md") (Join-Path $theme "PLAYNITE-LICENSE.md")
 
-# 5. A .pthm is a zip with theme.yaml at its root.
+# 4. A .pthm is a zip with theme.yaml at its root.
 $pthm = Join-Path $root "$Out/$($themeId)_$Version.pthm"
 if (Test-Path $pthm) { Remove-Item $pthm }
 $zip = "$pthm.zip"; Compress-Archive -Path (Join-Path $theme "*") -DestinationPath $zip -Force; Move-Item $zip $pthm -Force

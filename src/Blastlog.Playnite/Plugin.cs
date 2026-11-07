@@ -22,7 +22,7 @@ namespace Blastlog.Playnite {
 /// playtime one way, never deletes anything, previews before its first real sync, and shows Blastlog's Next up, Play
 /// next and game pages inside Playnite. Talks only to the server in its settings, with the token in the header.
 /// </summary>
-public sealed class BlastlogPlugin : GenericPlugin {
+public sealed partial class BlastlogPlugin : GenericPlugin {
   static readonly ILogger Log = LogManager.GetLogger();
   static readonly HttpClient Http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(60) };
   readonly BlastlogSettings settings; readonly SemaphoreSlim running = new SemaphoreSlim(1, 1);
@@ -38,7 +38,7 @@ public sealed class BlastlogPlugin : GenericPlugin {
     store = SyncStore.Load(storePath);
     try { cache = File.Exists(cachePath) ? JsonConvert.DeserializeObject<Dictionary<string, CachedRead>>(File.ReadAllText(cachePath)) : null; } catch (Exception) { cache = null; }
     cache = cache ?? new Dictionary<string, CachedRead>();
-    AddCustomElementSupport(new AddCustomElementSupportArgs { SourceName = "Blastlog", ElementList = new List<string> { "GamePanel", "Fingerprint", "Status" } });
+    AddCustomElementSupport(new AddCustomElementSupportArgs { SourceName = "Blastlog", ElementList = Screens.GamePage.Elements.ToList() });
   }
 
   /// <summary>Playnite's API for the views (the base class keeps its own protected).</summary>
@@ -92,7 +92,8 @@ public sealed class BlastlogPlugin : GenericPlugin {
     // Every Blastlog screen (Ui/Kit.cs IBlastlogScreen), in the site's menu order.
     foreach (var screen in Ui.Screens.All()) yield return Ui.Screens.SidebarItem(screen, this);
   }
-  public override Control GetGameViewControl(GetGameViewControlArgs args) => args.Name == "GamePanel" || args.Name == "Fingerprint" || args.Name == "Status" ? new GameElement(this, args.Name) : null;
+  /// <summary>The game page elements (Screens/GamePage.cs) the Blastlog theme places in Playnite's game details.</summary>
+  public override Control GetGameViewControl(GetGameViewControlArgs args) => Screens.GamePage.Create(this, args.Name);
 
   // ---- Events: auto-sync (after the first real sync only) ----
   public ThemeBridge Theme { get; private set; }

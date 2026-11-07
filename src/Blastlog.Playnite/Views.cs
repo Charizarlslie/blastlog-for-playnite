@@ -149,44 +149,4 @@ public sealed class PreviewWindow {
   }
 }
 
-/// <summary>
-/// Custom elements for themes (docs/PLAN.md §5 Theme): Blastlog_GamePanel (status, stars, fingerprint, Blastlog page),
-/// Blastlog_Fingerprint (the fingerprint card alone), Blastlog_Status (one line). A theme places them with
-/// <c>&lt;ContentControl x:Name="Blastlog_GamePanel" /&gt;</c>; an unpaired game shows nothing.
-/// </summary>
-public sealed class GameElement : PluginUserControl {
-  readonly BlastlogPlugin plugin; readonly string kind; readonly StackPanel body = new StackPanel();
-  public GameElement(BlastlogPlugin plugin, string kind) { this.plugin = plugin; this.kind = kind; Content = body; }
-  public override async void GameContextChanged(Game oldContext, Game newContext) {
-    body.Children.Clear(); Visibility = Visibility.Collapsed;
-    if (newContext == null) return;
-    var entryId = plugin.EntryFor(newContext.Id); if (entryId == null) return;
-    var cached = plugin.CachedEntry(entryId);
-    if (kind == "Status") { if (cached != null) { body.Children.Add(UiKit.Text($"On Blastlog: {cached.Status.Replace('_', ' ')} · {UiKit.Stars(cached.Rating)}", muted: true)); Visibility = Visibility.Visible; } return; }
-    var page = await plugin.Mirror("entries/" + entryId, fresh: false);
-    if (newContext.Id != GameContext?.Id || page.Value == null) return;
-    var card = new StackPanel();
-    var label = UiKit.Text("FINGERPRINT", size: 14, bold: true); label.Foreground = UiKit.Brand; card.Children.Add(label);
-    var traits = FindTraits(page.Value["fingerprint"]);
-    if (traits.Count == 0) card.Children.Add(UiKit.Text("No fingerprint yet.", muted: true));
-    foreach (var t in traits.Take(kind == "Fingerprint" ? 12 : 8)) card.Children.Add(UiKit.ShareBar(t.Key, t.Value, UiKit.Brand));
-    if (kind == "GamePanel") {
-      var like = page.Value["like"] as JObject; var predicted = (double?)(like?["predictedRating"] ?? like?["predicted"]);
-      if (predicted != null) card.Children.Add(UiKit.Text("You'd likely give it " + UiKit.Stars(predicted)));
-      if (cached != null) card.Children.Add(UiKit.Text($"On Blastlog: {cached.Status.Replace('_', ' ')} · {UiKit.Stars(cached.Rating)}" + (cached.Length != null ? $" · about {cached.Length.Hours} h" : ""), muted: true));
-      card.Children.Add(UiKit.Button("Open the Blastlog page", () => UiKit.Open(plugin.ServerUrl + "/library/" + entryId)));
-    }
-    body.Children.Add(UiKit.Card(card)); Visibility = Visibility.Visible;
-  }
-  /// <summary>The fingerprint's traits with their share, read loosely (the site's player fingerprint: name/label and a share or strength).</summary>
-  static List<KeyValuePair<string,double>> FindTraits(JToken fingerprint) {
-    var found = new List<KeyValuePair<string,double>>();
-    foreach (var token in fingerprint?.SelectTokens("$..traits[*]") ?? Enumerable.Empty<JToken>()) {
-      if (!(token is JObject t)) continue;
-      var name = (string)(t["label"] ?? t["name"]); var share = (double?)(t["share"] ?? t["strength"] ?? t["value"]);
-      if (name != null && share != null && !found.Any(f => f.Key == name)) found.Add(new KeyValuePair<string,double>(name, share.Value > 1 ? share.Value / 100 : share.Value));
-    }
-    return found.OrderByDescending(f => f.Value).ToList();
-  }
-}
 }
