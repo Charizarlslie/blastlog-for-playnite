@@ -17,6 +17,9 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <!-- Playnite supplies its SDK at run time: compile against it, don't ship a copy. -->
     <PackageReference Include="PlayniteSDK" Version="6.18.0" ExcludeAssets="runtime" />
+    <!-- C# tuples on .NET Framework 4.6.2: Playnite ships System.ValueTuple 4.0.3.0 (with a binding redirect), so compile
+         against it and don't ship a copy. -->
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
