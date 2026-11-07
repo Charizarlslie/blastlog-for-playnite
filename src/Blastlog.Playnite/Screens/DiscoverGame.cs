@@ -164,13 +164,10 @@ sealed partial class DiscoverGameView : UserControl {
     // One row of buttons: Play / Install (Playnite's), the answers, then the price check.
     var buttons = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
     var play = PlayOrInstall(entryId); if (play != null) buttons.Children.Add(play);
+    if (entryId == null && answer == null)
+      buttons.Children.Add(DiscoverAnswersRow.Inline(new DiscoverAnswers(plugin, Game.Id, Title, Shelf, NotOut, Answered) { HorizontalAlignment = HorizontalAlignment.Left }));
     var deal = info.S("dealUrl");
     if (deal != null) buttons.Children.Add(Kit.Button("Compare prices on GG.deals ↗", () => UiKit.Open(deal), "Blastlog.Ghost").Also(b => b.Margin = new Thickness(0, 0, 8, 8)));
-    if (entryId == null && answer == null) {
-      var answers = new DiscoverAnswers(plugin, Game.Id, Title, Shelf, NotOut, Answered) { MaxWidth = 520, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 14, 0, 0) };
-      text.Children.Add(answers);
-      if (buttons.Children.Count > 0) buttons.Margin = new Thickness(0, 6, 0, 0);
-    }
     if (buttons.Children.Count > 0) text.Children.Add(buttons);
 
     grid.Margin = new Thickness(0, 12, 0, 22);
