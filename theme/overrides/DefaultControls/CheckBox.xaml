@@ -1,0 +1,79 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    mc:Ignorable="d">
+    <!--
+      Settings checkboxes in Blastlog's look (the site's acct-switch checkboxes): a 20px box with an edge, filled with
+      the game colour and an on-game tick when on, a dash when mixed. Filters use chips instead (Border.xaml
+      Blastlog.ChipToggle). Based on Playnite's default theme (MIT, see CREDITS.md).
+    -->
+    <Style TargetType="{x:Type CheckBox}" BasedOn="{StaticResource BaseStyle}">
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Edge}" />
+        <Setter Property="BorderThickness" Value="1.5" />
+        <!-- 14px (design.md small) so labels fit Playnite's fixed-size dialogs; long ones wrap instead of clipping. -->
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.FocusRing}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Border Background="Transparent"
+                            Padding="{TemplateBinding Padding}">
+                        <DockPanel>
+                            <Border x:Name="BulletBorder" DockPanel.Dock="Left" CornerRadius="6"
+                                    VerticalAlignment="Center" Width="20" Height="20"
+                                    BorderThickness="{TemplateBinding BorderThickness}" Background="{DynamicResource Blastlog.Surface}"
+                                    BorderBrush="{TemplateBinding BorderBrush}">
+                                <Grid>
+                                    <Viewbox x:Name="CheckIcon" Visibility="Collapsed" Margin="3">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Stroke="{DynamicResource Blastlog.OnGame}" StrokeThickness="3.5" StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round" StrokeLineJoin="Round" Data="M20 6 9 17l-5-5" />
+                                        </Canvas>
+                                    </Viewbox>
+                                    <Viewbox x:Name="IndeterminateIcon" Visibility="Collapsed" Margin="4">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Stroke="{DynamicResource Blastlog.Text}" StrokeThickness="3.5" StrokeStartLineCap="Round" Data="M5 12h14" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Grid>
+                            </Border>
+                            <ContentPresenter DockPanel.Dock="Left" RecognizesAccessKey="True" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap" />
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsChecked" Value="{x:Null}" />
+                                <Condition Property="IsThreeState" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible" TargetName="IndeterminateIcon"/>
+                            <Setter Property="Background" Value="{DynamicResource Blastlog.GameTint2}" TargetName="BulletBorder" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.GameEdge}" TargetName="BulletBorder" />
+                        </MultiTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Text}" TargetName="BulletBorder" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Visibility" Value="Visible" TargetName="CheckIcon" />
+                            <Setter Property="Background" Value="{DynamicResource Blastlog.Game}" TargetName="BulletBorder" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Game}" TargetName="BulletBorder" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

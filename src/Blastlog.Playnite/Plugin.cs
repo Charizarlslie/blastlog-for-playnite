@@ -38,7 +38,7 @@ public sealed class BlastlogPlugin : GenericPlugin {
     store = SyncStore.Load(storePath);
     try { cache = File.Exists(cachePath) ? JsonConvert.DeserializeObject<Dictionary<string, CachedRead>>(File.ReadAllText(cachePath)) : null; } catch (Exception) { cache = null; }
     cache = cache ?? new Dictionary<string, CachedRead>();
-    AddCustomElementSupport(new AddCustomElementSupportArgs { SourceName = "Blastlog", ElementList = new List<string> { "GamePanel", "Fingerprint", "Status" } });
+    AddCustomElementSupport(new AddCustomElementSupportArgs { SourceName = "Blastlog", ElementList = new List<string> { "GamePanel", "Fingerprint", "Status", Ui.LibraryTile.ElementName } });
   }
 
   /// <summary>Playnite's API for the views (the base class keeps its own protected).</summary>
@@ -93,7 +93,8 @@ public sealed class BlastlogPlugin : GenericPlugin {
     var screens = Ui.Screens.All().ToList();
     for (var i = 0; i < screens.Count; i++) yield return Ui.Screens.SidebarItem(screens[i], this, i, screens.Count);
   }
-  public override Control GetGameViewControl(GetGameViewControlArgs args) => args.Name == "GamePanel" || args.Name == "Fingerprint" || args.Name == "Status" ? new GameElement(this, args.Name) : null;
+  public override Control GetGameViewControl(GetGameViewControlArgs args) => args.Name == Ui.LibraryTile.ElementName ? new Ui.LibraryTile(this)
+    : args.Name == "GamePanel" || args.Name == "Fingerprint" || args.Name == "Status" ? new GameElement(this, args.Name) : null;
 
   // ---- Events: auto-sync (after the first real sync only) ----
   public ThemeBridge Theme { get; private set; }
