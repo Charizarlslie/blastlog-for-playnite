@@ -41,6 +41,8 @@
                             <Setter Property="Padding" Value="24,0" />
                             <Setter Property="Margin" Value="0,0,10,10" />
                             <Setter Property="Cursor" Value="Hand" />
+                            <Setter Property="FocusVisualStyle" Value="{DynamicResource Blastlog.FocusRing}" />
+                            <Setter Property="VerticalAlignment" Value="Top" />
                         </Style>
                         <Style x:Key="BlastlogHeroGhost" TargetType="Button" BasedOn="{StaticResource BlastlogHeroPrimary}">
                             <Setter Property="Background" Value="{DynamicResource Blastlog.Surface}" />
@@ -124,8 +126,8 @@
                                 </DockPanel>
 
                                 <WrapPanel DockPanel.Dock="Top" Margin="0,16,12,8" Orientation="Horizontal">
-                                    <Button Name="PART_ButtonPlayAction" Style="{StaticResource BlastlogHeroPrimary}" />
-                                    <Button Name="PART_ButtonContextAction" Style="{StaticResource BlastlogHeroPrimary}" />
+                                    <Button Name="PART_ButtonPlayAction" Style="{DynamicResource PlayButton}" VerticalAlignment="Top" FontSize="16" MinWidth="140" Padding="24,0" Margin="0,0,10,10" />
+                                    <Button Name="PART_ButtonContextAction" Style="{DynamicResource PlayButton}" VerticalAlignment="Top" FontSize="16" MinWidth="140" Padding="24,0" Margin="0,0,10,10" />
                                     <Button Name="PART_ButtonMoreActions" Style="{StaticResource BlastlogHeroGhost}"
                                             Content="{DynamicResource LOCMoreAction}" />
                                     <Button x:Name="PART_ButtonEditGame" Style="{StaticResource BlastlogHeroGhost}"
@@ -242,7 +244,20 @@
                                             </StackPanel>
                                         </Border>
 
-                                        <Border Style="{StaticResource BlastlogCard}">
+                                        <Border>
+                                                <Border.Style>
+                                                    <Style TargetType="Border" BasedOn="{StaticResource BlastlogCard}">
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Visibility, ElementName=PART_ElemNotes}" Value="Collapsed" />
+                                                                    <Condition Binding="{Binding Visibility, ElementName=PART_ElemDescription}" Value="Collapsed" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
                                             <StackPanel>
                                                 <StackPanel Name="PART_ElemNotes" Margin="0,0,0,18">
                                                     <TextBlock Text="{DynamicResource LOCNotesLabel}" Style="{StaticResource BlastlogCardTitle}" />

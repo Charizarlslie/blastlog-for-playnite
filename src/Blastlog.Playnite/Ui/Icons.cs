@@ -23,7 +23,7 @@ public static class Icons {
   public const string Discover ="<circle cx=\"12\" cy=\"12\" r=\"10\" /><polygon points=\"16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76\" />";
 
   static readonly Regex Element = new Regex(@"<(path|rect|circle|line|polyline|polygon)\b([^>]*)/?>", RegexOptions.IgnoreCase);
-  static readonly Regex Attribute = new Regex("([a-zA-Z-]+)\\s*=\\s*\"([^\"]*)\"");
+  static readonly Regex Attribute = new Regex("([a-zA-Z][a-zA-Z0-9-]*)\\s*=\\s*\"([^\"]*)\"");
 
   /// <summary>An icon as a 24x24 geometry, for use as a <see cref="Path"/>'s data.</summary>
   public static Geometry Geometry(string svg) {

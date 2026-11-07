@@ -9,7 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Threading;
+using System.Windows.Data;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using Blastlog.Sync.Core;
 using Blastlog.Sync.Core.Design;
@@ -28,7 +29,7 @@ public sealed class ThemeBridge {
   static readonly string[] Keys = { "Blastlog.Game", "Blastlog.OnGame", "Blastlog.GameText", "Blastlog.GameTint", "Blastlog.GameTint2", "Blastlog.GameEdge", "Blastlog.GameBar" };
   readonly BlastlogPlugin plugin; readonly string coverCache;
   readonly ConcurrentDictionary<string, string> seeds = new ConcurrentDictionary<string, string>();
-  Guid? selected; bool installed;
+  Guid? selected; bool installed, themed;
 
   public ThemeBridge(BlastlogPlugin plugin) {
     this.plugin = plugin;
@@ -49,7 +50,7 @@ public sealed class ThemeBridge {
     installed = true;
     try {
       var resources = Application.Current.Resources;
-      var themed = BlastlogThemeActive;
+      themed = BlastlogThemeActive;
       var fonts = Path.Combine(Path.GetDirectoryName(typeof(ThemeBridge).Assembly.Location), "Fonts");
       Outfit = File.Exists(Path.Combine(fonts, "Outfit-Regular.ttf")) ? new FontFamily(new Uri(fonts + Path.DirectorySeparatorChar), "./#Outfit, Segoe UI") : new FontFamily("Segoe UI");
       resources["Blastlog.Font"] = Outfit;
@@ -115,16 +116,39 @@ public sealed class ThemeBridge {
   }
 
   /// <summary>A Blastlog image, downloaded once and kept in the plugin's data folder.</summary>
-  public async Task<string> CachedFile(string url) {
+  public Task<string> CachedFile(string url) {
+    if (string.IsNullOrEmpty(url)) return Task.FromResult<string>(null);
+    // One download per picture however many ask (a card's cover and its colour), at most six at a time: .NET Framework
+    // allows two connections per host by default, so a page asking for a hundred covers at once timed most of them out.
+    lock (fetches) {
+      if (fetches.TryGetValue(url, out var running)) return running;
+      var task = Download(url);
+      fetches[url] = task;
+      task.ContinueWith(_ => { lock (fetches) fetches.Remove(url); }, TaskScheduler.Default);
+      return task;
+    }
+  }
+  readonly Dictionary<string, Task<string>> fetches = new Dictionary<string, Task<string>>();
+  static readonly System.Threading.SemaphoreSlim Downloads = new System.Threading.SemaphoreSlim(6, 6);
+  static ThemeBridge() { try { System.Net.ServicePointManager.FindServicePoint(new Uri("https://images.igdb.com/")).ConnectionLimit = 8; } catch (Exception) { } }
+  async Task<string> Download(string url) {
     Directory.CreateDirectory(coverCache);
     string name; using (var sha = SHA256.Create()) name = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(url))).Replace("-", "").Substring(0, 32) + ".jpg";
     var path = Path.Combine(coverCache, name);
     if (File.Exists(path)) return path;
+    await Downloads.WaitAsync().ConfigureAwait(false);
     try {
+      if (File.Exists(path)) return path;
       var bytes = await Http.GetByteArrayAsync(url).ConfigureAwait(false);
-      var temp = path + ".part"; File.WriteAllBytes(temp, bytes); File.Move(temp, path);
+      // Two callers can fetch the same picture at once (a card's colour and its cover): each writes its own temp file,
+      // and whoever finishes second keeps the first one's copy.
+      var temp = path + "." + Guid.NewGuid().ToString("N") + ".part";
+      File.WriteAllBytes(temp, bytes);
+      try { if (!File.Exists(path)) File.Move(temp, path); } catch (IOException) when (File.Exists(path)) { }
+      try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { }
       return path;
     } catch (Exception e) { Log.Warn(e, "Blastlog: couldn't download " + url); return null; }
+    finally { Downloads.Release(); }
   }
 
   /// <summary>The cover shrunk to 36x48 (covers are 3:4), opaque pixels only: the site's canvas step.</summary>
@@ -142,37 +166,58 @@ public sealed class ThemeBridge {
     } catch (Exception) { return null; }
   }
 
-  // WPF freezes brushes put in application resources, so they can't be animated in place. The crossfade swaps in new
-  // brushes over a few frames instead (design.md 11: 240ms; Windows' "Show animations" off means one instant switch).
-  Color[] shown; DispatcherTimer fade;
+  // The game colours live on one holder object; the brushes in the resources are bound to it, so they can't be frozen
+  // and are placed once. A colour change animates the holder (design.md 11: 240ms; Windows' "Show animations" off means
+  // an instant switch) and never replaces resources, which would make WPF re-resolve every resource in the window on
+  // each frame (and, on Charlie's PC, coincided with panels that stopped closing).
+  readonly ColourHolder holder = new ColourHolder();
+  bool placed;
+  void Place() {
+    if (placed) return; placed = true;
+    var resources = Application.Current.Resources;
+    SolidColorBrush Bound(int index, byte alpha = 255) {
+      var b = new SolidColorBrush();
+      BindingOperations.SetBinding(b, SolidColorBrush.ColorProperty, new Binding(ColourHolder.Names[index]) { Source = holder,
+        Converter = alpha == 255 ? null : new AlphaConverter(alpha) });
+      return b;
+    }
+    for (var i = 0; i < Keys.Length; i++) resources[Keys[i]] = Bound(i);
+    // Under the Blastlog themes, Playnite's own accent (the Play button, selection borders, links, highlights) is the
+    // game colour too, with its ink on fills, so nothing stays the default theme's teal.
+    if (themed) {
+      resources["GlyphBrush"] = Bound(0); resources["HighlightGlyphBrush"] = Bound(0, 0x33); resources["TextBrushDark"] = Bound(1);
+    }
+  }
   void Apply(string seed, bool animate) {
     try {
       var t = GameColour.For(seed, CurrentMode);
       var target = new[] { t.Game, t.OnGame, t.GameText, t.GameTint, t.GameTint2, t.GameEdge, t.GameBar }
         .Select(v => (Color)ColorConverter.ConvertFromString(v)).ToArray();
-      var from = shown ?? target;
-      fade?.Stop();
-      var glow = target[0];
-      Application.Current.Resources["Blastlog.GlowColor"] = Color.FromArgb((byte)Math.Round(t.GlowAlpha * 255), glow.R, glow.G, glow.B);
-      Application.Current.Resources["Blastlog.GlowClearColor"] = Color.FromArgb(0, glow.R, glow.G, glow.B);
-      if (!animate || !SystemParameters.ClientAreaAnimation || shown == null) { Set(target); return; }
-      const int frames = 8; var frame = 0;
-      fade = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(30) };
-      fade.Tick += (s, e) => {
-        try {
-          frame++; var k = (double)frame / frames; var eased = k * (2 - k);
-          Set(from.Select((c, i) => Mix(c, target[i], eased)).ToArray());
-          if (frame >= frames) fade.Stop();
-        } catch (Exception ex) { fade.Stop(); Log.Error(ex, "Blastlog: colour fade failed"); }
-      };
-      fade.Start();
+      var first = !placed;
+      Place();
+      var duration = animate && !first && SystemParameters.ClientAreaAnimation ? new Duration(TimeSpan.FromMilliseconds(240)) : new Duration(TimeSpan.Zero);
+      for (var i = 0; i < target.Length; i++) {
+        if (duration.TimeSpan == TimeSpan.Zero) { holder.BeginAnimation(ColourHolder.Properties[i], null); holder.SetValue(ColourHolder.Properties[i], target[i]); }
+        else holder.BeginAnimation(ColourHolder.Properties[i], new ColorAnimation(target[i], duration) { EasingFunction = new QuadraticEase() });
+      }
+      var glow = target[0]; var glowColour = Color.FromArgb((byte)Math.Round(t.GlowAlpha * 255), glow.R, glow.G, glow.B);
+      var resources = Application.Current.Resources;
+      if (!(resources["Blastlog.GlowColor"] is Color old) || old != glowColour) {
+        resources["Blastlog.GlowColor"] = glowColour; resources["Blastlog.GlowClearColor"] = Color.FromArgb(0, glow.R, glow.G, glow.B);
+      }
     } catch (Exception e) { Log.Error(e, "Blastlog: couldn't apply the game colour"); }
   }
-  void Set(Color[] colours) {
-    var resources = Application.Current.Resources;
-    for (var i = 0; i < Keys.Length; i++) { var b = new SolidColorBrush(colours[i]); b.Freeze(); resources[Keys[i]] = b; }
-    shown = colours;
+
+  /// <summary>The page's game colours as animatable properties (Game, OnGame, GameText, GameTint, GameTint2, GameEdge, GameBar).</summary>
+  sealed class ColourHolder : Animatable {
+    protected override Freezable CreateInstanceCore() => new ColourHolder();
+    public static readonly string[] Names = { "Game", "OnGame", "GameText", "GameTint", "GameTint2", "GameEdge", "GameBar" };
+    public static readonly DependencyProperty[] Properties = Names.Select(n => DependencyProperty.Register(n, typeof(Color), typeof(ColourHolder), new PropertyMetadata(Colors.Transparent))).ToArray();
   }
-  static Color Mix(Color a, Color b, double k) => Color.FromRgb((byte)Math.Round(a.R + (b.R - a.R) * k), (byte)Math.Round(a.G + (b.G - a.G) * k), (byte)Math.Round(a.B + (b.B - a.B) * k));
+  sealed class AlphaConverter : IValueConverter {
+    readonly byte alpha; public AlphaConverter(byte alpha) { this.alpha = alpha; }
+    public object Convert(object value, Type t, object p, System.Globalization.CultureInfo c) { var col = (Color)value; return Color.FromArgb(alpha, col.R, col.G, col.B); }
+    public object ConvertBack(object value, Type t, object p, System.Globalization.CultureInfo c) => throw new NotSupportedException();
+  }
 }
 }

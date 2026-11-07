@@ -4,6 +4,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 Add-Type @"
 using System; using System.Runtime.InteropServices;
 public static class W {
+  [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
@@ -11,6 +12,8 @@ public static class W {
   public struct RECT { public int L, T, R, B; }
 }
 "@
+# Real pixels at any Windows scaling (otherwise the capture covers only part of the window).
+[W]::SetProcessDPIAware() | Out-Null
 $p = Get-Process Playnite.DesktopApp -ErrorAction Stop | Select-Object -First 1
 $h = $p.MainWindowHandle
 [W]::ShowWindow($h, 9) | Out-Null

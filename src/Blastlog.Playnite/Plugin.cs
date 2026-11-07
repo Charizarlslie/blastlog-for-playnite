@@ -38,7 +38,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     store = SyncStore.Load(storePath);
     try { cache = File.Exists(cachePath) ? JsonConvert.DeserializeObject<Dictionary<string, CachedRead>>(File.ReadAllText(cachePath)) : null; } catch (Exception) { cache = null; }
     cache = cache ?? new Dictionary<string, CachedRead>();
-    AddCustomElementSupport(new AddCustomElementSupportArgs { SourceName = "Blastlog", ElementList = Screens.GamePage.Elements.ToList() });
+    AddCustomElementSupport(new AddCustomElementSupportArgs { SourceName = "Blastlog", ElementList = Screens.GamePage.Elements.Concat(new[] { Ui.LibraryTile.ElementName }).ToList() });
   }
 
   /// <summary>Playnite's API for the views (the base class keeps its own protected).</summary>
@@ -46,7 +46,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public string ServerUrl => (settings.Data.ServerUrl ?? "").TrimEnd('/');
   public bool Configured => settings.Token != null && Uri.TryCreate(ServerUrl, UriKind.Absolute, out _);
   BlastlogClient Client() => new BlastlogClient(Http, new Uri(ServerUrl), settings.Token);
-  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.2.4" })
+  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.2.6" })
     { Rule = settings.Data.ConflictRule, IncludeHidden = settings.Data.IncludeHidden };
   void SaveStore() { try { store.Save(storePath); } catch (Exception e) { Log.Error(e, "Blastlog: couldn't save the sync store"); } }
 
@@ -90,10 +90,11 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   }
   public override IEnumerable<SidebarItem> GetSidebarItems() {
     // Every Blastlog screen (Ui/Kit.cs IBlastlogScreen), in the site's menu order.
-    foreach (var screen in Ui.Screens.All()) yield return Ui.Screens.SidebarItem(screen, this);
+    var screens = Ui.Screens.All().ToList();
+    for (var i = 0; i < screens.Count; i++) yield return Ui.Screens.SidebarItem(screens[i], this, i, screens.Count);
   }
   /// <summary>The game page elements (Screens/GamePage.cs) the Blastlog theme places in Playnite's game details.</summary>
-  public override Control GetGameViewControl(GetGameViewControlArgs args) => Screens.GamePage.Create(this, args.Name);
+  public override Control GetGameViewControl(GetGameViewControlArgs args) => args.Name == Ui.LibraryTile.ElementName ? new Ui.LibraryTile(this) : Screens.GamePage.Create(this, args.Name);
 
   // ---- Events: auto-sync (after the first real sync only) ----
   public ThemeBridge Theme { get; private set; }
@@ -181,7 +182,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
   public async Task StillPlaying(string entryId) {
-    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.2.4" } };
+    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.2.6" } };
     push.CheckIns.Add(new JObject { ["entryId"] = entryId, ["answer"] = "still_playing" });
     try { await Task.Run(() => Client().PushAsync(push)); cache.Remove("now-playing"); } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
