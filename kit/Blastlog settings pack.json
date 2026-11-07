@@ -1,0 +1,8 @@
+{
+  "about": "Blastlog for Playnite settings pack: load it in Add-ons → Extension settings → Blastlog → Load a settings pack. It sets only the sync choices below, never your server or token.",
+  "autoSync": true,
+  "conflictRule": "BlastlogWins",
+  "includeHidden": false,
+  "blastlogTags": true,
+  "traitTags": true
+}

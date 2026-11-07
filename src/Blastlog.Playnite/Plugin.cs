@@ -46,7 +46,7 @@ public sealed class BlastlogPlugin : GenericPlugin {
   public string ServerUrl => (settings.Data.ServerUrl ?? "").TrimEnd('/');
   public bool Configured => settings.Token != null && Uri.TryCreate(ServerUrl, UriKind.Absolute, out _);
   BlastlogClient Client() => new BlastlogClient(Http, new Uri(ServerUrl), settings.Token);
-  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.2.2" })
+  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.2.3" })
     { Rule = settings.Data.ConflictRule, IncludeHidden = settings.Data.IncludeHidden };
   void SaveStore() { try { store.Save(storePath); } catch (Exception e) { Log.Error(e, "Blastlog: couldn't save the sync store"); } }
 
@@ -63,7 +63,7 @@ public sealed class BlastlogPlugin : GenericPlugin {
     } catch (BlastlogException e) { return Words(e); } catch (Exception e) { return "Couldn't reach the server: " + e.Message; }
   }
   static string Words(BlastlogException e) => e.Error == "sync_token_invalid" ? "Blastlog didn't accept that token (wrong, revoked, expired, or sync is switched off)."
-    : e.Error == "supporter_tier_required" ? "Playnite sync comes with Blastlog's $10 supporter tier. You can get it on Blastlog: Your taste, then Your account."
+    : e.Error == "supporter_tier_required" ? "Blastlog says this account can't use Playnite sync right now."
     : e.Error == "rate_limited" ? $"Too many requests just now; try again in {e.RetryAfterSeconds ?? 60} seconds." : e.Error == "sync_scope_required" ? "This token is read only. Make one that can change your library."
     : e.Error == "invalid_request" ? "Blastlog didn't accept what the plugin sent" + (e.Details != null ? $" ({e.Details})" : "") + ". This is a plugin bug: send Claude a screenshot."
     : e.Error == "too_many_items" ? "That was more than Blastlog takes at once. This is a plugin bug: send Claude a screenshot."
@@ -176,7 +176,7 @@ public sealed class BlastlogPlugin : GenericPlugin {
     catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
   public async Task StillPlaying(string entryId) {
-    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.2.2" } };
+    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.2.3" } };
     push.CheckIns.Add(new JObject { ["entryId"] = entryId, ["answer"] = "still_playing" });
     try { await Task.Run(() => Client().PushAsync(push)); cache.Remove("now-playing"); } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }

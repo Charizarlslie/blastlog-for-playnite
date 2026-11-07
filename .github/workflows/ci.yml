@@ -1,5 +1,9 @@
 name: Build and test
-on: [push, pull_request]
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
 permissions:
   contents: read
 jobs:
@@ -22,10 +26,49 @@ jobs:
       - name: Pack the plugin
         shell: pwsh
         run: ./tools/pack-plugin.ps1
+      # The theme is built from Playnite's MIT default desktop theme, fetched at a pinned release (tools/build-theme.ps1).
+      - name: Build the Blastlog theme
+        shell: pwsh
+        run: ./tools/build-theme.ps1 -PlayniteRef 10.63
+      - name: Add the settings pack and setup guide
+        shell: pwsh
+        run: |
+          Copy-Item "kit/Blastlog settings pack.json" artifacts/
+          Copy-Item docs/SETUP_GUIDE.md "artifacts/Setup guide.md"
       - uses: actions/upload-artifact@v4
         with:
-          name: blastlog-for-playnite-pext
-          path: artifacts/*.pext
+          name: blastlog-for-playnite
+          path: |
+            artifacts/*.pext
+            artifacts/*.pthm
+            artifacts/*.json
+            artifacts/*.md
+  release:
+    # A version tag (v0.2.3) publishes the plugin, the theme, the settings pack and the guide together.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [core, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: blastlog-for-playnite
+          path: artifacts
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<'EOF'
+          Install the `.pext` (the plugin), then the `.pthm` (the Blastlog theme): double-click each with Playnite open.
+          Then Settings → Appearance → Theme → Blastlog. `Blastlog settings pack.json` loads in the plugin's settings.
+          Steps: `Setup guide.md`.
+
+          **Unsigned.** Windows Smart App Control blocks unsigned extension DLLs, so the plugin only loads with it off.
+          EOF
+          gh release create "$TAG" artifacts/* --title "Blastlog for Playnite ${TAG#v}" --notes-file notes.md
   secrets:
     runs-on: ubuntu-latest
     permissions:
