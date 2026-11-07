@@ -68,7 +68,8 @@ sealed partial class DiscoverGameView {
   static Border Card(string heading, out StackPanel body, bool game = false) {
     body = new StackPanel();
     if (heading != null) body.Children.Add(Kit.Text(heading, "Blastlog.CardTitle").Also(t => { t.FontSize = 20; t.FontWeight = FontWeights.ExtraBold; t.Margin = new Thickness(0, 0, 0, 12); }));
-    return Kit.Card(body, game).Also(c => { c.CornerRadius = new CornerRadius(26); c.Padding = new Thickness(26); });
+    // The site's panel: surface, a 1px line, radius 26, padding 26.
+    return Kit.Card(body, game).Also(c => { c.CornerRadius = new CornerRadius(26); c.Padding = new Thickness(26); c.BorderThickness = new Thickness(1); c.Res(Border.BorderBrushProperty, "Blastlog.Line"); });
   }
   static TextBlock Eyebrow(string text) => Kit.Text(text, "Blastlog.Small").Also(t => { t.FontWeight = FontWeights.Bold; t.Margin = new Thickness(0, 0, 0, 6); });
 
@@ -80,7 +81,7 @@ sealed partial class DiscoverGameView {
     var fit = page["fit"] as JObject;
     var reasons = fit.Strings("reasons"); var watch = fit.Strings("watchOuts"); var ready = fit.B("ready");
     if (reasons.Count == 0 && watch.Count == 0 && ready) return null;
-    var card = Card(openedFrom != null ? "Why it’s on your list" : "For you", out var body, game: true);
+    var card = Card(openedFrom != null ? "Why it’s on your list" : "For you", out var body);
     if (!ready) { body.Children.Add(PnKit.Text("Rate a few more games you’ve finished and Blastlog can say how this one fits your taste.", "Blastlog.Muted")); return card; }
     if (reasons.Count > 0) {
       body.Children.Add(Eyebrow("Because you like"));
@@ -93,12 +94,12 @@ sealed partial class DiscoverGameView {
     if (fit.B("early")) body.Children.Add(PnKit.Text(fit.B("upcoming") ? "It isn’t out yet, so this comes from previews and counts for a little less." : "Fingerprinting in progress, confirming data after release.", "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 6, 0, 0)));
     return card;
   }
-  /// <summary>A risk chip: dashed, in the warning colour (design.md 7).</summary>
+  /// <summary>A risk chip: dashed, in the danger colour (the site's .discover-chips.risk; design.md 7).</summary>
   static FrameworkElement RiskChip(string text) {
     var chip = Kit.Chip(text, neutral: true); chip.BorderThickness = new Thickness(0); chip.Margin = new Thickness(0);
-    if (chip.Child is TextBlock t) t.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.Warn");
+    if (chip.Child is TextBlock t) t.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.Danger");
     var dashed = new Rectangle { RadiusX = 14, RadiusY = 14, StrokeDashArray = new DoubleCollection { 4, 3 }, StrokeThickness = 1, IsHitTestVisible = false };
-    dashed.SetResourceReference(Shape.StrokeProperty, "Blastlog.Warn");
+    dashed.SetResourceReference(Shape.StrokeProperty, "Blastlog.Danger");
     var g = new Grid { Margin = new Thickness(0, 0, 8, 8) }; g.Children.Add(chip); g.Children.Add(dashed);
     return g;
   }

@@ -6,7 +6,6 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using Blastlog.Playnite.Ui;
 using Blastlog.Sync.Core.Design;
@@ -16,10 +15,10 @@ using BlastlogGame = Blastlog.Sync.Core.Game;
 
 namespace Blastlog.Playnite.Screens {
 /// <summary>
-/// A Discover game's own page (apps/web DiscoverGame.tsx), natively, in a Playnite window: the hero (blurred art under a
-/// scrim, cover, title, facts, summary, answers with Undo, Play / Install when the game is in Playnite, the price link),
-/// then For you, the fingerprint, friends who played it, accessibility and more about the game. A game already in the
-/// player's library that's paired in Playnite opens Playnite's own game page instead (the site opens its library page).
+/// A Discover game's own page (apps/web DiscoverGame.tsx), natively, in a Playnite window, laid out as the site's: Back,
+/// the hero (cover, title, facts, summary, answers with Undo, Play / Install when the game is in Playnite, the price
+/// link), then For you, the fingerprint, friends who played it, accessibility, more about the game and More like this.
+/// A game already in the player's library that's paired in Playnite opens Playnite's own game page instead (the site opens its library page).
 /// </summary>
 static class DiscoverGamePage {
   static readonly ILogger Log = LogManager.GetLogger();
@@ -111,6 +110,7 @@ sealed partial class DiscoverGameView : UserControl {
       window.Title = Title;
       // The page wears its game: the page colour set on Blastlog, else its cover's (design.md 2.3).
       if (!worn) { worn = true; Kit.GameScope(body, plugin, Game); }
+      body.Children.Add(Fingerprint.LinkButton(openedFrom != null ? "← Back to Discover" : "← Back", () => window.Close()).Also(b => { b.Margin = new Thickness(-10, 0, 0, 0); b.HorizontalAlignment = HorizontalAlignment.Left; }));
       body.Children.Add(Hero());
       var fit = FitCard(); if (fit != null) body.Children.Add(fit);
       if (data["fingerprint"] is JObject fingerprint)
@@ -131,17 +131,17 @@ sealed partial class DiscoverGameView : UserControl {
     var entryId = page.S("entryId"); var answer = page["answer"] as JObject;
 
     var grid = new Grid();
-    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(240) });
-    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(260) });
+    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(26) });
     grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-    var cover = Kit.Cover(plugin, Game, 240, ArtworkContext.Cover, 18);
+    var cover = Kit.Cover(plugin, Game, 260, ArtworkContext.Cover, 18);
     cover.VerticalAlignment = VerticalAlignment.Top;
     AutomationProperties.SetName(cover, Title + " cover");
     grid.Children.Add(cover);
 
     var text = new StackPanel(); Grid.SetColumn(text, 2); grid.Children.Add(text);
     text.Children.Add(PnKit.Text("Discover", "Blastlog.Body", "Blastlog.GameText", FontWeights.Bold));
-    text.Children.Add(PnKit.Text(Title, "Blastlog.HeroTitle").Also(t => { t.TextWrapping = TextWrapping.Wrap; t.FontSize = 40; t.Margin = new Thickness(0, 2, 0, 6); }));
+    text.Children.Add(PnKit.Text(Title, "Blastlog.PageTitle").Also(t => { t.TextWrapping = TextWrapping.Wrap; t.Margin = new Thickness(0, 2, 0, 6); }));
     var date = game.S("releaseDate"); var predicted = fit.D("predictedRating"); var acclaim = catalogue.D("acclaim");
     var facts = new[] {
       date != null ? (NotOut ? PnKit.ReleaseLabel(date) : game.S("year")) : null,
@@ -175,65 +175,15 @@ sealed partial class DiscoverGameView : UserControl {
     }
     if (buttons.Children.Count > 0) text.Children.Add(buttons);
 
-    return Backdrop(grid);
+    grid.Margin = new Thickness(0, 12, 0, 22);
+    return grid;
   }
 
-  /// <summary>The summary, cut after six lines with Read more (the site shows it whole; a long one would push everything down).</summary>
+  /// <summary>The summary, whole, as on the site.</summary>
   static FrameworkElement Summary(string summary) {
-    var panel = new StackPanel { Margin = new Thickness(0, 12, 0, 0), MaxWidth = 760, HorizontalAlignment = HorizontalAlignment.Left };
-    var t = PnKit.Text(summary, "Blastlog.Body").Also(x => { x.FontSize = 15; x.TextWrapping = TextWrapping.Wrap; });
-    t.LineStackingStrategy = LineStackingStrategy.BlockLineHeight; t.LineHeight = 23; t.TextTrimming = TextTrimming.WordEllipsis;
-    panel.Children.Add(t);
-    const double clamp = 23 * 6;
-    Button toggle = null;
-    toggle = Fingerprint.LinkButton("Read more ▾", () => { var open = t.MaxHeight < 1e5; t.MaxHeight = open ? double.PositiveInfinity : clamp; toggle.Content = open ? "Show less ▴" : "Read more ▾"; }, game: true);
-    toggle.Margin = new Thickness(-10, 0, 0, 0); toggle.HorizontalAlignment = HorizontalAlignment.Left; toggle.Visibility = Visibility.Collapsed;
-    panel.Children.Add(toggle);
-    // Cut only when it really runs past six lines at the width it gets (measured once, on its first layout).
-    var measured = false;
-    t.SizeChanged += (s, e) => {
-      try {
-        if (measured || e.NewSize.Width <= 0) return;
-        measured = true;
-        if (e.NewSize.Height > clamp + 1) { t.MaxHeight = clamp; toggle.Visibility = Visibility.Visible; }
-      } catch (Exception ex) { Log.Error(ex, "Blastlog summary"); }
-    };
-    return panel;
-  }
-
-  /// <summary>The hero card: the game's art blurred under a scrim, the game's glow from the top right, then the content.</summary>
-  FrameworkElement Backdrop(FrameworkElement content) {
-    var card = new Border { CornerRadius = new CornerRadius(26), BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 0, 18), ClipToBounds = true };
-    card.SetResourceReference(Border.BackgroundProperty, "Blastlog.Surface"); card.SetResourceReference(Border.BorderBrushProperty, "Blastlog.GameEdge");
-    var layers = new Grid();
-    var art = new Border { Opacity = 0.42, IsHitTestVisible = false, Effect = new BlurEffect { Radius = 36, KernelType = KernelType.Gaussian }, Margin = new Thickness(-60) };
-    layers.Children.Add(art);
-    var scrim = new Border { IsHitTestVisible = false };
-    Tint.OnGame(scrim, (game, line, surface) => {
-      var b = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
-      b.GradientStops.Add(new GradientStop(Tint.Alpha(Tint.Mix(game, surface, 0.16), 0.55), 0));
-      b.GradientStops.Add(new GradientStop(Tint.Alpha(surface, 0.86), 0.55));
-      b.GradientStops.Add(new GradientStop(Tint.Alpha(surface, 0.94), 1));
-      b.Freeze(); scrim.Background = b;
-    });
-    layers.Children.Add(scrim);
-    layers.Children.Add(new Border { Child = content, Padding = new Thickness(28) });
-    card.Child = layers;
-    // Rounded corners for the blurred layer too (ClipToBounds clips to the square box).
-    card.SizeChanged += (s, e) => { try { layers.Clip = new RectangleGeometry(new Rect(0, 0, e.NewSize.Width - 2, e.NewSize.Height - 2), 25, 25); } catch (Exception ex) { Log.Error(ex, "Blastlog hero clip"); } };
-    LoadBackdrop(art);
-    return card;
-  }
-  async void LoadBackdrop(Border art) {
-    try {
-      // A wide screenshot when IGDB has one (the site's hero art), else the cover.
-      var shot = info.Strings("screenshots").FirstOrDefault(IsIgdb);
-      var url = shot != null ? Artwork.NormalizedLegacyUrl(shot, "screenshot_big") : Artwork.Url(Game, ArtworkContext.Cover);
-      var file = await PnKit.Picture(plugin, url);
-      if (file == null) return;
-      var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad; image.UriSource = new Uri(file); image.DecodePixelWidth = 640; image.EndInit(); image.Freeze();
-      art.Background = new ImageBrush(image) { Stretch = Stretch.UniformToFill };
-    } catch (Exception e) { Log.Warn("Blastlog: hero art didn't load: " + e.Message); }
+    var t = PnKit.Text(summary, "Blastlog.Body").Also(x => { x.FontSize = 16; x.TextWrapping = TextWrapping.Wrap; x.MaxWidth = 820; x.HorizontalAlignment = HorizontalAlignment.Left; x.Margin = new Thickness(0, 12, 0, 12); });
+    t.LineStackingStrategy = LineStackingStrategy.BlockLineHeight; t.LineHeight = 25;
+    return t;
   }
   /// <summary>Pictures come from IGDB's image server only (the plugin's one other host, README).</summary>
   internal static bool IsIgdb(string url) => Uri.TryCreate(url?.StartsWith("//") == true ? "https:" + url : url, UriKind.Absolute, out var u) && u.Scheme == "https" && u.Host == "images.igdb.com";
