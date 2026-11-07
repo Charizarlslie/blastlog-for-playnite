@@ -28,22 +28,27 @@ public static class Nav {
   }
 
   /// <summary>Quick start: tap the well-known games you've played and give them stars.</summary>
-  public static void QuickStart(BlastlogPlugin plugin, Action done = null) => Site(plugin, "/quick-start");
+  public static async void QuickStart(BlastlogPlugin plugin, Action done = null) {
+    // Native once the server has the quick start routes; the site's page until then (or offline).
+    try { if (await Blastlog.Playnite.Screens.QuickStartPage.Open(plugin, done)) return; } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Error(e, "Blastlog quick start"); }
+    Site(plugin, "/quick-start");
+  }
 
   /// <summary>Find a co-op game with friends (the site's Together page), optionally with these friends picked.</summary>
   public static void Together(BlastlogPlugin plugin, IEnumerable<string> friendIds = null) {
     var ids = friendIds?.Where(id => !string.IsNullOrEmpty(id)).ToList();
+    if (plugin.Configured) { Blastlog.Playnite.Screens.TogetherPage.Open(plugin, ids); return; }
     Site(plugin, "/together" + (ids != null && ids.Count > 0 ? "?with=" + string.Join(",", ids) : ""));
   }
 
   /// <summary>The player's friends and friend groups.</summary>
-  public static void Friends(BlastlogPlugin plugin) => Site(plugin, "/friends");
+  public static void Friends(BlastlogPlugin plugin) { if (plugin.Configured) Blastlog.Playnite.Screens.FriendsPage.Open(plugin); else Site(plugin, "/friends"); }
 
-  /// <summary>Your taste (the native Taste screen once in-app jumps between screens work).</summary>
-  public static void Taste(BlastlogPlugin plugin) => Site(plugin, "/profile");
+  /// <summary>Your taste: the native screen in Playnite's sidebar (Ui/ScreenJump.cs), the site if Playnite won't switch.</summary>
+  public static void Taste(BlastlogPlugin plugin) { if (!ScreenJump.To("Your taste")) Site(plugin, "/profile"); }
 
   /// <summary>Sharpen your picks: the full list of games worth rating or reviewing.</summary>
-  public static void Sharpen(BlastlogPlugin plugin) => Site(plugin, "/recommendations#sharpen");
+  public static void Sharpen(BlastlogPlugin plugin) { if (!ScreenJump.To("Play next", "Sharpen your picks")) Site(plugin, "/recommendations#sharpen"); }
 
   /// <summary>A page that stays on the site (import sorting, account settings, the picture).</summary>
   public static void Site(BlastlogPlugin plugin, string path) => UiKit.Open(plugin.ServerUrl + path);
