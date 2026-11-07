@@ -14,7 +14,7 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Edge}" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.FocusRing}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource Blastlog.FocusRing}" />
         <Setter Property="BorderThickness" Value="{DynamicResource ControlBorderThickness}" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Padding" Value="10,5,10,5" />

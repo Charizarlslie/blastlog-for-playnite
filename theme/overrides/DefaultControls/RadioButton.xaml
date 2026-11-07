@@ -14,7 +14,7 @@
         <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.FocusRing}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource Blastlog.FocusRing}" />
         <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
         <Setter Property="BorderThickness" Value="{DynamicResource ControlBorderThickness}" />
         <Setter Property="Template">

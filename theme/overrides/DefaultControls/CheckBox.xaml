@@ -19,7 +19,7 @@
         <!-- 14px (design.md small) so labels fit Playnite's fixed-size dialogs; long ones wrap instead of clipping. -->
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.FocusRing}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource Blastlog.FocusRing}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type CheckBox}">

@@ -17,6 +17,13 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   copy of the same file from Playnite's default desktop theme (MIT, pinned at 10.63 in `tools/build-theme.ps1`) changed
   to Blastlog's look. The build copies the default theme, then these files over it; an override whose original no longer
   exists fails the build. Keep every `PART_*` element Playnite's file has: Playnite wires behaviour to them.
+  Playnite loads each theme file on its own to check it before applying the theme, so a `StaticResource` (or `BasedOn`)
+  to a key that only another override file defines makes Playnite fall back to its default theme: use `DynamicResource`
+  across files, or define the style in the file that needs it. Shared theme pieces (`Blastlog.FocusRing`,
+  `Blastlog.PillFocusRing`, `Blastlog.IconButton`) live in `DefaultControls/Border.xaml`.
+- **Library tiles** (`DerivedStyles/GridViewItemTemplate.xaml`): each tile has a `Blastlog_Tile` element that
+  `Ui/LibraryTint.cs` fills with the status pill and stars and uses to give the tile its own game colours (worked out
+  off the UI thread, remembered per game). The cover box is 3:4 at Playnite's tile width; covers fill and crop.
 
 ## The kit (`src/Blastlog.Playnite/Ui/`)
 

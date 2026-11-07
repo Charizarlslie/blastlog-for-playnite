@@ -6,9 +6,11 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     mc:Ignorable="d">
     <!--
-      Based on Playnite's default theme (MIT, see CREDITS.md). Besides Playnite's Border style, this is where the theme's
-      shared Blastlog pieces live, because it is the first control file Playnite loads: every later file can use them as
-      StaticResource. Colours are Blastlog tokens only (Constants.xaml), so both Blastlog and Blastlog Light work.
+      Based on Playnite's default theme (MIT, see CREDITS.md). Besides Playnite's Border style, this holds the theme's
+      shared focus rings and icon button. Playnite checks each theme file on its own before applying the theme, so other
+      files must use these as DynamicResource (a StaticResource or BasedOn to a key from another file fails the theme);
+      styles that need BasedOn are defined in the file that uses them. Colours are Blastlog tokens only (Constants.xaml),
+      so both Blastlog and Blastlog Light work.
     -->
     <Style TargetType="Border">
         <Setter Property="SnapsToDevicePixels" Value="True" />
@@ -43,93 +45,8 @@
       an edge border; on is the pill alone, game fill with on-game text and a 2px ring in text, no checkmark. The ring
       sits over the fill so nothing changes size.
     -->
-    <Style x:Key="Blastlog.ChipToggle" TargetType="CheckBox">
-        <Setter Property="SnapsToDevicePixels" Value="True" />
-        <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
-        <Setter Property="FontSize" Value="15" />
-        <Setter Property="FontWeight" Value="Bold" />
-        <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Edge}" />
-        <Setter Property="MinHeight" Value="40" />
-        <Setter Property="Padding" Value="16,0" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.PillFocusRing}" />
-        <Setter Property="HorizontalAlignment" Value="Left" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="CheckBox">
-                    <Grid>
-                        <Border x:Name="Fill" CornerRadius="999" BorderThickness="1"
-                                Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" />
-                        <Border x:Name="Ring" CornerRadius="999" BorderThickness="2" Visibility="Collapsed"
-                                BorderBrush="{DynamicResource Blastlog.Text}" />
-                        <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Fill" Property="BorderBrush" Value="{DynamicResource Blastlog.Text}" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.Game}" />
-                            <Setter TargetName="Fill" Property="BorderBrush" Value="{DynamicResource Blastlog.Game}" />
-                            <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
-                            <Setter Property="Foreground" Value="{DynamicResource Blastlog.OnGame}" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="{x:Null}">
-                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.GameTint2}" />
-                            <Setter TargetName="Fill" Property="BorderBrush" Value="{DynamicResource Blastlog.GameEdge}" />
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.5" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
 
     <!-- A row in a pick list (filter dropdowns): highlight only, game fill with on-game text when on, no checkmark. -->
-    <Style x:Key="Blastlog.PickRow" TargetType="CheckBox">
-        <Setter Property="SnapsToDevicePixels" Value="True" />
-        <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
-        <Setter Property="FontSize" Value="15" />
-        <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="MinHeight" Value="38" />
-        <Setter Property="Padding" Value="12,0" />
-        <Setter Property="Margin" Value="6,2" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.FocusRing}" />
-        <Setter Property="HorizontalContentAlignment" Value="Left" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="CheckBox">
-                    <Border x:Name="Fill" CornerRadius="10" Background="{TemplateBinding Background}">
-                        <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
-                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.Surface2}" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.Game}" />
-                            <Setter Property="Foreground" Value="{DynamicResource Blastlog.OnGame}" />
-                            <Setter Property="FontWeight" Value="Bold" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="{x:Null}">
-                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.GameTint2}" />
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.5" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
 
     <!-- A quiet icon button on a bar (the site's search clear button and toolbar icons). -->
     <Style x:Key="Blastlog.IconButton" TargetType="Button">
@@ -139,7 +56,7 @@
         <Setter Property="MinWidth" Value="36" />
         <Setter Property="MinHeight" Value="36" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.FocusRing}" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource Blastlog.FocusRing}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">

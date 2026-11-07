@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,8 +9,52 @@
       Based on Playnite's default theme (MIT, see CREDITS.md); every PART_ element and style key is kept.
     -->
 
-    <Style x:Key="FilterPanelCheckBox" TargetType="CheckBox" BasedOn="{StaticResource Blastlog.ChipToggle}">
+    <Style x:Key="FilterPanelCheckBox" TargetType="CheckBox">
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Edge}" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource Blastlog.PillFocusRing}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="Margin" Value="16,4,12,6" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid>
+                        <Border x:Name="Fill" CornerRadius="999" BorderThickness="1"
+                                Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" />
+                        <Border x:Name="Ring" CornerRadius="999" BorderThickness="2" Visibility="Collapsed"
+                                BorderBrush="{DynamicResource Blastlog.Text}" />
+                        <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fill" Property="BorderBrush" Value="{DynamicResource Blastlog.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.Game}" />
+                            <Setter TargetName="Fill" Property="BorderBrush" Value="{DynamicResource Blastlog.Game}" />
+                            <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                            <Setter Property="Foreground" Value="{DynamicResource Blastlog.OnGame}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="{x:Null}">
+                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.GameTint2}" />
+                            <Setter TargetName="Fill" Property="BorderBrush" Value="{DynamicResource Blastlog.GameEdge}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="FilterPanelLabel" TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
@@ -44,7 +88,35 @@
         <Setter Property="Margin" Value="16,0,12,0" />
     </Style>
 
-    <Style x:Key="FilterPresetButtonAction" TargetType="Button" BasedOn="{StaticResource Blastlog.IconButton}">
+    <Style x:Key="Blastlog.FilterIconButton" TargetType="Button">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.TextMuted}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="MinWidth" Value="36" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource Blastlog.FocusRing}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fill" CornerRadius="10" Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Blastlog.Line}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="FilterPresetButtonAction" TargetType="Button" BasedOn="{StaticResource Blastlog.FilterIconButton}">
         <Setter Property="FontFamily" Value="{StaticResource FontIcoFont}" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="Margin" Value="4,0,0,0" />
@@ -72,7 +144,7 @@
                         </Border.Style>
                         <DockPanel Background="{DynamicResource Blastlog.Bg}">
                             <DockPanel Margin="16,16,12,8" DockPanel.Dock="Top">
-                                <Button Style="{StaticResource Blastlog.IconButton}"
+                                <Button Style="{StaticResource Blastlog.FilterIconButton}"
                                         DockPanel.Dock="Right" ToolTip="{DynamicResource LOCCloseLabel}"
                                         Name="PART_ButtonClose">
                                     <Viewbox Width="14" Height="14">

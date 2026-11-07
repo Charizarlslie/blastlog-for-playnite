@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -8,7 +8,9 @@
       in the game's tint and edge, radius 18, the 3:4 cover first, then the title (two lines, then cut off) and the
       Blastlog_Tile element, where the plugin puts the status pill and stars and gives the tile its own game colours
       (Ui/LibraryTint.cs). Without the plugin the tile wears the selected game's colours and shows no pill.
-      Based on Playnite's default theme (MIT, see CREDITS.md); every PART_ element and setting it uses is kept.
+      The title always shows and the cover always fills its 3:4 box (the site's tiles), so Playnite's "show names
+      under covers" and cover stretch settings don't apply here; its other grid settings do.
+      Based on Playnite's default theme (MIT, see CREDITS.md); every PART_ element is kept.
     -->
 
     <!-- The round Play / Info buttons over the cover on hover. -->
@@ -68,7 +70,7 @@
                                             d:DataContext="{x:Static DesignMainViewModel.DesignSelectedGameIntance}">
 
                                     <!-- The cover box is 3:4 at Playnite's tile width (the Viewbox sizes it), with the card's top corners. -->
-                                    <Grid Width="{Settings GridItemWidth}" x:Name="CoverArea">
+                                    <Grid Width="{Settings GridItemWidth}" x:Name="CoverArea" ClipToBounds="True">
                                         <Grid.OpacityMask>
                                             <VisualBrush Stretch="None" AlignmentX="Left" AlignmentY="Top">
                                                 <VisualBrush.Visual>
@@ -78,14 +80,22 @@
                                                 </VisualBrush.Visual>
                                             </VisualBrush>
                                         </Grid.OpacityMask>
-                                        <Viewbox Stretch="Uniform" IsHitTestVisible="False">
-                                            <Border Width="3" Height="4" />
-                                        </Viewbox>
+                                        <!-- The sizer alone sets the box: Playnite's tile width, 4:3 tall (a layout transform, so no converter is needed). -->
+                                        <Border x:Name="CoverSizer" IsHitTestVisible="False" VerticalAlignment="Top"
+                                                Width="{Settings GridItemWidth}" Height="{Settings GridItemWidth}">
+                                            <Border.LayoutTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1.3333333" />
+                                            </Border.LayoutTransform>
+                                        </Border>
                                         <Border Background="{DynamicResource Blastlog.Surface2}" />
-                                        <Image Name="PART_ImageCover"
-                                               RenderOptions.BitmapScalingMode="Fant" StretchDirection="Both"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Stretch="{Settings CoverArtStretch}" />
+                                        <!-- The image sits in a canvas so it never sizes the box; it fills it and is cropped like the site's covers. -->
+                                        <Canvas>
+                                            <Image Name="PART_ImageCover"
+                                                   RenderOptions.BitmapScalingMode="Fant" StretchDirection="Both"
+                                                   Width="{Binding ActualWidth, ElementName=CoverArea}"
+                                                   Height="{Binding ActualHeight, ElementName=CoverArea}"
+                                                   Stretch="UniformToFill" />
+                                        </Canvas>
                                         <!-- No cover: the gamepad mark in Blastlog green and the title (design.md 9). -->
                                         <Border Background="{DynamicResource Blastlog.Surface2}" x:Name="TextGameName" Visibility="Collapsed">
                                             <StackPanel VerticalAlignment="Center" Margin="14">
@@ -141,8 +151,7 @@
                                                    Foreground="{DynamicResource Blastlog.Text}"
                                                    TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                                    LineHeight="20" LineStackingStrategy="BlockLineHeight" MaxHeight="40"
-                                                   Margin="12,0,12,0"
-                                                   Visibility="{Settings ShowNamesUnderCovers}" />
+                                                   Margin="12,0,12,0" />
                                         <ContentControl x:Name="Blastlog_Tile" Margin="12,8,12,0" Focusable="False" />
                                     </StackPanel>
                                 </StackPanel>

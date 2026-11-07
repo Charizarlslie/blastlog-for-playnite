@@ -26,28 +26,37 @@ public sealed class LibraryTile : PluginUserControl {
   readonly BlastlogPlugin plugin; readonly WrapPanel row = new WrapPanel { Orientation = Orientation.Horizontal };
   int version;
 
-  public LibraryTile(BlastlogPlugin plugin) { this.plugin = plugin; Content = row; Focusable = false; }
+  public LibraryTile(BlastlogPlugin plugin) {
+    this.plugin = plugin; Content = row; Focusable = false;
+    // Playnite hands over the game before it puts this control in the tile, so the tile is reachable only once loaded.
+    Loaded += (s, e) => Apply(GameContext);
+  }
 
-  public override async void GameContextChanged(Game oldContext, Game newContext) {
+  public override void GameContextChanged(Game oldContext, Game newContext) { if (IsLoaded) Apply(newContext); }
+
+  async void Apply(Game game) {
     var mine = ++version;
     try {
       row.Children.Clear();
       var tile = (Parent as FrameworkElement)?.TemplatedParent as FrameworkElement;
-      if (newContext == null) { if (tile != null) Neutral(tile); return; }
-      ShowInfo(newContext);
-      if (tile == null || plugin.Theme == null || !ThemeBridge.BlastlogThemeActive) return;
-      var key = SeedKey(newContext);
+      if (game == null) { if (tile != null) Neutral(tile); return; }
+      ShowInfo(game);
+      if (tile == null || !ThemeBridge.BlastlogThemeActive) return;
+      var key = SeedKey(game);
       if (Seeds.TryGetValue(key, out var known)) { Kit.GameScope(tile, known); return; }
       Neutral(tile);
+      // The theme bridge starts with the application; tiles can be drawn a moment before that.
+      for (var i = 0; plugin.Theme == null && i < 60; i++) await Task.Delay(500);
+      if (plugin.Theme == null || mine != version) return;
       await Working.WaitAsync();
       string seed;
       try {
         if (mine != version) return;
-        seed = await Task.Run(() => plugin.Theme.SeedFor(newContext));
+        seed = await Task.Run(() => plugin.Theme.SeedFor(game));
       } finally { Working.Release(); }
       Seeds[key] = seed;
       if (mine == version) Kit.GameScope(tile, seed);
-    } catch (Exception e) { Log.Error(e, "Blastlog: library tile for " + newContext?.Name); }
+    } catch (Exception e) { Log.Error(e, "Blastlog: library tile for " + game?.Name); }
   }
 
   /// <summary>Status pill (icon plus word, fixed colours) and stars, from the paired entry as of the last sync.</summary>
