@@ -46,6 +46,8 @@ public static class Fingerprint {
       glow.GradientStops.Add(new GradientStop(Tint.Mix(game, surface, 0.14), 0)); glow.GradientStops.Add(new GradientStop(surface, 0.6));
       card.Background = Frozen(glow);
     });
+    // A narrow card (Playnite's grid view side panel) keeps more room for the bars and chips.
+    card.SizeChanged += (s, e) => { try { var p = e.NewSize.Width < 480 ? 18 : 28; if (card.Padding.Left != p) card.Padding = new Thickness(p); } catch (Exception ex) { Log.Error(ex, "Blastlog fingerprint card"); } };
     var layers = new Grid();
     // The watermark: the fingerprint glyph, big and faint in the game's words colour, off the top-right corner.
     var mark = Icons.Make(Glyph, 260); mark.Opacity = 0.1; mark.IsHitTestVisible = false; mark.HorizontalAlignment = HorizontalAlignment.Right; mark.VerticalAlignment = VerticalAlignment.Top;
@@ -250,7 +252,7 @@ public static class Fingerprint {
   }
 
   static Button Chip(FingerprintTrait trait, bool big) {
-    var text = new TextBlock { Text = trait.Label, FontSize = 14, FontWeight = big ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center };
+    var text = new TextBlock { Text = trait.Label, FontSize = 14, FontWeight = big ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     text.SetResourceReference(TextBlock.FontFamilyProperty, "Blastlog.Font"); text.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.Text");
     if (trait.Role == "context") { var ctx = new System.Windows.Documents.Run(" (context)"); ctx.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "Blastlog.TextMuted"); text.Inlines.Add(ctx); }
     var pill = new Border { CornerRadius = new CornerRadius(999), BorderThickness = new Thickness(1), Padding = big ? new Thickness(15, 8, 15, 8) : new Thickness(10, 5, 10, 5), Child = text };
