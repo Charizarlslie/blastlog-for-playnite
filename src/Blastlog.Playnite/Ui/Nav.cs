@@ -18,10 +18,13 @@ public static class Nav {
   /// <summary>Add a game to the Blastlog library. <paramref name="status"/> "playing" when added from Currently playing.</summary>
   public static void AddGame(BlastlogPlugin plugin, string status = null, Action done = null) => Site(plugin, "/dashboard");
 
-  /// <summary>A catalogue game's page (Discover's game page): for games that aren't in the library, or aren't in Playnite.</summary>
-  public static void DiscoverGame(BlastlogPlugin plugin, string gameId, Action done = null) {
+  /// <summary>
+  /// A catalogue game's page (Discover's game page): for games that aren't in the library, or aren't in Playnite. Native
+  /// (Screens/DiscoverGame.cs). <paramref name="shelf"/>: the Discover shelf it was opened from, when it was.
+  /// </summary>
+  public static void DiscoverGame(BlastlogPlugin plugin, string gameId, Action done = null, string shelf = null) {
     if (gameId == null) return;
-    Site(plugin, "/discover/game/" + gameId);
+    Blastlog.Playnite.Screens.DiscoverGamePage.Open(plugin, gameId, shelf, done);
   }
 
   /// <summary>Quick start: tap the well-known games you've played and give them stars.</summary>
