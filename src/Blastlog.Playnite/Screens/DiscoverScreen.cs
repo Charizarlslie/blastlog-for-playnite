@@ -23,7 +23,7 @@ public sealed class DiscoverScreen : IBlastlogScreen {
 /// each card wearing its game with where it came from, why it fits, a friend's line, Watch out, Also counts, More from the
 /// series, and the answers (Want to play, I own it, Played it, Not for me with Why not?). The result line offers Undo,
 /// Why not? and Rate and review it; the comfort pick sits above the picks; Hidden and answered lists every answer with
-/// Undo. Covers open the game's Discover page on Blastlog.
+/// Undo. Covers and titles open the game's own page (Screens/DiscoverGame.cs).
 /// </summary>
 sealed class DiscoverView : UserControl {
   static readonly ILogger Log = LogManager.GetLogger();
@@ -116,7 +116,7 @@ sealed class DiscoverView : UserControl {
     var card = pick.Card; var gameId = card.S("gameId"); var title = card.S("title"); var tag = SourceTag(pick);
     var early = pick.Source != "friends" && card.B("earlyRead");
     var notOut = pick.Source != "friends" && !OutYet(card);
-    void Open() => Nav.DiscoverGame(plugin, gameId);
+    void Open() => Nav.DiscoverGame(plugin, gameId, () => _ = Load(true), pick.Source);
     var artGrid = new Grid();
     artGrid.Children.Add(PnKit.Art(plugin, gameId, card.S("coverUrl"), new CornerRadius(17, 17, 0, 0)));
     artGrid.Children.Add(PnKit.OverPill(tag.Item1, TagBrush(pick.Source), HorizontalAlignment.Left, VerticalAlignment.Top));
@@ -172,7 +172,7 @@ sealed class DiscoverView : UserControl {
   /// <summary>The comfort pick: one old favorite after a run of low ratings, apart from the picks, with Play it again and Not now.</summary>
   FrameworkElement ComfortPick(JObject pick) {
     var pickId = pick.S("pickId"); var title = pick.S("title"); var gameId = pick.S("gameId");
-    void Open() => Nav.DiscoverGame(plugin, gameId);
+    void Open() => Nav.DiscoverGame(plugin, gameId, () => _ = Load(true));
     var row = new DockPanel();
     var art = PnKit.Bare(PnKit.Art(plugin, gameId, pick.S("coverUrl"), new CornerRadius(14), 120), Open, title);
     art.Margin = new Thickness(0, 0, 20, 0); art.VerticalAlignment = VerticalAlignment.Top; art.HorizontalAlignment = HorizontalAlignment.Left;
