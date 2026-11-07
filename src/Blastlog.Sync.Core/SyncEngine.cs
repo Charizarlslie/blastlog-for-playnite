@@ -154,6 +154,9 @@ public sealed class SyncEngine {
     var push = Pairing.ToPush(choices); push.Client = info;
     if (push.Count == 0) return new PushResponse();
     var response = await PushChunked(push, ct).ConfigureAwait(false);
+    // A new link doesn't always move its entry past the saved cursor, so read the whole library once: otherwise games
+    // reported as paired stayed unpaired here until the next full read.
+    store.Cursor = null;
     await RefreshAsync(ct).ConfigureAwait(false);
     return response;
   }

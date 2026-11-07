@@ -100,6 +100,10 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public ThemeBridge Theme { get; private set; }
   public override void OnApplicationStarted(OnApplicationStartedEventArgs args) {
     Theme = new ThemeBridge(this); Theme.Install();
+    Log.Warn($"Blastlog: started, {(Configured ? "token set" : "no token")}, {store.Pairs.Count} paired game(s), first sync {(store.FirstSyncDone ? "done" : "not done")}.");
+    // Nothing shows as paired (no pills, stars or Play on Blastlog's screens) until games are paired once.
+    if (Configured && store.Pairs.Count == 0) PlayniteApi.Notifications.Add(new NotificationMessage("blastlog-pair",
+      "Blastlog: pair your Playnite games with your Blastlog library so they show their status, stars and Play buttons. Click here to start.", NotificationType.Info, () => _ = PairGames()));
     timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
     timer.Tick += (s, e) => { if (DateTime.Now >= nextAuto) _ = AutoSync(); };
     timer.Start();
@@ -134,6 +138,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     try {
       var outcome = await Task.Run(() => Engine().SyncAsync(dryRun));
       if (!dryRun) { SaveStore(); await RefreshTags(); cache.Remove("next-up?mode=recommended"); }
+      Log.Warn($"Blastlog: {(dryRun ? "previewed" : "synced")} {store.Pairs.Count} paired game(s): {outcome.Response?.Counts?.Applied ?? 0} to Blastlog, {outcome.PlayniteWrites} in Playnite, {outcome.Plan.Conflicts.Count} changed on both sides.");
       if (!dryRun && outcome.Plan.Conflicts.Count > 0) PlayniteApi.Notifications.Add(new NotificationMessage("blastlog-conflicts",
         $"Blastlog: {outcome.Plan.Conflicts.Count} game(s) changed differently on both sides; they were left as they are. Preview sync lists them.", NotificationType.Info));
       return outcome;
@@ -164,6 +169,8 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
       var choices = await Task.Run(() => engine.PairingAsync());
       if (PairingWindow.Show(this, choices) != true) return;
       var result = await Task.Run(() => engine.ApplyPairingAsync(choices)); SaveStore();
+      PlayniteApi.Notifications.Remove("blastlog-pair");
+      Log.Warn($"Blastlog: pairing applied {result.Counts.Applied}, rejected {result.Counts.Rejected}; {store.Pairs.Count} paired game(s) saved.");
       PlayniteApi.Dialogs.ShowMessage($"Paired: {result.Counts.Applied}.{(choices.Any(c => c.Match.Result == "skipped") ? $" {choices.Count(c => c.Match.Result == "skipped")} couldn't be sent (listed in the pairing window)." : "")} {(result.Counts.Rejected > 0 ? result.Counts.Rejected + " couldn't be (they're listed in Blastlog's import or already there). " : "")}Games sent to the import wait for you on Blastlog → Library → Import games. Next: Preview sync.");
     } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage("Pairing: " + Words(e), "Blastlog"); }
     catch (Exception e) { PlayniteApi.Dialogs.ShowErrorMessage("Couldn't pair: " + e.Message, "Blastlog"); }

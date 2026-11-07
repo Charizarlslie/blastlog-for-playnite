@@ -40,6 +40,8 @@ public static class Screens {
   public static SidebarItem SidebarItem(IBlastlogScreen screen, BlastlogPlugin plugin, int rank, int count) => new SidebarItem {
     Title = new string('\u200B', Math.Max(0, count - rank)) + screen.Title, Type = SiderbarItemType.View, Icon = Icons.Make(screen.Icon, 18),
     Opened = () => Kit.Page(screen.Create(plugin)),
+    // A screen may wear its own game (the dashboard wears Next up's); leaving it, the library wears its selection again.
+    Closed = () => plugin.Theme?.RestoreSelection(),
   };
 }
 

@@ -73,6 +73,14 @@ public sealed class ThemeBridge {
   /// </summary>
   public void WearPage(string seed) { if (installed) { selected = null; Apply(seed ?? GameColour.BrandGreen, true); } }
 
+  /// <summary>Back from a Blastlog screen to Playnite's library: wear the selected game again (or Blastlog green).</summary>
+  public void RestoreSelection() {
+    try {
+      var games = plugin.Api.MainView.SelectedGames?.ToList();
+      Select(games != null && games.Count == 1 ? games[0] : null);
+    } catch (Exception e) { Log.Warn(e, "Blastlog: couldn't restore the selected game's colour"); }
+  }
+
   /// <summary>The selected game changed: wear its colour (Blastlog green until it's known).</summary>
   public void Select(Game game) {
     if (!installed) return;
