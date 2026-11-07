@@ -62,6 +62,10 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   `Nav.Together`, `Nav.Friends`, `Nav.Taste`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
   Each opens the site until its native version lands; a native dialog replaces that one method's body, so screens
   never hard-code a site URL for something Playnite can show.
+- **Rate & review** (Nav.Review, Screens/ReviewDialog.cs) is native: the site's pop-up (ownership, status, completion
+  date, stars, taps, review, the questions). It saves with PATCH entries/:id (expectedVersion; a ersion_conflict loads
+  the latest and keeps the player's edits), then PUT entries/:id/picks; the taps hide if the picks can't be read. The
+  starter line and taps are Blastlog.Sync.Core.Design.ReviewWords, tested against the site's cases.
 - Text never under 14px, targets 44px, sentence case, no AI mentions, no admin data (design.md 7, 10, 12).
 
 ## Checking it locally (Windows)
