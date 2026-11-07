@@ -107,8 +107,6 @@ static class PnKit {
     if (url == null || plugin.Theme == null) return;
     try {
       var file = await plugin.Theme.CachedFile(url);
-      // The card's colour reads the same cover at the same moment; the loser of that race gets null, so look again.
-      if (file == null) { await Task.Delay(800); file = await plugin.Theme.CachedFile(url); }
       if (file == null) return;
       var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad; image.UriSource = new Uri(file);
       image.DecodePixelWidth = (int)Math.Min(800, (width ?? 300) * 2); image.EndInit(); image.Freeze();
