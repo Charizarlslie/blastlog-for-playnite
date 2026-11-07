@@ -348,7 +348,7 @@ sealed class PlayNextView : UserControl {
     await Load(true);
   }
   async Task<JObject> SetStatus(string entryId, string status) {
-    var entry = (await plugin.Mirror("entries/" + entryId, true)).Value?["entry"];
+    var entry = (await plugin.Mirror("entries/" + entryId + "?like=0", true)).Value?["entry"];
     var version = (int?)entry?["version"];
     if (version == null) { plugin.Api.Dialogs.ShowErrorMessage("Couldn't read that game from Blastlog. Try again.", "Blastlog"); return null; }
     return await plugin.Write("entries/" + entryId, new JObject { ["expectedVersion"] = version, ["status"] = status }, new HttpMethod("PATCH"));

@@ -158,7 +158,7 @@ sealed class DashboardNextUp : Border {
       "Released on " + string.Join(", ", Dash.OrderedPlatforms(platforms))));
     var id = (string)entry["id"];
     if (id != null) Dash.Safe(async () => {
-      var page = (await plugin.Mirror("entries/" + id, fresh: false)).Value;
+      var page = (await plugin.Mirror("entries/" + id + "?like=0", fresh: false)).Value;
       var stores = Dash.Arr(page?["stores"]?["stores"]).OfType<JObject>().ToList();
       if (stores.Count == 0) return;
       var line = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };

@@ -77,7 +77,7 @@ public sealed class ReviewDialog {
 
   async void Load() {
     try {
-      var entryRead = plugin.Mirror("entries/" + entryId, fresh: true); var picksRead = plugin.Mirror("entries/" + entryId + "/picks", fresh: true);
+      var entryRead = plugin.Mirror("entries/" + entryId + "?like=0", fresh: true); var picksRead = plugin.Mirror("entries/" + entryId + "/picks", fresh: true);
       await Task.WhenAll(entryRead, picksRead);
       entry = entryRead.Result.Value?["entry"] as JObject;
       if (entry == null) { Failed(); return; }
@@ -152,10 +152,16 @@ public sealed class ReviewDialog {
     main.Children.Add(tapHost);
     main.Children.Add(Label("Review").Also(t => t.Margin = new Thickness(0, 18, 0, 0)));
     main.Children.Add(ReviewBox());
-    // As on the site: errors, then a full-width Save under the left column.
-    errorHost.Margin = new Thickness(0, 14, 0, 0); main.Children.Add(errorHost);
-    saveButton = Kit.Button("Save changes", Save); saveButton.Margin = new Thickness(0, 16, 0, 0); saveButton.HorizontalAlignment = HorizontalAlignment.Stretch;
-    main.Children.Add(saveButton);
+    // Errors and Save sit in a footer pinned under the form, so they never fall below the fold on a short window.
+    errorHost.Margin = new Thickness(0, 0, 0, 10);
+    saveButton = Kit.Button("Save changes", Save); saveButton.Margin = new Thickness(0); saveButton.MinWidth = 180;
+    var cancel = Kit.Button("Cancel", () => { if (!saving) window.Close(); }, "Blastlog.Ghost"); cancel.Margin = new Thickness(0, 0, 10, 0);
+    var footer = new StackPanel { Margin = new Thickness(0, 14, 8, 0) };
+    footer.Children.Add(errorHost);
+    footer.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, saveButton } });
+    var footerFrame = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Child = footer, Margin = new Thickness(0, 8, 0, 0) };
+    footerFrame.SetResourceReference(Border.BorderBrushProperty, "Blastlog.Line");
+    DockPanel.SetDock(footerFrame, Dock.Bottom); root.Children.Add(footerFrame);
 
     var grid = new Grid();
     grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); grid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -453,7 +459,7 @@ public sealed class ReviewDialog {
   /// keep the ones they did, so saving again neither loses their edits nor quietly undoes the other change.
   /// </summary>
   async Task Merge() {
-    var latest = (await plugin.Mirror("entries/" + entryId, fresh: true)).Value?["entry"] as JObject;
+    var latest = (await plugin.Mirror("entries/" + entryId + "?like=0", fresh: true)).Value?["entry"] as JObject;
     if (latest == null) return;
     var before = entry; entry = latest;
     if (ownership == ((string)before["ownership"] ?? "library")) ownership = (string)latest["ownership"] ?? ownership;

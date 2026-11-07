@@ -102,7 +102,7 @@ sealed class DashboardView : StackPanel {
       // One page read per playing game, in parallel; the card fills in as they land.
       var ids = data.PlayingIds.ToList(); var changed = false;
       await Task.WhenAll(ids.Select(async e => {
-        var page = (await plugin.Mirror("entries/" + e, fresh)).Value;
+        var page = (await plugin.Mirror("entries/" + e + "?like=0", fresh)).Value;
         if (id != renderId || page == null) return;
         if (!data.Pages.TryGetValue(e, out var old) || !JToken.DeepEquals(old, page)) { data.Pages[e] = page; changed = true; }
       }));

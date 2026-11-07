@@ -71,9 +71,11 @@ sealed partial class DiscoverGameView : UserControl {
     try {
       if (!plugin.Configured) { Show(Kit.Card(PnKit.Text("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog to see this game."))); return; }
       var read = plugin.Mirror($"discover/games/{gameId}", fresh); var services = plugin.Mirror("subscriptions", false);
+      // More like this is slow on the server, so the page opens without it and adds it when it comes.
       var similar = plugin.Mirror($"games/{gameId}/like", fresh);
-      await Task.WhenAll(read, services, similar);
-      data = read.Result.Value; subs = services.Result.Value; like = similar.Result.Value;
+      await Task.WhenAll(read, services);
+      data = read.Result.Value; subs = services.Result.Value;
+      if (similar.IsCompleted) like = similar.Result.Value;
       page = data?["page"] as JObject; info = data?["info"] as JObject;
       if (page == null) { Unavailable(); return; }
       // A game that's in the library opens its library page, here Playnite's own game page when it's paired there.
@@ -82,6 +84,10 @@ sealed partial class DiscoverGameView : UserControl {
       var paired = entryId != null ? plugin.GameFor(entryId) : null;
       if (paired != null && !(page["answer"] is JObject) && noticeText == null) { OpenInPlaynite(paired.Id); return; }
       Build();
+      if (!similar.IsCompleted) {
+        var built = data; like = (await similar).Value;
+        if (like != null && ReferenceEquals(built, data)) Build();
+      }
     } catch (Exception e) { Log.Error(e, "Blastlog Discover game load"); }
   }
 

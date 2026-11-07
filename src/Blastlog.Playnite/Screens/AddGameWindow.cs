@@ -336,7 +336,7 @@ sealed class AddGameFlow {
 
   /// <summary>Takes the add back: the site's restorable remove, at the entry's current version.</summary>
   async Task Undo(string entryId, int version, string title) {
-    var fresh = (await plugin.Mirror("entries/" + entryId, fresh: true)).Value?["entry"];
+    var fresh = (await plugin.Mirror("entries/" + entryId + "?like=0", fresh: true)).Value?["entry"];
     var current = (int?)fresh?["version"] ?? version;
     if (await plugin.Write("entries/" + entryId, new JObject { ["expectedVersion"] = current }, HttpMethod.Delete) == null) return;
     Done();

@@ -165,7 +165,7 @@ sealed class DashboardPlaying : Border {
   // ---- Changes (the site's own write routes, through the token) ----
   /// <summary>PATCH /entries/:id with the entry's current version (read fresh first). Null after telling the player why.</summary>
   async Task<JObject> Patch(string entryId, JObject changes) {
-    var current = (await plugin.Mirror("entries/" + entryId, fresh: true)).Value;
+    var current = (await plugin.Mirror("entries/" + entryId + "?like=0", fresh: true)).Value;
     var version = (int?)current?["entry"]?["version"];
     if (version == null) { plugin.Api.Dialogs.ShowErrorMessage("Couldn't read that game from Blastlog just now. Try again in a moment.", "Blastlog"); return null; }
     changes["expectedVersion"] = version.Value;

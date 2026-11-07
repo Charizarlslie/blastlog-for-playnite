@@ -72,23 +72,39 @@ public sealed class GamePageElement : PluginUserControl {
       entryId = game == null ? null : plugin.EntryFor(game.Id);
       if (game == null) { Show(null); return; }
       if (entryId == null) { page = null; Show(kind == "GamePage" ? NotPaired() : null); return; }
-      // The cached copy straight away, then the rest as it arrives.
-      var read = await plugin.Mirror("entries/" + entryId, fresh);
+      // Hold the space while a game that isn't cached loads, so the sections under it don't jump when it arrives.
+      if ((string)page?["entry"]?["id"] != entryId) Show(Placeholder());
+      // The cached copy straight away, then the rest as it arrives. More like this is slow, so it comes separately.
+      var read = await plugin.Mirror("entries/" + entryId + "?like=0", fresh);
       if (mine != generation) return;
       page = read.Value;
       if (page == null) { Show(kind == "GamePage" ? Unavailable() : kind == "GameActions" || kind == "Status" ? Fallback() : null); return; }
       Render();
       if (kind != "GamePage") return;
       var gameId = (string)page["entry"]?["game"]?["id"];
+      var likeRead = plugin.Mirror($"games/{gameId}/like", fresh);
       var reads = new[] { plugin.Mirror($"games/{gameId}/fit", fresh), plugin.Mirror($"games/{gameId}/friends", fresh), plugin.Mirror($"entries/{entryId}/history", fresh) };
       await Task.WhenAll(reads);
       if (mine != generation) return;
       fit = reads[0].Result.Value; friends = reads[1].Result.Value?["items"] as JArray; history = reads[2].Result.Value?["items"] as JArray;
       Render();
+      var like = (await likeRead).Value;
+      if (mine != generation || like == null || page == null) return;
+      page["like"] = like;
+      Render();
     } catch (Exception e) { Log.Error(e, "Blastlog game page load"); }
   }
 
   void Show(FrameworkElement content) { host.Content = content; Visibility = content == null ? Visibility.Collapsed : Visibility.Visible; }
+
+  /// <summary>An empty block the size of what will come (roughly), so Playnite's own sections don't move when it lands.</summary>
+  FrameworkElement Placeholder() {
+    var height = kind == "GamePage" ? 900 : kind == "Fingerprint" ? 360 : kind == "GameActions" || kind == "Status" ? 56 : 0;
+    if (height == 0) return null;
+    var block = new Border { MinHeight = height };
+    if (kind == "GamePage") block.Child = Kit.Text("Loading its Blastlog page…", "Blastlog.Muted").Also(t => { t.VerticalAlignment = VerticalAlignment.Top; t.Margin = new Thickness(0, 8, 0, 0); });
+    return block;
+  }
 
   void Render() {
     try {
