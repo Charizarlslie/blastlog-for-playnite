@@ -23,68 +23,145 @@ public sealed class DashboardScreen : IBlastlogScreen {
   public FrameworkElement Create(BlastlogPlugin plugin) => new DashboardView(plugin);
 }
 
-/// <summary>What the dashboard read, all at once.</summary>
+/// <summary>What the dashboard has read so far (saved copies first, then the server's answers).</summary>
 sealed class DashboardData {
-  public JObject Me, Stats, NowPlaying, Shelf, TasteHelp, Backlog, Friends, FriendActivity, Imports;
+  public JObject Me, Dashboard, Next, Shelf, TasteHelp, Backlog, Friends, FriendActivity, Imports;
   /// <summary>Each Currently playing game's page read (entry with game, length and version; stores).</summary>
   public Dictionary<string, JObject> Pages = new Dictionary<string, JObject>();
+  public JObject Stats => Dashboard?["stats"] as JObject;
+  public JObject NowPlaying => Dashboard?["nowPlaying"] as JObject;
+  public IEnumerable<string> PlayingIds => Dash.Arr(NowPlaying?["items"]).Select(i => Dash.Str(i, "entryId")).Where(x => x != null);
   public string DisplayName => Dash.Str(Me?["user"], "displayName");
   public int FriendCount => Dash.Arr(Friends?["friends"]).Count;
 }
 
+/// <summary>
+/// The page is a column of slots, one per card. Each draws at once from the saved copy and again when its own read
+/// lands with something new, so nothing waits on the slowest read and the page doesn't jump while you scroll.
+/// </summary>
 sealed class DashboardView : StackPanel {
   static readonly ILogger Log = LogManager.GetLogger();
+  enum Slot { Header, Prompts, Hero, Playing, Library, Shelf, Friends }
+  static readonly string[] Paths = { "me", "friends", "dashboard", "imports", "backlog", "recently-finished", "taste-help", "friend-activity" };
   readonly BlastlogPlugin plugin;
-  int renderId;
+  readonly DashboardData data = new DashboardData();
+  readonly Dictionary<Slot, ContentControl> slots = new Dictionary<Slot, ContentControl>();
+  readonly ContentControl sync = new ContentControl();
+  int renderId; bool built, nextRead, finished;
 
   public DashboardView(BlastlogPlugin plugin) {
     this.plugin = plugin;
     MaxWidth = 1500;
+    foreach (Slot s in Enum.GetValues(typeof(Slot))) slots[s] = new ContentControl { Focusable = false, IsTabStop = false };
     Loaded += (s, e) => Dash.Safe(() => Render(false), "load");
   }
 
-  /// <summary>Reads everything again (after a change, or Refresh) and redraws.</summary>
+  /// <summary>Reads everything again (after a change, or Refresh) and redraws what changed.</summary>
   public void Refresh(bool fresh = false) => Dash.Safe(() => Render(fresh), "refresh");
+
+  string NextPath => $"next-up?mode={DashboardNextUp.Mode}";
 
   async Task Render(bool fresh) {
     var id = ++renderId;
-    if (Children.Count == 0) Children.Add(Dash.Text("Loading your dashboard…", "Blastlog.Muted"));
     if (!plugin.Configured) {
-      Children.Clear(); Header(null);
+      Children.Clear(); built = false;
+      Children.Add(Header(null));
       Children.Add(Dash.Card(Dash.Text("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog to get started. Your dashboard shows up here once it's in.")));
       Children.Add(SyncStrip()); return;
     }
-
-    Task<JObject> Read(string path) => plugin.Mirror(path, fresh).ContinueWith(t => t.Status == TaskStatus.RanToCompletion ? t.Result.Value : null, TaskScheduler.Default);
-    var me = Read("me"); var dashboard = Read("dashboard"); var shelf = Read("recently-finished"); var help = Read("taste-help");
-    var backlog = Read("backlog"); var friends = Read("friends"); var activity = Read("friend-activity"); var imports = Read("imports");
-    var next = Read($"next-up?mode={DashboardNextUp.Mode}");
-    await Task.WhenAll(me, dashboard, shelf, help, backlog, friends, activity, imports, next);
-    var data = new DashboardData { Me = me.Result, Stats = dashboard.Result?["stats"] as JObject, NowPlaying = dashboard.Result?["nowPlaying"] as JObject, Shelf = shelf.Result,
-      TasteHelp = help.Result, Backlog = backlog.Result, Friends = friends.Result, FriendActivity = activity.Result, Imports = imports.Result };
-    var playingIds = Dash.Arr(data.NowPlaying?["items"]).Select(i => Dash.Str(i, "entryId")).Where(x => x != null).ToList();
-    var pages = playingIds.Select(e => Read("entries/" + e)).ToList();
-    await Task.WhenAll(pages);
-    for (var i = 0; i < playingIds.Count; i++) if (pages[i].Result != null) data.Pages[playingIds[i]] = pages[i].Result;
-    if (id != renderId) return;
-
-    Children.Clear();
-    Header(data);
-    if (data.Stats == null && next.Result == null) {
-      Children.Add(Dash.Card(Dash.Text("Couldn't reach Blastlog, and there's no saved copy yet. Check your connection, then press Refresh.")));
-      Children.Add(SyncStrip()); return;
+    if (!built) {
+      Children.Clear();
+      Children.Add(slots[Slot.Header]); Children.Add(slots[Slot.Prompts]); Children.Add(slots[Slot.Hero]);
+      Children.Add(Columns(slots[Slot.Playing], slots[Slot.Library]));
+      Children.Add(slots[Slot.Shelf]); Children.Add(slots[Slot.Friends]); Children.Add(sync);
+      built = true;
     }
-    Prompts(data);
-    Children.Add(new DashboardNextUp(plugin, this, next.Result));
-    Children.Add(Columns(new DashboardPlaying(plugin, this, data, next.Result?["entry"] as JObject), DashboardLibrary.LibraryCard(plugin, data.Stats)));
-    Children.Add(DashboardLibrary.RecentlyFinished(plugin, data));
-    var friendsCard = DashboardLibrary.FriendsLately(plugin, data.FriendActivity);
-    if (friendsCard != null) Children.Add(friendsCard);
-    Children.Add(SyncStrip());
+    // 1. Saved copies, drawn straight away (a change clears them; then what's on screen stays until the answer).
+    foreach (var path in Paths.Concat(new[] { NextPath })) { var saved = plugin.SavedRead(path); if (saved != null) Store(path, saved); }
+    foreach (var e in data.PlayingIds) { var saved = plugin.SavedRead("entries/" + e); if (saved != null) data.Pages[e] = saved; }
+    finished = false;
+    foreach (Slot s in Enum.GetValues(typeof(Slot))) Draw(s);
+    sync.Content = SyncStrip();
+
+    // 2. The server's answers, each redrawing only its own cards.
+    var reads = Paths.Concat(new[] { NextPath }).Select(path => Fetch(path, fresh, id)).ToList();
+    await Task.WhenAll(reads);
+    if (id != renderId) return;
+    finished = true;
+    Draw(Slot.Hero); Draw(Slot.Playing);
+    sync.Content = SyncStrip();
   }
 
+  async Task Fetch(string path, bool fresh, int id) {
+    var value = (await plugin.Mirror(path, fresh)).Value;
+    if (id != renderId) return;
+    if (path.StartsWith("next-up")) nextRead = true;
+    if (value != null && Store(path, value)) foreach (var s in SlotsFor(path)) Draw(s);
+    else if (path.StartsWith("next-up")) Draw(Slot.Hero);
+    if (path == "dashboard") {
+      // One page read per playing game, in parallel; the card fills in as they land.
+      var ids = data.PlayingIds.ToList(); var changed = false;
+      await Task.WhenAll(ids.Select(async e => {
+        var page = (await plugin.Mirror("entries/" + e, fresh)).Value;
+        if (id != renderId || page == null) return;
+        if (!data.Pages.TryGetValue(e, out var old) || !JToken.DeepEquals(old, page)) { data.Pages[e] = page; changed = true; }
+      }));
+      if (changed && id == renderId) Draw(Slot.Playing); // once, so the rows don't flicker through their colours per read
+    }
+  }
+
+  /// <summary>Keeps a read; true when it's new or different from what's shown.</summary>
+  bool Store(string path, JObject value) {
+    JObject Swap(ref JObject field) { var old = field; field = value; return old; }
+    JObject old;
+    switch (path) {
+      case "me": old = Swap(ref data.Me); break;
+      case "friends": old = Swap(ref data.Friends); break;
+      case "dashboard": old = Swap(ref data.Dashboard); break;
+      case "imports": old = Swap(ref data.Imports); break;
+      case "backlog": old = Swap(ref data.Backlog); break;
+      case "recently-finished": old = Swap(ref data.Shelf); break;
+      case "taste-help": old = Swap(ref data.TasteHelp); break;
+      case "friend-activity": old = Swap(ref data.FriendActivity); break;
+      default:
+        if (path != NextPath) return false; // a mode the hero has since switched away from
+        old = Swap(ref data.Next); break;
+    }
+    return old == null || !JToken.DeepEquals(old, value);
+  }
+  static IEnumerable<Slot> SlotsFor(string path) {
+    switch (path) {
+      case "me": case "friends": return new[] { Slot.Header };
+      case "dashboard": return new[] { Slot.Prompts, Slot.Playing, Slot.Library };
+      case "imports": return new[] { Slot.Prompts };
+      case "backlog": return new[] { Slot.Playing };
+      case "recently-finished": case "taste-help": return new[] { Slot.Shelf };
+      case "friend-activity": return new[] { Slot.Friends };
+      default: return new[] { Slot.Hero, Slot.Playing };
+    }
+  }
+
+  void Draw(Slot slot) {
+    try {
+      var host = slots[slot];
+      switch (slot) {
+        case Slot.Header: host.Content = Header(data); break;
+        case Slot.Prompts: host.Content = Prompts(data); break;
+        case Slot.Hero:
+          if (data.Next != null) host.Content = new DashboardNextUp(plugin, this, data.Next);
+          else if (finished && data.Stats == null) host.Content = Dash.Card(Dash.Text("Couldn't reach Blastlog, and there's no saved copy yet. Check your connection, then press Refresh."));
+          else if (nextRead && finished) host.Content = new DashboardNextUp(plugin, this, null);
+          else host.Content = Dash.Card(Dash.Text("Loading your dashboard…", "Blastlog.Muted"));
+          break;
+        case Slot.Playing: host.Content = data.Dashboard == null ? null : new DashboardPlaying(plugin, this, data, data.Next?["entry"] as JObject); break;
+        case Slot.Library: host.Content = data.Dashboard == null ? null : DashboardLibrary.LibraryCard(plugin, data.Stats); break;
+        case Slot.Shelf: host.Content = data.Shelf == null ? null : DashboardLibrary.RecentlyFinished(plugin, data); break;
+        case Slot.Friends: host.Content = DashboardLibrary.FriendsLately(plugin, data.FriendActivity); break;
+      }
+    } catch (Exception e) { Log.Error(e, "Blastlog dashboard: drawing " + slot); }
+  }
   // ---- Header: title with page help; Search, Find a co-op game, + New entry ----
-  void Header(DashboardData data) {
+  FrameworkElement Header(DashboardData data) {
     var grid = new Grid { Margin = new Thickness(0, 0, 0, 22) };
     grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
     var name = data?.DisplayName;
@@ -101,7 +178,7 @@ sealed class DashboardView : StackPanel {
       actions.Children.Add(add);
       Grid.SetColumn(actions, 1); grid.Children.Add(actions);
     }
-    Children.Add(grid);
+    return grid;
   }
 
   /// <summary>The page help: the site's "Show me around this page" steps, in a small panel.</summary>
@@ -126,10 +203,11 @@ sealed class DashboardView : StackPanel {
   }
 
   // ---- Prompts: Rate games I know (fewer than 10 rated), New from Steam ----
-  void Prompts(DashboardData data) {
+  FrameworkElement Prompts(DashboardData data) {
+    var list = new StackPanel();
     var rated = (int?)data.Stats?["ratedDone"] ?? 0; var total = (int?)data.Stats?["total"] ?? 0;
     if (data.Stats != null && rated < 10)
-      Children.Add(Prompt(total > 0 ? "Sharpen your picks in two minutes" : "Get your first picks in two minutes",
+      list.Children.Add(Prompt(total > 0 ? "Sharpen your picks in two minutes" : "Get your first picks in two minutes",
         "Tap the well-known games you've played and give them stars. Ten is enough" + (total > 0 ? "." : ", and you can bring in your whole library later."),
         Kit.Button("Rate games I know", () => Dash.Site(plugin, "/quick-start")), total > 0 ? null : Kit.Button("Import my games", () => Dash.Site(plugin, "/library/import"), "Blastlog.Ghost")));
     // Steam sync's daily check found games to sort (only shows once the server sends the imports list).
@@ -137,9 +215,10 @@ sealed class DashboardView : StackPanel {
     if (steam.Count > 0) {
       var count = steam.Sum(b => (int?)b["counts"]?["total"] ?? 0);
       var last = (string)steam[steam.Count - 1]["id"];
-      Children.Add(Prompt("New from Steam", $"{count} game{(count == 1 ? "" : "s")} Steam has that Blastlog hasn't seen yet. Sort them into your library or wishlist.",
+      list.Children.Add(Prompt("New from Steam", $"{count} game{(count == 1 ? "" : "s")} Steam has that Blastlog hasn't seen yet. Sort them into your library or wishlist.",
         Kit.Button("Sort them", () => Dash.Site(plugin, "/library/import/" + last)), null));
     }
+    return list;
   }
   static Border Prompt(string head, string body, Button primary, Button second) {
     var grid = new Grid(); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -161,8 +240,9 @@ sealed class DashboardView : StackPanel {
       Grid.SetColumn(right, wide ? 1 : 0); Grid.SetRow(right, wide ? 0 : 1); Grid.SetColumnSpan(right, wide ? 1 : 2);
       left.Margin = new Thickness(0, 0, wide ? 18 : 0, 0);
     }
-    Lay(true);
-    grid.SizeChanged += (s, e) => { try { Lay(e.NewSize.Width >= 1000); } catch (Exception ex) { Log.Error(ex, "Blastlog dashboard layout"); } };
+    var wide = true; Lay(true);
+    // Only when it crosses the line: re-laying on every size change makes WPF measure the page again mid-scroll.
+    grid.SizeChanged += (s, e) => { try { var w = e.NewSize.Width >= 1000; if (w != wide) { wide = w; Lay(w); } } catch (Exception ex) { Log.Error(ex, "Blastlog dashboard layout"); } };
     return grid;
   }
 

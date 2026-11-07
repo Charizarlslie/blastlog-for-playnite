@@ -65,16 +65,22 @@ sealed class DashboardNextUp : Border {
     // Art, scrim, glow.
     if (art != null) {
       // A rectangle filled with the art takes the card's size instead of setting it (an Image would stretch the card to the cover's shape).
-      var blurred = new Rectangle { Opacity = 0.9, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1.25, 1.25), Effect = new BlurEffect { Radius = 48 } };
-      Dash.LoadFill(plugin, art, blurred, 480);
+      // The blur comes from decoding the cover tiny and letting it stretch smoothly: a live BlurEffect this size is redrawn on
+      // every scroll step and made the page crawl.
+      var blurred = new Rectangle { Opacity = 0.9, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1.25, 1.25) };
+      RenderOptions.SetBitmapScalingMode(blurred, BitmapScalingMode.Linear);
+      Dash.LoadFill(plugin, art, blurred, 24);
       layers.Children.Add(blurred);
     }
     var scrim = new Rectangle { OpacityMask = new LinearGradientBrush(new GradientStopCollection {
       new GradientStop(Color.FromArgb(235, 0, 0, 0), 0), new GradientStop(Color.FromArgb(200, 0, 0, 0), 0.55), new GradientStop(Color.FromArgb(120, 0, 0, 0), 1) }, 0) };
     scrim.SetResourceReference(Shape.FillProperty, "Blastlog.Bg");
     layers.Children.Add(scrim);
-    var glow = new Ellipse { Width = 720, Height = 560, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(-260, -240, 0, 0),
-      Opacity = ThemeBridge.CurrentMode == Blastlog.Sync.Core.Design.Mode.Light ? 0.10 : 0.24, Effect = new BlurEffect { Radius = 140 }, IsHitTestVisible = false };
+    // The glow: the game colour fading out from the top left (design.md 2.2: dark 24% fading by 66% of the radius, light 10% by 42%).
+    var light = ThemeBridge.CurrentMode == Blastlog.Sync.Core.Design.Mode.Light;
+    var glow = new Rectangle { Width = 900, Height = 700, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(-300, -280, 0, 0),
+      IsHitTestVisible = false, OpacityMask = new RadialGradientBrush(new GradientStopCollection {
+        new GradientStop(Color.FromArgb((byte)(light ? 26 : 61), 0, 0, 0), 0), new GradientStop(Color.FromArgb(0, 0, 0, 0), light ? 0.42 : 0.66) }) };
     glow.SetResourceReference(Shape.FillProperty, "Blastlog.Game");
     layers.Children.Add(glow);
 
@@ -260,6 +266,7 @@ sealed class DashboardNextUp : Border {
   FrameworkElement CoverBox(JObject entry, Blastlog.Sync.Core.Game game) {
     var cover = Kit.Cover(plugin, game, 260, ArtworkContext.Cover, 18);
     cover.Effect = new DropShadowEffect { BlurRadius = 30, ShadowDepth = 8, Opacity = 0.45, Color = Colors.Black };
+    cover.CacheMode = new BitmapCache(); // the shadow is drawn once, not on every scroll step
     System.Windows.Automation.AutomationProperties.SetName(cover, "Cover of " + game?.Title);
     var pill = Kit.StatusPill((string)entry["ownership"] == "wishlist" ? "wishlist" : (string)entry["status"]);
     pill.HorizontalAlignment = HorizontalAlignment.Left; pill.VerticalAlignment = VerticalAlignment.Bottom; pill.Margin = new Thickness(12);
