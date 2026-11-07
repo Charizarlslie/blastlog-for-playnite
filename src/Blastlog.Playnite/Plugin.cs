@@ -243,6 +243,15 @@ public sealed class BlastlogPlugin : GenericPlugin {
   /// telling the player in words what went wrong. Clears the cached reads so the screens show the change.
   /// </summary>
   public Task<JObject> Write(string path, object body) => Write(path, body, HttpMethod.Post);
+  /// <summary>
+  /// A background write (e.g. Discover's "seen" marks): no dialog, the read cache kept, failures logged and answered
+  /// with null. Use it only where the player doesn't need to know it failed.
+  /// </summary>
+  public async Task<JObject> WriteQuietly(string path, object body, HttpMethod method = null) {
+    if (!Configured) return null;
+    try { var r = await Task.Run(() => Client().SendAsync(method ?? HttpMethod.Post, path, body)); return r.Value ?? new JObject(); }
+    catch (Exception e) { Log.Warn("Blastlog quiet write failed (" + path + "): " + (e is BlastlogException b ? b.Error : e.Message)); return null; }
+  }
   /// <summary>The same with another method (PATCH, DELETE) for the mirror writes that need one.</summary>
   public async Task<JObject> Write(string path, object body, HttpMethod method) {
     if (!Configured) { PlayniteApi.Dialogs.ShowMessage("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog first.", "Blastlog"); return null; }
