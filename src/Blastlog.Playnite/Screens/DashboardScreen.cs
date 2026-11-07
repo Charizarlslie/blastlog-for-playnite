@@ -177,6 +177,19 @@ sealed class DashboardView : StackPanel {
       add.ToolTip = "Search for a game and add it to your Blastlog library";
       actions.Children.Add(add);
       Grid.SetColumn(actions, 1); grid.Children.Add(actions);
+      // Narrow pages put the actions on their own line under the title instead of squeezing the title into a column
+      // (the site's header wraps the same way).
+      grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+      grid.SizeChanged += (s, e) => {
+        try {
+          actions.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); left.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+          var stack = e.NewSize.Width < actions.DesiredSize.Width + Math.Max(520, left.DesiredSize.Width) + 24;
+          Grid.SetColumn(actions, stack ? 0 : 1); Grid.SetRow(actions, stack ? 1 : 0);
+          Grid.SetColumnSpan(left, stack ? 2 : 1);
+          actions.HorizontalAlignment = stack ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+          actions.Margin = new Thickness(0, stack ? 16 : 0, 0, 0);
+        } catch (Exception ex) { Log.Error(ex, "Blastlog dashboard: header layout"); }
+      };
     }
     return grid;
   }
