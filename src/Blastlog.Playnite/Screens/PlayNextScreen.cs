@@ -35,7 +35,7 @@ sealed class PlayNextView : UserControl {
   /// <summary>The length choice lasts while Playnite runs (the site keeps it for the browser session).</summary>
   static string choice = "any";
   readonly BlastlogPlugin plugin; readonly StackPanel body = new StackPanel();
-  JObject data, help; int limit = Batch; bool autoLoad = true, loaded;
+  JObject data, help, subs; int limit = Batch; bool autoLoad = true, loaded;
   string doneText; Func<Task> doneUndo; Button more; FrameworkElement comingShelf; ScrollViewer viewer;
 
   public PlayNextView(BlastlogPlugin plugin) {
@@ -54,6 +54,7 @@ sealed class PlayNextView : UserControl {
       if (!plugin.Configured) { body.Children.Clear(); body.Children.Add(Kit.Card(PnKit.Text("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog to see your picks."))); return; }
       data = (await plugin.Mirror("play-next", fresh)).Value;
       help = (await plugin.Mirror("taste-help", fresh)).Value;
+      subs = (await plugin.Mirror("subscriptions", fresh)).Value;
       Build();
       if (help.B("refreshing")) RefreshHelpSoon(0);
     } catch (Exception e) { Log.Error(e, "Blastlog Play next"); }
@@ -71,10 +72,11 @@ sealed class PlayNextView : UserControl {
 
   // ---- Filters, remembered like the site (owned-only per player on this device) ----
   string SettingsFile => Path.Combine(plugin.GetPluginUserDataPath(), "play-next.json");
-  bool OwnedOnly {
-    get { try { return File.Exists(SettingsFile) && JObject.Parse(File.ReadAllText(SettingsFile)).B("ownedOnly"); } catch (Exception) { return false; } }
-    set { try { File.WriteAllText(SettingsFile, new JObject { ["ownedOnly"] = value }.ToString(Formatting.None)); } catch (Exception) { } }
-  }
+  JObject Saved() { try { return File.Exists(SettingsFile) ? JObject.Parse(File.ReadAllText(SettingsFile)) : new JObject(); } catch (Exception) { return new JObject(); } }
+  void Save(string key, bool value) { try { var o = Saved(); o[key] = value; File.WriteAllText(SettingsFile, o.ToString(Formatting.None)); } catch (Exception) { } }
+  bool OwnedOnly { get => Saved().B("ownedOnly"); set => Save("ownedOnly", value); }
+  /// <summary>"On my subscriptions" (Blastlog docs/SUBSCRIPTIONS.md): only games the player's services include.</summary>
+  bool ServicesOnly { get => Saved().B("servicesOnly"); set => Save("servicesOnly", value); }
   static bool Owned(JObject item) => item.S("ownership") != "wishlist";
   static bool Fits(JObject item, string choice, double quickMax, double longMin, string level) {
     if (choice == "any") return true;
@@ -91,10 +93,11 @@ sealed class PlayNextView : UserControl {
     body.Children.Clear(); more = null; comingShelf = null;
     if (data == null) { body.Children.Add(PnKit.Text("Recommendations are unavailable right now.", "Blastlog.Body", "Blastlog.Danger")); return; }
     var ready = data.B("ready"); var ownedOnly = OwnedOnly;
+    var hasServices = subs.Objects("services").Any(s => s.B("on")); var servicesOnly = ServicesOnly && hasServices;
     var thresholds = data["lengthChoice"] as JObject;
     var quickMax = thresholds.D("quickMaxHours") ?? 12; var longMin = thresholds.D("longMinHours") ?? 40; var level = thresholds.S("level") ?? "main_plus_extra";
     var items = data.Objects("items");
-    var pool = ownedOnly ? items.Where(Owned).ToList() : items;
+    var pool = (ownedOnly ? items.Where(Owned) : items).Where(i => !servicesOnly || PlayNextSubscriptions.OnMine(subs, i.S("gameId"))).ToList();
     var fitting = pool.Where(i => Fits(i, choice, quickMax, longMin, level)).ToList();
     // A game you're already playing sits in its own strip, never at #1 (design.md 8).
     var playing = fitting.Where(i => i.S("status") == "playing").ToList();
@@ -126,18 +129,19 @@ sealed class PlayNextView : UserControl {
       Tuple.Create("all", "Wishlist too", (string)null),
       Tuple.Create("owned", "Only what I own", wishlisted > 0 ? $"Leaves out {wishlisted} wishlist game{(wishlisted == 1 ? "" : "s")}" : null) },
       ownedOnly ? "owned" : "all", c => { OwnedOnly = c == "owned"; limit = Batch; Build(); }));
+    if (hasServices) filters.Children.Add(PnKit.Segmented("Subscriptions", new[] { Tuple.Create("on", "On my subscriptions", (string)null) },
+      servicesOnly ? "on" : "", c => { ServicesOnly = !servicesOnly; limit = Batch; Build(); }));
     body.Children.Add(filters);
 
     // Coming up is after the picks, a long scroll away; one line says it's there and jumps to it.
     if (comingUp.Count > 0) {
-      var jump = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+      // One line of text, so the link and the rest share a baseline.
       var first = comingUp[0];
-      var go = PnKit.Bare(PnKit.Text($"Coming up: {(comingUp.Count == 1 ? "1 game" : comingUp.Count + " games")} not out yet ↓", "Blastlog.GameWords").Also(t => t.FontSize = 15),
-        () => { autoLoad = false; comingShelf?.BringIntoView(); comingShelf?.Focus(); }, "Jump to Coming up");
-      go.MinHeight = 44; go.HorizontalAlignment = HorizontalAlignment.Left; go.Margin = new Thickness(0, 0, 8, 0);
-      jump.Children.Add(go);
+      var go = new System.Windows.Documents.Hyperlink(PnKit.Run($"Coming up: {(comingUp.Count == 1 ? "1 game" : comingUp.Count + " games")} not out yet ↓", "Blastlog.GameText", FontWeights.SemiBold)) { TextDecorations = null };
+      go.Click += (s, e) => { try { autoLoad = false; comingShelf?.BringIntoView(); comingShelf?.Focus(); } catch (Exception ex) { Log.Error(ex, "Blastlog Coming up"); } };
       var next = first.S("releaseDate") != null ? ", " + PnKit.ReleaseLabel(first.S("releaseDate")).Replace("Out", "out") : "";
-      jump.Children.Add(PnKit.Text($"Next is {first.S("title")}{next}.", "Blastlog.Muted").Also(t => t.VerticalAlignment = VerticalAlignment.Center));
+      var jump = PnKit.Line("Blastlog.Muted", go, PnKit.Run($"  Next is {first.S("title")}{next}."));
+      jump.MinHeight = 44; jump.Padding = new Thickness(0, 12, 0, 12); jump.Margin = new Thickness(0, 0, 0, 2);
       body.Children.Add(jump);
     } else if (comingHidden > 0) body.Children.Add(PnKit.Text($"{(comingHidden == 1 ? "1 wishlist game is" : comingHidden + " wishlist games are")} coming up; “Wishlist too” shows {(comingHidden == 1 ? "it" : "them")}.", "Blastlog.Muted"));
 
@@ -151,10 +155,11 @@ sealed class PlayNextView : UserControl {
     if (choice != "any" && shown.Count == 0)
       body.Children.Add(Note((choice == "quick" ? $"Nothing here takes {quickMax:0.#} hours or less" : $"Nothing here takes {longMin:0.#} hours or more") + $" ({PnKit.LevelLabel(level)})."
         + (unknown > 0 ? $" {(unknown == 1 ? "1 game has" : unknown + " games have")} no length yet, so {(unknown == 1 ? "it can’t" : "they can’t")} show here." : "")));
-    if (choice == "any" && ownedOnly && shown.Count == 0) body.Children.Add(Note("Nothing you own is waiting to be played. Switch to “Wishlist too” to see the rest."));
+    if (choice == "any" && servicesOnly && shown.Count == 0) body.Children.Add(Note("Nothing here is on your subscriptions right now."));
+    if (choice == "any" && ownedOnly && !servicesOnly && shown.Count == 0) body.Children.Add(Note("Nothing you own is waiting to be played. Switch to “Wishlist too” to see the rest."));
 
     if (playing.Count > 0) {
-      var strips = new CardGrid { MinColumn = 420, Gap = 12, Margin = new Thickness(0, 4, 0, 18) };
+      var strips = new CardGrid { MinColumn = 420, Gap = 12, Fit = true, Margin = new Thickness(0, 4, 0, 18) };
       foreach (var item in playing) strips.Children.Add(PlayingStrip(item));
       body.Children.Add(strips);
     }
@@ -221,7 +226,7 @@ sealed class PlayNextView : UserControl {
     if (length != null) { var meta = PnKit.Text(length + " to beat", "Blastlog.Small"); meta.VerticalAlignment = VerticalAlignment.Center; meta.Margin = new Thickness(10, 0, 14, 0); DockPanel.SetDock(meta, Dock.Right); row.Children.Add(meta); }
     var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
     words.Children.Add(PnKit.Text("You’re playing", "Blastlog.Small", "Blastlog.GameText", FontWeights.Bold));
-    words.Children.Add(PnKit.Text(item.S("title"), "Blastlog.Body", null, FontWeights.ExtraBold).Also(t => { t.FontSize = 17; t.TextWrapping = TextWrapping.NoWrap; t.TextTrimming = TextTrimming.CharacterEllipsis; }));
+    words.Children.Add(PnKit.Text(item.S("title"), "Blastlog.Body", null, FontWeights.ExtraBold).Also(t => { t.FontSize = 17; t.TextWrapping = TextWrapping.NoWrap; t.TextTrimming = TextTrimming.CharacterEllipsis; t.ToolTip = t.Text; }));
     row.Children.Add(words);
     var strip = PnKit.GameCard(plugin, item.S("gameId"), item.S("coverUrl"), row);
     strip.Padding = new Thickness(12, 12, 16, 12);
@@ -249,6 +254,7 @@ sealed class PlayNextView : UserControl {
       facts.ToolTip = "Fingerprinted before it came out, from previews and store pages. It counts a little less until it's refreshed after release.";
     }
     facts.Margin = new Thickness(0, 2, 0, 6); text.Children.Add(facts);
+    var chip = PlayNextSubscriptions.Chip(subs, item.S("gameId")); if (chip != null) text.Children.Add(chip);
     var mustHaves = item.Strings("mustHaves"); var dealbreakers = item.Strings("dealbreakers");
     if (mustHaves.Count > 0) text.Children.Add(Para(PnKit.Text("Instant yes: " + string.Join(", ", mustHaves), "Blastlog.Body", "Blastlog.Ok", FontWeights.Bold)));
     if (dealbreakers.Count > 0) text.Children.Add(Para(PnKit.Line("Blastlog.Body", PnKit.Run("Never: ", "Blastlog.Danger", FontWeights.Bold), PnKit.Run(string.Join(", ", dealbreakers), "Blastlog.Danger"))));

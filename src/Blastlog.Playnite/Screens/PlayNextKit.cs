@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
@@ -99,14 +100,37 @@ static class PnKit {
     if (width != null) { host.Width = width.Value; host.Height = width.Value * 4 / 3; }
     else host.SizeChanged += (s, e) => { if (e.WidthChanged) host.Height = host.ActualWidth * 4 / 3; };
     var size = Math.Min(44, (width ?? 160) * 0.3);
-    host.Child = Icons.Make(Icons.Gamepad, size, (Brush)Application.Current.TryFindResource("Blastlog.Brand")).Also(i => { i.HorizontalAlignment = HorizontalAlignment.Center; i.VerticalAlignment = VerticalAlignment.Center; });
+    var icon = Icons.Make(Icons.Gamepad, size, new SolidColorBrush()); icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
+    ((Shape)((Canvas)((Viewbox)icon).Child).Children[0]).SetResourceReference(Shape.StrokeProperty, "Blastlog.GameText");
+    host.Child = icon;
     LoadArt(plugin, Artwork.Url(new BlastlogGame { Id = gameId, CoverUrl = coverUrl }, width != null && width < 120 ? ArtworkContext.Thumbnail : ArtworkContext.Cover), host, width);
     return host;
   }
+
+  // A page asks for a hundred or so pictures at once (each card's cover, and the same cover again for its colour).
+  // .NET allows only two connections per host, so all at once most of them hit the download timeout and the cards stay
+  // blank and green. Each picture is fetched once, at most four at a time, top of the page first; a failed one is tried
+  // again the next time it's asked for.
+  static readonly SemaphoreSlim Downloads = new SemaphoreSlim(4, 4);
+  static readonly Dictionary<string, Task<string>> Fetches = new Dictionary<string, Task<string>>();
+  public static Task<string> Picture(BlastlogPlugin plugin, string url) {
+    if (url == null || plugin.Theme == null) return Task.FromResult<string>(null);
+    lock (Fetches) {
+      if (Fetches.TryGetValue(url, out var known) && !(known.IsCompleted && known.Result == null)) return known;
+      return Fetches[url] = Fetch(plugin, url);
+    }
+  }
+  static async Task<string> Fetch(BlastlogPlugin plugin, string url) {
+    await Downloads.WaitAsync().ConfigureAwait(false);
+    try { return await plugin.Theme.CachedFile(url).ConfigureAwait(false); }
+    catch (Exception e) { Log.Warn("Blastlog: picture didn't load: " + e.Message); return null; }
+    finally { Downloads.Release(); }
+  }
+
   static async void LoadArt(BlastlogPlugin plugin, string url, Border host, double? width) {
     if (url == null || plugin.Theme == null) return;
     try {
-      var file = await plugin.Theme.CachedFile(url);
+      var file = await Picture(plugin, url);
       if (file == null) return;
       var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad; image.UriSource = new Uri(file);
       image.DecodePixelWidth = (int)Math.Min(800, (width ?? 300) * 2); image.EndInit(); image.Freeze();
@@ -119,8 +143,16 @@ static class PnKit {
   public static Border GameCard(BlastlogPlugin plugin, string gameId, string coverUrl, UIElement child, double radius = 18) {
     var card = new Border { CornerRadius = new CornerRadius(radius), BorderThickness = new Thickness(1), Child = child, SnapsToDevicePixels = true };
     card.Res(Border.BackgroundProperty, "Blastlog.GameTint").Res(Border.BorderBrushProperty, "Blastlog.GameEdge");
-    Kit.GameScope(card, plugin, new BlastlogGame { Id = gameId, CoverUrl = coverUrl });
+    Wear(card, plugin, new BlastlogGame { Id = gameId, CoverUrl = coverUrl });
     return card;
+  }
+  /// <summary>The card's own game colour once its cover is on disk (through the shared queue above), Blastlog green meanwhile.</summary>
+  static async void Wear(FrameworkElement card, BlastlogPlugin plugin, BlastlogGame game) {
+    Kit.GameScope(card, GameColour.BrandGreen);
+    try {
+      await Picture(plugin, Artwork.Url(game, ArtworkContext.Cover));
+      Kit.GameScope(card, plugin, game);
+    } catch (Exception e) { Log.Warn("Blastlog: card colour: " + e.Message); }
   }
 
   /// <summary>A small pill over cover art: the page colour under it, mostly opaque, so it reads on any cover.</summary>
@@ -260,6 +292,8 @@ public sealed class CardGrid : Panel {
   public bool Scaled { get; set; }
   public double Gap { get; set; } = 16;
   public bool Masonry { get; set; }
+  /// <summary>Fewer cards than columns stretch to fill the row (CSS auto-fit), like the site's You're playing strips.</summary>
+  public bool Fit { get; set; }
   public static readonly DependencyProperty WideProperty = DependencyProperty.RegisterAttached("Wide", typeof(bool), typeof(CardGrid),
     new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsParentMeasure));
   public static void SetWide(UIElement element, bool value) => element.SetValue(WideProperty, value);
@@ -283,6 +317,7 @@ public sealed class CardGrid : Panel {
     laidWidth = w;
     var min = Scaled ? Math.Max(170, Math.Min(280, w * 0.125)) : MinColumn;
     var cols = Math.Max(1, (int)Math.Floor((w + Gap) / (min + Gap)));
+    if (Fit) cols = Math.Max(1, Math.Min(cols, InternalChildren.Count));
     Columns = cols;
     var cw = (w - Gap * (cols - 1)) / cols;
     var span = w < 780 ? cols : Math.Min(cols, cols >= 7 ? 3 : 2);

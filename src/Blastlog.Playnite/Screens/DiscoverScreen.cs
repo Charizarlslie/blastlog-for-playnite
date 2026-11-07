@@ -30,7 +30,7 @@ sealed class DiscoverView : UserControl {
   const int First = 24, More = 24;
   readonly BlastlogPlugin plugin; readonly StackPanel body = new StackPanel();
   readonly HashSet<string> seen = new HashSet<string>();
-  JObject page; int shown = First; bool loaded;
+  JObject page, subs; int shown = First; bool loaded;
   DiscoverAnswered notice; string noticeText;
 
   public DiscoverView(BlastlogPlugin plugin) {
@@ -43,6 +43,7 @@ sealed class DiscoverView : UserControl {
     try {
       if (!plugin.Configured) { body.Children.Clear(); body.Children.Add(Kit.Card(PnKit.Text("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog to see Discover."))); return; }
       page = (await plugin.Mirror("discover", fresh)).Value;
+      subs = (await plugin.Mirror("subscriptions", fresh)).Value;
       Build();
     } catch (Exception e) { Log.Error(e, "Blastlog Discover"); }
   }
@@ -130,6 +131,7 @@ sealed class DiscoverView : UserControl {
     var predicted = card.D("predictedRating");
     var facts = string.Join(" · ", new[] { card.S("year"), predicted != null ? $"predicted {predicted:0.0}★" : null, early ? "early read" : null }.Where(x => x != null));
     if (facts.Length > 0) text.Children.Add(Para(PnKit.Text(facts, "Blastlog.Small")));
+    var chip = PlayNextSubscriptions.Chip(subs, gameId); if (chip != null) text.Children.Add(chip);
     if (!string.IsNullOrEmpty(tag.Item2)) text.Children.Add(Para(PnKit.Text(tag.Item2, "Blastlog.Body")));
     var reasons = card.Strings("reasons");
     if (reasons.Count > 0) text.Children.Add(Para(PnKit.Line("Blastlog.Body", PnKit.Run("Because you like ", "Blastlog.TextMuted"), PnKit.Run(string.Join(", ", reasons)))));
