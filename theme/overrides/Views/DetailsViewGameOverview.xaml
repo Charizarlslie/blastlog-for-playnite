@@ -83,6 +83,14 @@
                             <!-- Pinned to the visible width: the art fills by height, and would otherwise widen the whole page. -->
                             <Grid Height="640" VerticalAlignment="Top" HorizontalAlignment="Left" ClipToBounds="True" IsHitTestVisible="False"
                                   Width="{Binding ViewportWidth, ElementName=PART_ScrollViewHost}">
+                                <!-- The whole header (art, scrim, glow) fades out at its bottom, so it melts into the library behind it in both themes. -->
+                                <Grid.OpacityMask>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#FF000000" Offset="0" />
+                                        <GradientStop Color="#FF000000" Offset="0.55" />
+                                        <GradientStop Color="#00000000" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Grid.OpacityMask>
                                 <FadeImage x:Name="PART_ImageBackground" Stretch="UniformToFill"
                                            HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.6">
                                     <FadeImage.Effect>
