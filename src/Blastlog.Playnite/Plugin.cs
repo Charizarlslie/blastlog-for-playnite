@@ -89,12 +89,15 @@ public sealed class BlastlogPlugin : GenericPlugin {
     yield return new GameMenuItem { MenuSection = "Blastlog", Description = "Unpair from Blastlog", Action = a => _ = Unpair(game) };
   }
   public override IEnumerable<SidebarItem> GetSidebarItems() {
-    yield return new SidebarItem { Title = "Blastlog", Type = SiderbarItemType.View, Icon = new TextBlock { Text = "B", FontSize = 20, FontWeight = System.Windows.FontWeights.Bold }, Opened = () => new DashboardView(this) };
+    // Every Blastlog screen (Ui/Kit.cs IBlastlogScreen), in the site's menu order.
+    foreach (var screen in Ui.Screens.All()) yield return Ui.Screens.SidebarItem(screen, this);
   }
   public override Control GetGameViewControl(GetGameViewControlArgs args) => args.Name == "GamePanel" || args.Name == "Fingerprint" || args.Name == "Status" ? new GameElement(this, args.Name) : null;
 
   // ---- Events: auto-sync (after the first real sync only) ----
+  public ThemeBridge Theme { get; private set; }
   public override void OnApplicationStarted(OnApplicationStartedEventArgs args) {
+    Theme = new ThemeBridge(this); Theme.Install();
     timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
     timer.Tick += (s, e) => { if (DateTime.Now >= nextAuto) _ = AutoSync(); };
     timer.Start();
@@ -105,6 +108,7 @@ public sealed class BlastlogPlugin : GenericPlugin {
   public override void OnApplicationStopped(OnApplicationStoppedEventArgs args) { timer?.Stop(); SaveStore(); }
   public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args) => Debounced();
   public override void OnGameStopped(OnGameStoppedEventArgs args) => Debounced();
+  public override void OnGameSelected(OnGameSelectedEventArgs args) => Theme?.Select(args.NewValue?.Count == 1 ? args.NewValue[0] : null);
   void ScheduleAuto(TimeSpan after) => nextAuto = DateTime.Now + after;
   /// <summary>Edits and game sessions sync ten seconds after the last one, not once each.</summary>
   void Debounced() {
@@ -233,6 +237,16 @@ public sealed class BlastlogPlugin : GenericPlugin {
       SaveCache();
     } catch (Exception e) { Log.Warn("Blastlog read failed (" + path + "): " + (e is BlastlogException b ? b.Error : e.Message)); }
     return new Response<JObject> { Value = hit?.Value };
+  }
+  /// <summary>
+  /// A write through the token API (POST /sync/v1/&lt;path&gt;), for screen actions. Returns the answer, or null after
+  /// telling the player in words what went wrong. Clears the cached reads so the screens show the change.
+  /// </summary>
+  public async Task<JObject> Write(string path, object body) {
+    if (!Configured) { PlayniteApi.Dialogs.ShowMessage("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog first.", "Blastlog"); return null; }
+    try { var r = await Task.Run(() => Client().PostAsync(path, body)); cache.Clear(); SaveCache(); return r.Value ?? new JObject(); }
+    catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); return null; }
+    catch (Exception e) { PlayniteApi.Dialogs.ShowErrorMessage("Couldn't reach Blastlog: " + e.Message, "Blastlog"); return null; }
   }
   void SaveCache() { try { File.WriteAllText(cachePath, JsonConvert.SerializeObject(cache)); } catch (Exception) { } }
   public string CacheLine() { var at = cache.Values.Select(c => (DateTimeOffset?)c.At).Max(); return at == null ? "" : $"Last updated {at.Value.LocalDateTime:g}."; }

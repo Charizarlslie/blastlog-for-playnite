@@ -38,21 +38,21 @@ public static class GameColour {
   public const string BrandGreen = "#00e4a8";
   const string White = "#ffffff";
 
-  static (string Game, string OnGame) FillAndInk(string seed, Mode mode) {
+  static void FillAndInk(string seed, Mode mode, out string game, out string onGame) {
     var dark = Tokens.For(mode)["ink"];
-    var pick = new[] { dark, White }.Select(ink => (ink, nudged: Colour.NudgeToContrast(seed, new[] { ink }, 4.5).Value))
+    var pick = new[] { dark, White }.Select(ink => new { ink, nudged = Colour.NudgeToContrast(seed, new[] { ink }, 4.5) })
       .OrderBy(x => x.nudged.Move).ThenByDescending(x => Colour.Contrast(seed, x.ink)).First();
-    return (pick.nudged.Colour, pick.ink);
+    game = pick.nudged.Colour; onGame = pick.ink;
   }
 
   public static GameTokens For(string seed, Mode mode) {
     var t = Tokens.For(mode);
     var colour = (seed != null && Colour.ParseHex(seed) != null ? seed : BrandGreen).ToLowerInvariant();
-    var (game, onGame) = FillAndInk(colour, mode);
-    var gameText = Colour.NudgeToContrast(colour, new[] { t["surface"], t["surface-2"] }, 5).Value.Colour;
+    FillAndInk(colour, mode, out var game, out var onGame);
+    var gameText = Colour.NudgeToContrast(colour, new[] { t["surface"], t["surface-2"] }, 5).Colour;
     double tintL = mode == Mode.Dark ? .25 : .955, tint2L = mode == Mode.Dark ? .30 : .915, tintChroma = mode == Mode.Dark ? .06 : .04;
-    var edge = Colour.NudgeToContrast(Colour.WithLightness(colour, mode == Mode.Dark ? .5 : .66, .1), new[] { t["bg"], t["surface"] }, 3).Value.Colour;
-    var bar = Colour.NudgeToContrast(Colour.WithLightness(colour, mode == Mode.Dark ? .34 : .88, .08), new[] { t["text"] }, 7).Value.Colour;
+    var edge = Colour.NudgeToContrast(Colour.WithLightness(colour, mode == Mode.Dark ? .5 : .66, .1), new[] { t["bg"], t["surface"] }, 3).Colour;
+    var bar = Colour.NudgeToContrast(Colour.WithLightness(colour, mode == Mode.Dark ? .34 : .88, .08), new[] { t["text"] }, 7).Colour;
     var alpha = mode == Mode.Dark ? .23 : .1;
     return new GameTokens {
       Game = game, OnGame = onGame, GameText = gameText,

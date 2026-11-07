@@ -1,0 +1,130 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      Blastlog's components for the plugin's screens (Blastlog design.md 4 and 7). Every colour is a DynamicResource
+      Blastlog.* token: the Blastlog theme defines them and ThemeBridge fills them in under any other theme, so screens look
+      the same everywhere. Game colours (Blastlog.Game, .OnGame, .GameText, .GameTint, .GameTint2, .GameEdge, .GameBar)
+      follow the page's game, or a card's own game inside a GameScope. Text is never under 14px; targets are 44px.
+    -->
+
+    <!-- Type (design.md 4): 14 small, 15 secondary, 16 body, 18 card title, 22 section, 32-36 page title, 40-48 hero. -->
+    <Style x:Key="Blastlog.Body" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource Blastlog.Font}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="Blastlog.Muted" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Body}">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.TextMuted}" />
+    </Style>
+    <Style x:Key="Blastlog.Small" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Muted}">
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style x:Key="Blastlog.CardTitle" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Body}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style x:Key="Blastlog.Section" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Body}">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+    <Style x:Key="Blastlog.PageTitle" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Body}">
+        <Setter Property="FontSize" Value="34" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+    </Style>
+    <Style x:Key="Blastlog.HeroTitle" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Body}">
+        <Setter Property="FontSize" Value="44" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+    </Style>
+    <!-- The caps label (only FINGERPRINT uses caps, design.md 4). -->
+    <Style x:Key="Blastlog.Label" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Body}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.GameText}" />
+    </Style>
+    <Style x:Key="Blastlog.GameWords" TargetType="TextBlock" BasedOn="{StaticResource Blastlog.Body}">
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.GameText}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Cards (design.md 5 and 7): flat on surface, radius 20-24, or game-tinted with the game's edge. -->
+    <Style x:Key="Blastlog.Card" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource Blastlog.Surface}" />
+        <Setter Property="CornerRadius" Value="22" />
+        <Setter Property="Padding" Value="22" />
+        <Setter Property="Margin" Value="0,0,0,18" />
+    </Style>
+    <Style x:Key="Blastlog.GameCard" TargetType="Border" BasedOn="{StaticResource Blastlog.Card}">
+        <Setter Property="Background" Value="{DynamicResource Blastlog.GameTint}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.GameEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style x:Key="Blastlog.Tile" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource Blastlog.Surface2}" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="14" />
+    </Style>
+
+    <!-- Buttons (design.md 7): primary (game / on-game), ghost (edge outline), text (muted). 44-52px, radius 12. -->
+    <!-- Blastlog's focus ring (design.md 7), for keyboard navigation only. -->
+    <Style x:Key="Blastlog.FocusRing"><Setter Property="Control.Template"><Setter.Value><ControlTemplate><Border CornerRadius="15" BorderThickness="3" Margin="-4" BorderBrush="{DynamicResource Blastlog.Focus}" /></ControlTemplate></Setter.Value></Setter></Style>
+    <ControlTemplate x:Key="Blastlog.ButtonTemplate" TargetType="Button">
+        <Grid>
+            <Border x:Name="Fill" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12" />
+            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fill" Property="Opacity" Value="0.88" /></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Fill" Property="Opacity" Value="0.75" /></Trigger>
+            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5" /></Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+    <Style x:Key="Blastlog.Primary" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource Blastlog.ButtonTemplate}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Blastlog.FocusRing}" />
+        <Setter Property="Background" Value="{DynamicResource Blastlog.Game}" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.OnGame}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontFamily" Value="{DynamicResource Blastlog.Font}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="MinHeight" Value="46" />
+        <Setter Property="MinWidth" Value="44" />
+        <Setter Property="Padding" Value="20,0" />
+        <Setter Property="Margin" Value="0,0,10,0" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style x:Key="Blastlog.Ghost" TargetType="Button" BasedOn="{StaticResource Blastlog.Primary}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.Text}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Edge}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style x:Key="Blastlog.TextButton" TargetType="Button" BasedOn="{StaticResource Blastlog.Primary}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.TextMuted}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="10,0" />
+    </Style>
+    <Style x:Key="Blastlog.DangerButton" TargetType="Button" BasedOn="{StaticResource Blastlog.Ghost}">
+        <Setter Property="Foreground" Value="{DynamicResource Blastlog.Danger}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Danger}" />
+    </Style>
+
+    <!-- Chips (design.md 7): pills; trait chips in the game's tint and edge. -->
+    <Style x:Key="Blastlog.Chip" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource Blastlog.GameTint2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.GameEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+    </Style>
+    <Style x:Key="Blastlog.NeutralChip" TargetType="Border" BasedOn="{StaticResource Blastlog.Chip}">
+        <Setter Property="Background" Value="{DynamicResource Blastlog.Surface2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Line}" />
+    </Style>
+</ResourceDictionary>

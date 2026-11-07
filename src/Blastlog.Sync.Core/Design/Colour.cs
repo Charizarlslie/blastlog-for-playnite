@@ -9,6 +9,11 @@ public struct Rgb {
   public int R, G, B;
   public Rgb(int r, int g, int b) { R = r; G = g; B = b; }
 }
+/// <summary>A colour after a lightness move, and how far it moved (OKLCH lightness).</summary>
+public sealed class Nudge {
+  public readonly string Colour; public readonly double Move;
+  public Nudge(string colour, double move) { Colour = colour; Move = move; }
+}
 /// <summary>An OKLCH colour: lightness 0-1, chroma, hue in degrees.</summary>
 public struct Oklch {
   public double L, C, H;
@@ -92,18 +97,18 @@ public static class Colour {
   /// The smallest lightness move that makes <paramref name="colour"/> reach <paramref name="target"/> contrast against
   /// every colour in <paramref name="against"/>; the colour unchanged when it already passes; null when nothing works.
   /// </summary>
-  public static (string Colour, double Move)? NudgeToContrast(string colour, IList<string> against, double target, double maxChroma = double.PositiveInfinity) {
+  public static Nudge NudgeToContrast(string colour, IList<string> against, double target, double maxChroma = double.PositiveInfinity) {
     bool Passes(string candidate) => against.All(bg => Contrast(candidate, bg) >= target);
     var start = ToOklch(colour);
     var capped = start.C > maxChroma ? WithLightness(colour, start.L, maxChroma) : colour.ToLowerInvariant();
-    if (Passes(capped)) return (capped, 0);
-    (string, double)? best = null;
+    if (Passes(capped)) return new Nudge(capped, 0);
+    Nudge best = null;
     foreach (var direction in new[] { 1, -1 }) {
       for (var step = 1; step <= 1000; step++) {
         var L = start.L + direction * step / 1000.0;
         if (L < 0 || L > 1) break;
         var candidate = WithLightness(colour, L, maxChroma);
-        if (Passes(candidate)) { if (best == null || step < best.Value.Item2 * 1000) best = (candidate, step / 1000.0); break; }
+        if (Passes(candidate)) { if (best == null || step < best.Move * 1000) best = new Nudge(candidate, step / 1000.0); break; }
       }
     }
     return best;

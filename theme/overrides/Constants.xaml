@@ -1,0 +1,96 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!--
+      Blastlog Dark. Based on Playnite's default desktop theme (MIT, see CREDITS.md); every key the default theme
+      defines is kept. Values are Blastlog's dark tokens (Blastlog design.md 2.1). The Blastlog.* keys at the end are
+      Blastlog's own: the plugin replaces the Blastlog.Game* brushes with the selected game's colours and animates them.
+    -->
+    <sys:Double x:Key="FontSizeSmall">14</sys:Double>
+    <sys:Double x:Key="FontSize">15</sys:Double>
+    <sys:Double x:Key="FontSizeLarge">16</sys:Double>
+    <sys:Double x:Key="FontSizeLarger">22</sys:Double>
+    <sys:Double x:Key="FontSizeLargest">32</sys:Double>
+    <FontFamily x:Key="FontFamily">Outfit, Segoe UI</FontFamily>
+    <FontFamily x:Key="MonospaceFontFamily">Consolas</FontFamily>
+    <Thickness x:Key="PopupBorderThickness">1</Thickness>
+    <Thickness x:Key="ControlBorderThickness">1</Thickness>
+    <sys:Double x:Key="EllipseBorderThickness">1</sys:Double>
+    <CornerRadius x:Key="ControlCornerRadius">10</CornerRadius>
+    <Thickness x:Key="SidebarItemPadding">8</Thickness>
+
+    <Color x:Key="BlackColor">#FF000000</Color>
+    <Color x:Key="WhiteColor">#FFFFFFFF</Color>
+    <Color x:Key="TextColor">#f4f4f6</Color>
+    <Color x:Key="TextColorDarker">#a6a6b1</Color>
+    <Color x:Key="TextColorDark">#0b0b0d</Color>
+    <Color x:Key="MainColor">#1e1e24</Color>
+    <Color x:Key="MainColorDark">#0b0b0d</Color>
+    <Color x:Key="HoverColor">#2a2a31</Color>
+    <Color x:Key="GlyphColor">#00e4a8</Color>
+    <Color x:Key="HighlightGlyphColor">#3300e4a8</Color>
+    <Color x:Key="PopupBackgroundColor">#151519</Color>
+    <Color x:Key="PopupBorderColor">#6a6a76</Color>
+    <Color x:Key="BackgroundToneColor">#1e1e24</Color>
+    <Color x:Key="GridItemBackgroundColor">#151519</Color>
+    <Color x:Key="PanelSeparatorColor">#2a2a31</Color>
+    <Color x:Key="WindowPanelSeparatorColor">#2a2a31</Color>
+    <Color x:Key="DataChangeNotifColor">#ffb27a</Color>
+
+    <SolidColorBrush x:Key="ControlBackgroundBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="TextBrush" Color="{DynamicResource TextColor}" />
+    <SolidColorBrush x:Key="TextBrushDarker" Color="{DynamicResource TextColorDarker}" />
+    <SolidColorBrush x:Key="TextBrushDark" Color="{DynamicResource TextColorDark}" />
+    <SolidColorBrush x:Key="NormalBrush" Color="{DynamicResource MainColor}" />
+    <SolidColorBrush x:Key="NormalBrushDark" Color="{DynamicResource MainColorDark}" />
+    <SolidColorBrush x:Key="NormalBorderBrush" Color="#6a6a76" />
+    <SolidColorBrush x:Key="HoverBrush" Color="{DynamicResource HoverColor}" />
+    <SolidColorBrush x:Key="GlyphBrush" Color="{DynamicResource GlyphColor}" />
+    <SolidColorBrush x:Key="HighlightGlyphBrush" Color="{DynamicResource HighlightGlyphColor}" />
+    <SolidColorBrush x:Key="PopupBorderBrush" Color="{DynamicResource PopupBorderColor}" />
+    <SolidColorBrush x:Key="TooltipBackgroundBrush" Color="#1e1e24" />
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#1e1e24" />
+    <SolidColorBrush x:Key="GridItemBackgroundBrush" Color="{DynamicResource GridItemBackgroundColor}" />
+    <SolidColorBrush x:Key="PanelSeparatorBrush" Color="{DynamicResource PanelSeparatorColor}" />
+    <SolidColorBrush x:Key="WindowPanelSeparatorBrush" Color="{DynamicResource WindowPanelSeparatorColor}" />
+    <SolidColorBrush x:Key="PopupBackgroundBrush" Color="#151519" />
+    <SolidColorBrush x:Key="CheckBoxCheckMarkBkBrush" Color="{DynamicResource MainColorDark}" />
+    <SolidColorBrush x:Key="DataChangeNotifBrush" Color="{DynamicResource DataChangeNotifColor}" />
+
+    <SolidColorBrush x:Key="PositiveRatingBrush" Color="#6ee7b0" />
+    <SolidColorBrush x:Key="NegativeRatingBrush" Color="#ff8c95" />
+    <SolidColorBrush x:Key="MixedRatingBrush" Color="#ffc400" />
+
+    <SolidColorBrush x:Key="WarningBrush" Color="#ff8c95" />
+
+    <SolidColorBrush x:Key="ExpanderBackgroundBrush" Color="#151519" />
+    <!-- The misspelling is Playnite's own key name. -->
+    <SolidColorBrush x:Key="WindowBackgourndBrush" Color="#0b0b0d" />
+
+    <!-- Blastlog tokens (design.md 2.1, dark). -->
+    <SolidColorBrush x:Key="Blastlog.Bg" Color="#0b0b0d" />
+    <SolidColorBrush x:Key="Blastlog.Side" Color="#0e0e11" />
+    <SolidColorBrush x:Key="Blastlog.Surface" Color="#151519" />
+    <SolidColorBrush x:Key="Blastlog.Surface2" Color="#1e1e24" />
+    <SolidColorBrush x:Key="Blastlog.Line" Color="#2a2a31" />
+    <SolidColorBrush x:Key="Blastlog.Edge" Color="#6a6a76" />
+    <SolidColorBrush x:Key="Blastlog.Text" Color="#f4f4f6" />
+    <SolidColorBrush x:Key="Blastlog.TextMuted" Color="#a6a6b1" />
+    <SolidColorBrush x:Key="Blastlog.Star" Color="#ffc400" />
+    <SolidColorBrush x:Key="Blastlog.Ok" Color="#6ee7b0" />
+    <SolidColorBrush x:Key="Blastlog.Warn" Color="#ffb27a" />
+    <SolidColorBrush x:Key="Blastlog.Danger" Color="#ff8c95" />
+    <SolidColorBrush x:Key="Blastlog.Brand" Color="#00e4a8" />
+    <SolidColorBrush x:Key="Blastlog.Focus" Color="#f4f4f6" />
+
+    <!-- The selected game's colours (design.md 2.2). Blastlog green until the plugin sets them. -->
+    <SolidColorBrush x:Key="Blastlog.Game" Color="#00e4a8" />
+    <SolidColorBrush x:Key="Blastlog.OnGame" Color="#0b0b0d" />
+    <SolidColorBrush x:Key="Blastlog.GameText" Color="#00e4a8" />
+    <SolidColorBrush x:Key="Blastlog.GameTint" Color="#00291b" />
+    <SolidColorBrush x:Key="Blastlog.GameTint2" Color="#033727" />
+    <SolidColorBrush x:Key="Blastlog.GameEdge" Color="#0f7555" />
+    <SolidColorBrush x:Key="Blastlog.GameBar" Color="#00432f" />
+    <Color x:Key="Blastlog.GlowColor">#3B00E4A8</Color>
+    <Color x:Key="Blastlog.GlowClearColor">#0000E4A8</Color>
+</ResourceDictionary>

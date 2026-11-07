@@ -4,7 +4,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 namespace Blastlog.Sync.Core {
 // Shapes of the Blastlog sync API (docs/API_SPEC.md; the server's docs/PLAYNITE_SYNC.md wins where they differ).
-public sealed class Game { public string Id {get;set;} public string Title {get;set;} public int? ReleaseYear {get;set;} public string CoverUrl {get;set;} public string IgdbId {get;set;} public string[] SteamAppIds {get;set;} public string[] GogIds {get;set;} }
+public sealed class Game { public string Id {get;set;} public string Title {get;set;} public int? ReleaseYear {get;set;} public string CoverUrl {get;set;} public string IgdbId {get;set;} public string[] SteamAppIds {get;set;} public string[] GogIds {get;set;} public string Accent {get;set;} public GameArtwork Artwork {get;set;} }
+/// <summary>IGDB image ids for a game (the web's Game.artwork), when the server sends them.</summary>
+public sealed class GameArtwork { public string CoverImageId {get;set;} public string HeroImageId {get;set;} public List<HeroCandidate> HeroCandidates {get;set;} }
+public sealed class HeroCandidate { public string ImageId {get;set;} public string Source {get;set;} public int? Width {get;set;} public int? Height {get;set;} public bool? Animated {get;set;} public bool? AlphaChannel {get;set;} public JObject ImageType {get;set;} }
 public sealed class EntryLength { public int Hours {get;set;} public string Level {get;set;} }
 public sealed class EntryLink { public string PlayniteGameId {get;set;} }
 public sealed class Entry { public string EntryId {get;set;} public int Version {get;set;} public DateTimeOffset UpdatedAt {get;set;} public Game Game {get;set;} public string Ownership {get;set;} public string Status {get;set;} public double? Rating {get;set;} public bool HasReview {get;set;} public string FinishedOn {get;set;} public string Platform {get;set;} public bool InBacklog {get;set;} public EntryLength Length {get;set;} public EntryLink Link {get;set;} }

@@ -24,31 +24,18 @@ if (-not (Test-Path (Join-Path $base "Constants.xaml"))) { throw "Playnite's def
 $theme = Join-Path $work "Blastlog"
 Copy-Item -Recurse $base $theme
 
-# 2. Blastlog's colours (dark tokens from docs/design.md) and type. Each key must exist, so a changed base fails loudly.
-$constants = Join-Path $theme "Constants.xaml"
-$xaml = Get-Content -Raw -Encoding UTF8 $constants
-$colors = [ordered]@{
-  TextColor = "#F4F4F6"; TextColorDarker = "#A6A6B1"; MainColor = "#1E1E24"; MainColorDark = "#0B0B0D"; HoverColor = "#00B386"
-  GlyphColor = "#00E4A8"; HighlightGlyphColor = "#8800E4A8"; PopupBackgroundColor = "#151519"; PopupBorderColor = "#6A6A76"
-  BackgroundToneColor = "#1E1E24"; GridItemBackgroundColor = "#151519"; PanelSeparatorColor = "#2A2A31"; WindowPanelSeparatorColor = "#3300E4A8"
+# 2. Blastlog's own files (theme/overrides) replace the default theme's: Constants.xaml with Blastlog's tokens, the
+# sidebar, and the other restyled views. Each override is a whole file derived from Playnite's (MIT), so a base file it
+# replaces must still exist at the pinned release; a renamed or removed one fails the build instead of shipping half-styled.
+$overrides = Join-Path $root "theme/overrides"
+Get-ChildItem -Recurse -File $overrides | ForEach-Object {
+  $relative = $_.FullName.Substring($overrides.Length + 1)
+  $target = Join-Path $theme $relative
+  if ($_.Extension -eq ".xaml" -and -not (Test-Path $target)) { throw "Playnite $PlayniteRef has no $relative to replace." }
+  New-Item -ItemType Directory -Force (Split-Path -Parent $target) | Out-Null
+  Copy-Item $_.FullName $target -Force
 }
-foreach ($key in $colors.Keys) {
-  $pattern = "(<Color\s+x:Key=""$key""\s*>)[^<]*(</Color>)"
-  if ($xaml -notmatch $pattern) { throw "Constants.xaml has no Color $key" }
-  $xaml = [regex]::Replace($xaml, $pattern, "`${1}$($colors[$key])`${2}")
-}
-$brushes = [ordered]@{ NormalBorderBrush = "#6A6A76"; ButtonBackgroundBrush = "#151519"; PopupBackgroundBrush = "#151519"; PositiveRatingBrush = "#6EE7B0"; MixedRatingBrush = "#FFC400" }
-foreach ($key in $brushes.Keys) {
-  $pattern = "(<SolidColorBrush\s+x:Key=""$key""\s+Color="")[^""]*("")"
-  if ($xaml -notmatch $pattern) { Write-Warning "Constants.xaml: no literal colour on $key; left as Playnite's"; continue }
-  $xaml = [regex]::Replace($xaml, $pattern, "`${1}$($brushes[$key])`${2}")
-}
-# Outfit when it's installed (the setup guide links it), Segoe UI otherwise. Nothing under 14px (docs/design.md §4).
-$xaml = [regex]::Replace($xaml, "(<FontFamily\s+x:Key=""FontFamily""\s*>)[^<]*(</FontFamily>)", "`${1}Outfit, Segoe UI`${2}")
-$sizes = @{ FontSizeSmall = "14"; FontSize = "15"; FontSizeLarge = "16"; FontSizeLarger = "20"; FontSizeLargest = "29" }
-foreach ($key in $sizes.Keys) { $xaml = [regex]::Replace($xaml, "(<sys:Double\s+x:Key=""$key""\s*>)[^<]*(</sys:Double>)", "`${1}$($sizes[$key])`${2}") }
-$xaml = [regex]::Replace($xaml, "(<CornerRadius\s+x:Key=""ControlCornerRadius""\s*>)[^<]*(</CornerRadius>)", "`${1}10`${2}")
-[IO.File]::WriteAllText($constants, $xaml)
+
 
 # 3. The plugin's elements in the game details, above the description: status line, then the Blastlog panel.
 $elements = '<StackPanel Margin="0,0,0,15"><ContentControl x:Name="Blastlog_Status" /><ContentControl x:Name="Blastlog_GamePanel" /></StackPanel>'

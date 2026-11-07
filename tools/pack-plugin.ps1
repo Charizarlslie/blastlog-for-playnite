@@ -10,6 +10,9 @@ $version = ((Get-Content (Join-Path $root "src/Blastlog.Playnite/extension.yaml"
 $outDir = Join-Path $root $Out; New-Item -ItemType Directory -Force $outDir | Out-Null
 $stage = Join-Path $root "obj/pext"; if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }; New-Item -ItemType Directory $stage | Out-Null
 Get-ChildItem $bin -File | Where-Object { $_.Extension -in ".dll", ".yaml", ".png" } | Copy-Item -Destination $stage
+# Outfit and its licence, for the Blastlog theme.
+if (-not (Test-Path (Join-Path $bin "Fonts/Outfit-Regular.ttf"))) { throw "The Outfit fonts are missing from the build output." }
+Copy-Item -Recurse (Join-Path $bin "Fonts") (Join-Path $stage "Fonts")
 $pext = Join-Path $outDir "Blastlog_for_Playnite_$version.pext"
 Compress-Archive -Path (Join-Path $stage "*") -DestinationPath "$pext.zip" -Force; Move-Item "$pext.zip" $pext -Force
 Get-Item $pext | ForEach-Object { "{0}  {1:N0} bytes" -f $_.Name, $_.Length }
