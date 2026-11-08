@@ -99,7 +99,9 @@ Below: the fingerprint card exactly as design.md §8 "Game page fingerprint" (ca
 typical game with names inside the fill, "+N more", tap a group for every trait, "Why it's here"), how much you'd like
 it, length at your level, reasons and watch-outs, friends' stars and reviews, your review (edit in place, or Rate & review), where you own
 it, series, More like this as a row of small covers, and history with Undo. Playnite's own extras (playtime,
-achievements from other add-ons, description, links) sit underneath in the same style.
+achievements from other add-ons, description, links) sit underneath in the same style. A friend's entry (from friend
+activity) opens the same page natively in a window, read only apart from reactions; screenshots open in an in-Playnite
+viewer that steps through them (trailers still play on YouTube in the browser).
 
 ### 4.4 Play next
 Picks first with #1's status buttons, the You're playing strip, Tends to love / dislike chips, length and ownership

@@ -193,9 +193,9 @@ public sealed class GamePageElement : PluginUserControl {
     var entry = Entry; var title = (string)entry?["game"]?["title"] ?? "this game";
     var stack = new StackPanel();
     stack.Children.Add(Fingerprint.Card(FingerprintData.Parse(page["fingerprint"]), Options()));
-    var forYou = ForYou(); if (forYou != null) stack.Children.Add(forYou);
-    stack.Children.Add(TwoUp(Take(entry), Facts(entry)));
-    stack.Children.Add(Friends());
+    var forYou = ForYou(fit); if (forYou != null) stack.Children.Add(forYou);
+    stack.Children.Add(TwoUp(Take(entry), Facts(entry, page["info"] as JObject)));
+    stack.Children.Add(Friends(friends));
     var own = OwnedAndCollection(entry); if (own != null) stack.Children.Add(own);
     var like = MoreLikeThis(title); if (like != null) stack.Children.Add(like);
     stack.Children.Add(History());
@@ -204,7 +204,7 @@ public sealed class GamePageElement : PluginUserControl {
   }
 
   /// <summary>Two cards side by side on a wide page, stacked on a narrow one (Playnite's grid view side panel).</summary>
-  static FrameworkElement TwoUp(FrameworkElement a, FrameworkElement b) {
+  internal static FrameworkElement TwoUp(FrameworkElement a, FrameworkElement b) {
     var grid = new Grid();
     grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) }); grid.ColumnDefinitions.Add(new ColumnDefinition());
     grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -226,7 +226,7 @@ public sealed class GamePageElement : PluginUserControl {
   static TextBlock Eyebrow(string text) => Kit.Text(text, "Blastlog.Small").Also(t => { t.FontWeight = FontWeights.Bold; t.Margin = new Thickness(0, 0, 0, 6); });
 
   /// <summary>"For you" (design.md 8): predicted stars with a plain verdict, Because you like, Watch out. Hidden once rated or before the game is read.</summary>
-  FrameworkElement ForYou() {
+  internal static FrameworkElement ForYou(JObject fit) {
     if (fit == null || fit["rated"]?.Type != JTokenType.Null && fit["rated"] != null || (bool?)fit["read"] != true) return null;
     var card = Card("For you", out var body, game: true);
     if ((bool?)fit["ready"] != true) { body.Children.Add(Kit.Text("Rate a few more games you’ve finished and Blastlog can say how this one fits your taste.", "Blastlog.Muted")); return card; }
@@ -308,7 +308,7 @@ public sealed class GamePageElement : PluginUserControl {
   }
 
   /// <summary>Game details: status, ownership, release platforms, length at your level, when you finished it.</summary>
-  FrameworkElement Facts(JObject entry) {
+  internal static FrameworkElement Facts(JObject entry, JObject info) {
     var card = Card("Game details", out var body);
     var grid = new Grid(); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
     void Row(string label, UIElement value) {
@@ -320,7 +320,7 @@ public sealed class GamePageElement : PluginUserControl {
     var status = (string)entry?["status"]; var wishlist = (string)entry?["ownership"] == "wishlist";
     Row("Status", Kit.StatusPill(wishlist && status == "not_started" ? "wishlist" : status));
     Row("Ownership", Kit.Text(wishlist ? "Wishlist" : (string)entry?["ownership"] == "library" ? "In library" : "Unknown"));
-    var platforms = ((page["info"] as JObject)?["platforms"] as JArray ?? entry?["game"]?["releasePlatforms"] as JArray ?? new JArray()).Select(p => (string)p).Where(p => !string.IsNullOrEmpty(p)).ToList();
+    var platforms = (info?["platforms"] as JArray ?? entry?["game"]?["releasePlatforms"] as JArray ?? new JArray()).Select(p => (string)p).Where(p => !string.IsNullOrEmpty(p)).ToList();
     Row("Release platforms", Kit.Text(platforms.Count > 0 ? string.Join(", ", platforms) : "Not available"));
     var length = entry?["length"] as JObject;
     var level = (string)length?["level"];
@@ -342,7 +342,7 @@ public sealed class GamePageElement : PluginUserControl {
   }
 
   /// <summary>Friends on this game: one row per friend with stars; a review gets a two-line preview that opens in full.</summary>
-  FrameworkElement Friends() {
+  internal static FrameworkElement Friends(JArray friends) {
     var card = Card("Friends on this game", out var body);
     if (friends == null) { body.Children.Add(Kit.Text("Checking your friends…", "Blastlog.Muted")); return card; }
     if (friends.Count == 0) { body.Children.Add(Kit.Text("None of your friends has rated it yet.", "Blastlog.Muted")); return card; }

@@ -299,18 +299,26 @@ static class DashboardLibrary {
     var excerpt = (string)item["excerpt"];
     if (!string.IsNullOrEmpty(excerpt)) body.Children.Add(Dash.Text("“" + excerpt + "”", "Blastlog.Muted").Also(t => { t.MaxHeight = 44; t.TextTrimming = TextTrimming.WordEllipsis; t.Margin = new Thickness(0, 4, 0, 0); }));
     var entryId = (string)item["entryId"];
-    if (choices.Count > 0 && entryId != null) body.Children.Add(Reactions(plugin, entryId, $"{name}'s {gameTitle}", choices, Dash.Arr(item["reactions"]).OfType<JObject>().ToList()));
+    var reactHost = new ContentControl { Focusable = false };
+    if (choices.Count > 0 && entryId != null) { reactHost.Content = Reactions(plugin, entryId, $"{name}'s {gameTitle}", choices, Dash.Arr(item["reactions"]).OfType<JObject>().ToList()); body.Children.Add(reactHost); }
     Grid.SetColumn(body, 1); grid.Children.Add(body);
     var cover = Kit.Cover(plugin, Dash.GameFromCover((string)item["game"]?["id"], gameTitle, (string)item["game"]?["coverUrl"]), 40, ArtworkContext.Thumbnail, 6);
     cover.VerticalAlignment = VerticalAlignment.Top; cover.Margin = new Thickness(0, 4, 0, 0);
     Grid.SetColumn(cover, 2); grid.Children.Add(cover);
-    Dash.OnClick(grid, () => Dash.Site(plugin, "/library/" + entryId));
+    // The friend's entry, natively; reactions changed there show here when it closes.
+    Dash.OnClick(grid, () => Nav.FriendEntry(plugin, entryId, name, async () => {
+      try {
+        if (reactHost.Content == null) return;
+        var fresh = (await plugin.Mirror($"entries/{entryId}/reactions", true)).Value;
+        if (fresh?["reactions"] is JArray updated) reactHost.Content = Reactions(plugin, entryId, $"{name}'s {gameTitle}", choices, updated.OfType<JObject>().ToList());
+      } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Warn(e, "Blastlog: friend reactions refresh"); }
+    }));
     grid.Background = Brushes.Transparent; grid.ToolTip = $"{name}'s {gameTitle}";
     return grid;
   }
 
   /// <summary>The emoji reactions under a friend's line (web Reactions.tsx): each choice a 44px button, yours highlighted.</summary>
-  static FrameworkElement Reactions(BlastlogPlugin plugin, string entryId, string about, List<string> choices, List<JObject> reactions) {
+  internal static FrameworkElement Reactions(BlastlogPlugin plugin, string entryId, string about, List<string> choices, List<JObject> reactions, Action changed = null) {
     var row = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
     void Fill() {
       row.Children.Clear();
@@ -321,7 +329,7 @@ static class DashboardLibrary {
         var e = emoji;
         var b = Kit.Button(count > 0 ? $"{emoji} {count}" : emoji, async () => {
           var answer = await plugin.Write($"entries/{entryId}/reactions", new { emoji = e, on = !mine });
-          if (answer?["reactions"] is JArray updated) { reactions = updated.OfType<JObject>().ToList(); Fill(); }
+          if (answer?["reactions"] is JArray updated) { reactions = updated.OfType<JObject>().ToList(); Fill(); changed?.Invoke(); }
         }, "Blastlog.Ghost");
         b.MinHeight = 44; b.MinWidth = 52; b.Padding = new Thickness(12, 0, 12, 0); b.Margin = new Thickness(0, 0, 6, 6); b.FontSize = 15;
         b.SetResourceReference(Control.BorderBrushProperty, mine ? "Blastlog.GameEdge" : "Blastlog.Line");

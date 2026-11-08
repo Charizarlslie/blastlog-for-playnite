@@ -62,6 +62,18 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   `Nav.Together`, `Nav.Friends`, `Nav.Taste`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
   Each opens the site until its native version lands; a native dialog replaces that one method's body, so screens
   never hard-code a site URL for something Playnite can show.
+- **A friend's entry** (`Nav.FriendEntry`, Screens/FriendEntry.cs) is native: the site's game page for someone else's
+  entry (hero, fingerprint, For you, their take with taps, review and your reactions, game details, your other friends,
+  accessibility, trailers and screenshots, More like this), read only apart from reactions. Friend activity on the
+  Dashboard opens it.
+- **Trailers and screenshots** (`Screens/GameMore.cs`, shared by every game page window) open in the media viewer
+  (`Nav.Media`, Ui/MediaViewer.cs): the site's MediaViewer, stepping through the trailers then every screenshot with the
+  arrows, Home and End (order and labels are Core `MediaSequence`, tested against the site). Trailers play on YouTube in
+  the browser (Playnite has no player).
+- **Still on the site** because the mirror has no route for them yet: the character sheet's look (`Nav.SheetLook`;
+  needs `PUT /sync/v1/me/sheet-style`), reporting a review, import sorting, account settings. Year in review
+  (`/year/:year`) has no mirror read and nothing in the plugin links to it (the site links it from Support only), so it
+  has no native version.
 - **Rate & review** (Nav.Review, Screens/ReviewDialog.cs) is native: the site's pop-up (ownership, status, completion
   date, stars, taps, review, the questions). It saves with PATCH entries/:id (expectedVersion; a ersion_conflict loads
   the latest and keeps the player's edits), then PUT entries/:id/picks; the taps hide if the picks can't be read. The

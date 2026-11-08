@@ -49,7 +49,7 @@ sealed partial class DiscoverGameView {
   }
 
   // ---- Cards ----
-  static Border Card(string heading, out StackPanel body, bool game = false) {
+  internal static Border Card(string heading, out StackPanel body, bool game = false) {
     body = new StackPanel();
     if (heading != null) body.Children.Add(Kit.Text(heading, "Blastlog.CardTitle").Also(t => { t.FontSize = 20; t.FontWeight = FontWeights.ExtraBold; t.Margin = new Thickness(0, 0, 0, 12); }));
     // The site's panel: surface, a 1px line, radius 26, padding 26.
@@ -120,61 +120,10 @@ sealed partial class DiscoverGameView {
     return panel;
   }
 
-  /// <summary>Accessibility: the features the developer lists on the Steam store page, as plain chips; hidden when none.</summary>
-  FrameworkElement AccessibilityCard() {
-    var features = info.Strings("accessibility");
-    if (features.Count == 0) return null;
-    var card = Card("Accessibility", out var body);
-    var w = new WrapPanel(); foreach (var f in features) w.Children.Add(Kit.Chip(f, neutral: true).Also(c => c.Margin = new Thickness(0, 0, 8, 8)));
-    AutomationProperties.SetName(w, "Accessibility features listed for " + Title);
-    body.Children.Add(w);
-    body.Children.Add(PnKit.Text("From the Steam store, as listed by the developer.", "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 4, 0, 0)));
-    return card;
-  }
+  /// <summary>Accessibility and "Trailers and screenshots": the cards every game page shares (Screens/GameMore.cs).</summary>
+  FrameworkElement AccessibilityCard() => GameMore.Accessibility(info, Title);
+  FrameworkElement MoreCard() => GameMore.Media(plugin, info, Title);
 
-  /// <summary>
-  /// More about the game (the site's GameMore): platforms and genres, the trailers (they play on YouTube, in the browser,
-  /// only when picked) and screenshots (open larger in the browser), with IGDB's credit.
-  /// </summary>
-  FrameworkElement MoreCard() {
-    var platforms = info.Strings("platforms"); var genres = info.Strings("genres");
-    var shots = info.Strings("screenshots").Where(IsIgdb).ToList(); var videos = info.Objects("videos").Where(v => !string.IsNullOrEmpty(v.S("youtubeId"))).ToList();
-    if (videos.Count == 0 && shots.Count == 0 && platforms.Count == 0) return null;
-    var card = Card(videos.Count > 0 || shots.Count > 0 ? "Trailers and screenshots" : "Where to play it", out var body);
-    if (platforms.Count > 0) body.Children.Add(PnKit.Line("Blastlog.Body", PnKit.Run("On ", "Blastlog.TextMuted"), PnKit.Run(string.Join(", ", platforms))).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.Margin = new Thickness(0, 0, 0, 4); }));
-    if (genres.Count > 0) body.Children.Add(PnKit.Line("Blastlog.Body", PnKit.Run("Genres ", "Blastlog.TextMuted"), PnKit.Run(string.Join(", ", genres))).Also(t => { t.TextWrapping = TextWrapping.Wrap; t.Margin = new Thickness(0, 0, 0, 4); }));
-    if (videos.Count > 0) {
-      var row = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
-      for (var i = 0; i < videos.Count; i++) {
-        var v = videos[i]; var url = "https://www.youtube.com/watch?v=" + Uri.EscapeDataString(v.S("youtubeId"));
-        var label = i == 0 ? $"▶ {v.S("name") ?? "Trailer"} · plays on YouTube ↗" : (v.S("name") ?? "Video") + " ↗";
-        row.Children.Add(Kit.Button(label, () => UiKit.Open(url), i == 0 ? "Blastlog.Primary" : "Blastlog.Ghost").Also(b => { b.Margin = new Thickness(0, 0, 8, 8); AutomationProperties.SetName(b, "Play " + (v.S("name") ?? "the trailer") + " on YouTube"); }));
-      }
-      body.Children.Add(row);
-    }
-    if (shots.Count > 0) {
-      const int shown = 6;
-      var row = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
-      for (var i = 0; i < Math.Min(shown, shots.Count); i++) {
-        var url = shots[i]; var more = i == shown - 1 ? shots.Count - shown : 0; var n = i + 1;
-        row.Children.Add(Shot(url, more, n));
-      }
-      body.Children.Add(row);
-    }
-    body.Children.Add(PnKit.Text("Game details, screenshots and trailers from IGDB.com.", "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 6, 0, 0)));
-    return card;
-  }
-  FrameworkElement Shot(string url, int more, int n) {
-    var full = Artwork.NormalizedLegacyUrl(url, "1080p");
-    var box = new Border { Width = 220, Height = 124, CornerRadius = new CornerRadius(14), ClipToBounds = true }.Res(Border.BackgroundProperty, "Blastlog.Surface2");
-    var layers = new Grid(); layers.Children.Add(box);
-    if (more > 0) layers.Children.Add(new Border { CornerRadius = new CornerRadius(14), Child = PnKit.Text("+" + more, "Blastlog.Section").Also(t => { t.HorizontalAlignment = HorizontalAlignment.Center; t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(0); }) }
-      .Also(b => b.Background = new SolidColorBrush(Tint.Scrim(0.55)).Also(x => x.Freeze())));
-    var button = PnKit.Bare(layers, () => UiKit.Open(full), more > 0 ? $"Show screenshot {n} larger, {more} more after it" : $"Show screenshot {n} larger");
-    button.Width = 220; button.Margin = new Thickness(0, 0, 10, 10); button.HorizontalAlignment = HorizontalAlignment.Left; button.Cursor = Cursors.Hand;
-    LoadShot(Artwork.NormalizedLegacyUrl(url, "screenshot_med"), box);
-    return button;
-  }
   /// <summary>
   /// More like this (the site's MoreLikeThis): up to 12 unplayed games most like it, six at first, each wearing its own
   /// game. One in Playnite opens Playnite's game page, one in the library but not Playnite opens on Blastlog, any other
@@ -237,15 +186,6 @@ sealed partial class DiscoverGameView {
     body.Children.Clear(); body.Children.Add(PnKit.Text("Opening the game…", "Blastlog.Muted"));
     PnKit.FindAncestor<ScrollViewer>(this)?.ScrollToTop();
     _ = Load(false);
-  }
-
-  async void LoadShot(string url, Border box) {
-    try {
-      var file = await PnKit.Picture(plugin, url);
-      if (file == null) return;
-      var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad; image.UriSource = new Uri(file); image.DecodePixelWidth = 440; image.EndInit(); image.Freeze();
-      box.Background = new ImageBrush(image) { Stretch = Stretch.UniformToFill };
-    } catch (Exception e) { Log.Warn("Blastlog: screenshot didn't load: " + e.Message); }
   }
 }
 }

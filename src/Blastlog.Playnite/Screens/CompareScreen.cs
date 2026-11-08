@@ -450,7 +450,7 @@ sealed class CompareView : Grid {
       if (classes.Count > 1) s.Children.Add(T("Also a fit: " + string.Join(", ", classes.Skip(1).Select(ClassName)), "Blastlog.Small"));
       // The look is picked on the site (Account settings links to it); friends see the owner's choice here too.
       if (p.Id == meId) s.Children.Add(Row(T("Look: " + (LookNames.TryGetValue(look, out var n) ? n : look), "Blastlog.Small").Also(t => t.VerticalAlignment = VerticalAlignment.Center),
-        Link("Change ↗", () => Site(plugin, "/compare#sheets"))).Also(r => r.Margin = new Thickness(0, 8, 0, 0)));
+        Link("Change ↗", () => Nav.SheetLook(plugin))).Also(r => r.Margin = new Thickness(0, 8, 0, 0)));
       return (UIElement)SheetCard(s, p, look);
     }).ToList();
     var about = Disclosure("How the sheets work", () => {
