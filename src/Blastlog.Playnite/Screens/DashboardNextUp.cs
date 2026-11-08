@@ -15,7 +15,7 @@ using Newtonsoft.Json.Linq;
 namespace Blastlog.Playnite.Screens {
 /// <summary>
 /// Next up (design.md 8 Dashboard; web App.tsx NextUpCard and Recommendations.tsx NextUpReasons): the whole cover, sharp,
-/// on a blurred copy of itself under a scrim with the game's glow; Recommended / Quick one / Long haul; status, length,
+/// on a blurred copy of itself under a scrim with the game's glow; Recommended / Quick one / Long haul; status on the cover; length,
 /// platforms and where you own it; Why it's up next and one Watch for; a boost with Not now and Undo; the quote from your
 /// own review; Play or Install when it's in Playnite, View details, Add review (Edit review once written).
 /// </summary>
@@ -142,11 +142,9 @@ sealed class DashboardNextUp : Border {
     return grid;
   }
 
-  /// <summary>Status, length, platforms, then where you own it (once the game's page read arrives).</summary>
+  /// <summary>Length, platforms, then where you own it (once the game's page read arrives); the status is on the cover.</summary>
   FrameworkElement Chips(JObject entry) {
     var wrap = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
-    var pill = Kit.StatusPill((string)entry["ownership"] == "wishlist" ? "wishlist" : (string)entry["status"]); pill.Margin = new Thickness(0, 0, 8, 8);
-    wrap.Children.Add(pill);
     var length = entry["length"] as JObject; var lengthText = Dash.LengthText(length);
     if (lengthText != null) {
       var hours = Dash.Hours(length);
@@ -274,14 +272,14 @@ sealed class DashboardNextUp : Border {
     return panel;
   }
 
-  /// <summary>The full cover with a shadow, its status on it (the approved board).</summary>
+  /// <summary>The full cover with a shadow, its status on its top-right corner (the approved board).</summary>
   FrameworkElement CoverBox(JObject entry, Blastlog.Sync.Core.Game game) {
     var cover = Kit.Cover(plugin, game, 260, ArtworkContext.Cover, 18);
     cover.Effect = new DropShadowEffect { BlurRadius = 30, ShadowDepth = 8, Opacity = 0.45, Color = Colors.Black };
     cover.CacheMode = new BitmapCache(); // the shadow is drawn once, not on every scroll step
     System.Windows.Automation.AutomationProperties.SetName(cover, "Cover of " + game?.Title);
     var pill = Kit.StatusPill((string)entry["ownership"] == "wishlist" ? "wishlist" : (string)entry["status"]);
-    pill.HorizontalAlignment = HorizontalAlignment.Left; pill.VerticalAlignment = VerticalAlignment.Bottom; pill.Margin = new Thickness(12);
+    pill.HorizontalAlignment = HorizontalAlignment.Right; pill.VerticalAlignment = VerticalAlignment.Top; pill.Margin = new Thickness(12);
     return new Grid { Margin = new Thickness(32, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Children = { cover, pill } };
   }
 }
