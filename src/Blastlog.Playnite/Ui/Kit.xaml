@@ -52,8 +52,10 @@
     <!-- Cards (design.md 5 and 7): flat on surface, radius 20-24, or game-tinted with the game's edge. -->
     <Style x:Key="Blastlog.Card" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource Blastlog.Surface}" />
-        <Setter Property="CornerRadius" Value="22" />
-        <Setter Property="Padding" Value="22" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Blastlog.Line}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="26" />
+        <Setter Property="Padding" Value="26" />
         <Setter Property="Margin" Value="0,0,0,18" />
     </Style>
     <Style x:Key="Blastlog.GameCard" TargetType="Border" BasedOn="{StaticResource Blastlog.Card}">
