@@ -20,13 +20,16 @@ static class DashboardLibrary {
   static string Pct(double part, double total) => total > 0 ? Math.Round(part / total * 100, MidpointRounding.AwayFromZero) + "%" : "0%";
 
   // ---- Your library: four numbers (each opens the library filtered), finished vs still to play, How your stars split ----
-  public static FrameworkElement LibraryCard(BlastlogPlugin plugin, JObject stats) {
+  /// <summary><paramref name="friend"/>: a friend's dashboard (FriendDashboard.cs), whose links open their library through <paramref name="open"/>.</summary>
+  public static FrameworkElement LibraryCard(BlastlogPlugin plugin, JObject stats, FriendView friend = null, Action<string> open = null) {
+    Action<string> go = open ?? (q => Dash.Library(plugin, q));
+    var your = friend == null ? "Your" : friend.Name + "’s"; var yourLower = friend == null ? "your" : friend.Name + "’s";
     var panel = new StackPanel();
     var head = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 14) };
-    head.Children.Add(Dash.Text("Your library", "Blastlog.CardTitle").Also(t => t.VerticalAlignment = VerticalAlignment.Center));
-    var open = Dash.Link("Open library →", () => Dash.Library(plugin, null)); DockPanel.SetDock(open, Dock.Right); head.Children.Add(open);
+    head.Children.Add(Dash.Text(your + " library", "Blastlog.CardTitle").Also(t => t.VerticalAlignment = VerticalAlignment.Center));
+    var openLink = Dash.Link("Open library →", () => go(null)); DockPanel.SetDock(openLink, Dock.Right); head.Children.Add(openLink);
     panel.Children.Add(head);
-    if (stats == null) { panel.Children.Add(Dash.Text("Your library's numbers show here once Blastlog answers.", "Blastlog.Muted")); return Dash.Card(panel); }
+    if (stats == null) { panel.Children.Add(Dash.Text(your + " library's numbers show here once Blastlog answers.", "Blastlog.Muted")); return Dash.Card(panel); }
 
     double completed = (double?)stats["completed"] ?? 0, backlog = (double?)stats["backlog"] ?? 0, total = completed + backlog;
     var ratedDone = (int?)stats["ratedDone"] ?? 0; var average = (double?)stats["averageRating"] ?? 0;
@@ -48,7 +51,7 @@ static class DashboardLibrary {
       var q = query;
       var tile = new Button { Content = content, Style = Kit.Style("Blastlog.Ghost"), ToolTip = description, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(16, 12, 16, 12), HorizontalContentAlignment = HorizontalAlignment.Left };
       tile.SetResourceReference(Control.BackgroundProperty, "Blastlog.Surface2"); tile.SetResourceReference(Control.BorderBrushProperty, "Blastlog.Line");
-      tile.Click += (s, e) => Dash.Library(plugin, q);
+      tile.Click += (s, e) => go(q);
       Dash.AutomationName(tile, $"{value} {label}: {description}");
       grid.Children.Add(tile);
     }
@@ -57,20 +60,20 @@ static class DashboardLibrary {
       panel.Children.Add(BarLabel(Bold(completed.ToString("N0", CultureInfo.InvariantCulture), " finished"), Bold(backlog.ToString("N0", CultureInfo.InvariantCulture), " still to play")));
       panel.Children.Add(Split(new[] { new Part(completed, 1, "Blastlog.Game"), new Part(backlog, 1, "Blastlog.GameBar") }, null).Margin(0, 6, 0, 18));
     }
-    panel.Children.Add(BarLabel(new TextBlock { Style = Kit.Style("Blastlog.Muted"), Text = "How your stars split" }, Bold(average.ToString("0.0", CultureInfo.InvariantCulture) + "★", " average")));
+    panel.Children.Add(BarLabel(new TextBlock { Style = Kit.Style("Blastlog.Muted"), Text = "How " + yourLower + " stars split" }, Bold(average.ToString("0.0", CultureInfo.InvariantCulture) + "★", " average")));
     var dist = stats["ratingDistribution"] as JObject;
     var counts = Enumerable.Range(1, 5).Select(s => (int?)dist?[s.ToString(CultureInfo.InvariantCulture)] ?? 0).ToArray(); var sum = counts.Sum();
     if (sum == 0) panel.Children.Add(Dash.Text("No ratings yet.", "Blastlog.Muted").Margin(0, 6, 0, 0));
     else {
       var shades = Dash.StarShades(counts, out var peak);
-      panel.Children.Add(Split(counts.Select((c, i) => new Part(c, shades[i], "Blastlog.Star")).ToArray(), i => Dash.Library(plugin, $"status=done&rating={i + 1}")).Margin(0, 6, 0, 10));
+      panel.Children.Add(Split(counts.Select((c, i) => new Part(c, shades[i], "Blastlog.Star")).ToArray(), i => go($"status=done&rating={i + 1}")).Margin(0, 6, 0, 10));
       var legend = new UniformGrid { Columns = 5 };
       for (var i = 0; i < 5; i++) {
         var star = i + 1;
         var content = new StackPanel { Children = { Dash.Text(counts[i].ToString(CultureInfo.InvariantCulture), "Blastlog.Body", weight: FontWeights.ExtraBold).Also(t => t.HorizontalAlignment = HorizontalAlignment.Center),
           Dash.Text($"{star}★ · {Pct(counts[i], sum)}", "Blastlog.Small", star == peak ? "Blastlog.Star" : null).Also(t => { t.HorizontalAlignment = HorizontalAlignment.Center; t.TextWrapping = TextWrapping.NoWrap; }) } };
         var b = new Button { Content = content, Style = Kit.Style("Blastlog.TextButton"), Margin = new Thickness(0), Padding = new Thickness(2, 4, 2, 4) };
-        b.Click += (s, e) => Dash.Library(plugin, $"status=done&rating={star}");
+        b.Click += (s, e) => go($"status=done&rating={star}");
         Dash.AutomationName(b, $"{counts[i]} games rated {star} stars, {Pct(counts[i], sum)}");
         legend.Children.Add(b);
       }

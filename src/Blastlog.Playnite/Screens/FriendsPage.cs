@@ -26,6 +26,8 @@ static class FriendsPage {
     List<JObject> friends = new List<JObject>(); JObject groups; string code;
     // Which "are you sure?" is open (a friend's id, or "link"), and the group being written ("new" or its id).
     string confirming, editing; string draftName = ""; List<string> draftMembers = new List<string>();
+    // A friend's link pasted in (the site's /friends/add/:code page, natively): the text, its code, and what it said.
+    string pasteText = "", pasteCode; JObject pasted; bool pasteFailed;
 
     public View(BlastlogPlugin plugin) {
       this.plugin = plugin;
@@ -87,11 +89,24 @@ static class FriendsPage {
         DockPanel.SetDock(face, Dock.Left); row.Children.Add(face);
         row.Children.Add(Stack(null, T(name, "Blastlog.Body", null, 16, FontWeights.Bold), T(Since(friend), "Blastlog.Small")).Also(s => s.VerticalAlignment = VerticalAlignment.Center));
         block.Children.Add(row);
+        block.Children.Add(Pages(id, name));
         if (confirming == id) block.Children.Add(Confirm($"Stop being friends with {name}? You won’t see each other’s games any more, and your current link won’t bring them back.",
           "Stop being friends", true, () => { confirming = null; Run(() => Remove(id, name), "friends remove"); }, () => { confirming = null; Render(); }));
         list.Children.Add(block);
       }
       return LinkPages.Card("Your friends", null, list);
+    }
+
+    /// <summary>Their Dashboard, Library and Taste (the menu's friend links on the site), natively (Nav.FriendPage).</summary>
+    UIElement Pages(string id, string name) {
+      var links = Wrap();
+      foreach (var (page, label) in new[] { ("dashboard", "Dashboard"), ("library", "Library"), ("profile", "Taste") }) {
+        var b = Link(label, () => Nav.FriendPage(plugin, id, page, name));
+        AutomationProperties.SetName(b, $"{name}’s {label}");
+        links.Children.Add(b);
+      }
+      links.Margin = new Thickness(52, 2, 0, 0);
+      return links;
     }
 
     Task Remove(string id, string name) => Act(async () => {
@@ -201,8 +216,81 @@ static class FriendsPage {
       if (confirming == "link") content.Children.Add(Confirm("Make a new link? The old one stops working. Friends you already have stay friends.", "Make a new link", false,
         () => { confirming = null; Run(NewLink, "friends new link"); }, () => { confirming = null; Render(); }));
       else content.Children.Add(Link("Make a new link", () => { confirming = "link"; Render(); }).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(-6, 8, 0, 0); }));
+      content.Children.Add(PasteLink());
       return LinkPages.Card("Add a friend", note, content);
     }
+
+    // ---- A friend's link, pasted (the site's AddFriend page: GET friends/code/:code, then POST friends) ----
+    UIElement PasteLink() {
+      var s = new StackPanel { Margin = new Thickness(0, 22, 0, 0) };
+      s.Children.Add(T("Got a friend’s link?", "Blastlog.Body", null, 16, FontWeights.Bold));
+      s.Children.Add(T("Paste it here to add them.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, 2, 0, 8)));
+      var input = new TextBox { Text = pasteText, BorderThickness = new Thickness(0), Background = System.Windows.Media.Brushes.Transparent, FontSize = 15,
+        VerticalContentAlignment = VerticalAlignment.Center, MinHeight = 40, MaxLength = 300 };
+      input.SetResourceReference(Control.ForegroundProperty, "Blastlog.Text"); input.SetResourceReference(Control.FontFamilyProperty, "Blastlog.Font");
+      input.SetResourceReference(System.Windows.Controls.Primitives.TextBoxBase.CaretBrushProperty, "Blastlog.Text");
+      AutomationProperties.SetName(input, "A friend’s link");
+      var field = Box(input, "Blastlog.Surface2", 12, new Thickness(12, 2, 12, 2), "Blastlog.Edge"); field.MinHeight = 44; field.Margin = new Thickness(0, 0, 10, 0);
+      var check = Kit.Button("Check it", () => CheckLink(input.Text), "Blastlog.Ghost");
+      input.TextChanged += (o, e) => { pasteText = input.Text; };
+      input.PreviewKeyDown += (o, e) => { if (e.Key == System.Windows.Input.Key.Enter) { e.Handled = true; Run(() => CheckLink(input.Text), "friends check link"); } };
+      var line = new DockPanel(); DockPanel.SetDock(check, Dock.Right); line.Children.Add(check); line.Children.Add(field);
+      s.Children.Add(line);
+      if (pasteFailed) s.Children.Add(Stack(new Thickness(0, 12, 0, 0), T("This friend link doesn’t work", "Blastlog.Body", null, 0, FontWeights.Bold),
+        T("It may have been replaced with a new one. Ask your friend to send it again.", "Blastlog.Muted")));
+      else if (pasted != null) s.Children.Add(LinkAnswer());
+      return s;
+    }
+
+    /// <summary>The code in "https://blastlog.games/friends/add/abc123", or the text itself when it's just a code.</summary>
+    static string CodeIn(string text) {
+      var t = (text ?? "").Trim();
+      var at = t.IndexOf("/friends/add/", StringComparison.OrdinalIgnoreCase);
+      if (at >= 0) t = t.Substring(at + "/friends/add/".Length);
+      var end = t.IndexOfAny(new[] { '?', '#', '/', ' ' }); if (end >= 0) t = t.Substring(0, end);
+      return t.Length > 0 && t.Length <= 100 && t.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_') ? t : null;
+    }
+
+    async Task CheckLink(string text) {
+      var c = CodeIn(text);
+      pasted = null; pasteFailed = false; pasteCode = c;
+      if (c == null) { if ((text ?? "").Trim().Length > 0) pasteFailed = true; Render(); return; }
+      var answer = (await plugin.Mirror("friends/code/" + Uri.EscapeDataString(c), true)).Value;
+      if (pasteCode != c) return;
+      if (answer?["user"] is JObject) pasted = answer; else pasteFailed = true;
+      Render();
+    }
+
+    UIElement LinkAnswer() {
+      var user = pasted["user"] as JObject; var name = S(user, "displayName") ?? "Someone";
+      bool Flag(string key) => pasted[key]?.Type == JTokenType.Boolean && (bool)pasted[key];
+      var s = new StackPanel { Margin = new Thickness(0, 14, 0, 0) };
+      var head = new DockPanel { LastChildFill = true };
+      var face = LinkPages.Face(name); face.Margin = new Thickness(0, 0, 14, 0); DockPanel.SetDock(face, Dock.Left); head.Children.Add(face);
+      var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+      head.Children.Add(words); s.Children.Add(head);
+      if (Flag("self")) { words.Children.Add(T("That’s your own link", "Blastlog.Body", null, 16, FontWeights.Bold)); words.Children.Add(T("Send it to a friend; when they open it, you’re friends.", "Blastlog.Muted")); }
+      else if (Flag("alreadyFriends")) { words.Children.Add(T($"You and {name} are friends", "Blastlog.Body", null, 16, FontWeights.Bold)); words.Children.Add(T("You can see each other’s libraries, ratings, reviews and Profiles.", "Blastlog.Muted")); }
+      else if (Flag("stale")) {
+        words.Children.Add(T("This link is from before", "Blastlog.Body", null, 16, FontWeights.Bold));
+        words.Children.Add(T($"You and {name} stopped being friends after this link was made. If you both want to be friends again, ask {name} for a new link.", "Blastlog.Muted"));
+      } else {
+        words.Children.Add(T($"Add {name} as a friend?", "Blastlog.Body", null, 16, FontWeights.Bold));
+        words.Children.Add(T("You’ll see each other’s libraries, ratings, reviews and Profiles.", "Blastlog.Muted"));
+        var add = Kit.Button("Add friend", () => AddByLink(name)); add.Margin = new Thickness(0, 0, 10, 0);
+        s.Children.Add(Row(add, Kit.Button("Not now", () => { pasted = null; pasteText = ""; Render(); }, "Blastlog.Ghost")).Also(r => r.Margin = new Thickness(58, 12, 0, 0)));
+      }
+      return s;
+    }
+
+    Task AddByLink(string name) => Act(async () => {
+      var c = pasteCode;
+      if (c == null) return;
+      var r = await plugin.Write("friends", new { code = c });
+      if (r == null) return;
+      pasted = null; pasteText = ""; pasteCode = null;
+      Say($"You and {name} are friends now.");
+    });
 
     Task NewLink() => Act(async () => {
       if (await plugin.Write("friends/link", new { }) != null) Say("New link ready; the old one no longer works.");

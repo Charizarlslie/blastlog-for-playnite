@@ -59,10 +59,19 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   Paired games: `plugin.EntryFor(playniteGameId)`, `plugin.GameFor(entryId)`; Play/Install go through
   `plugin.Api.StartGame(id)` / `plugin.Api.InstallGame(id)`.
 - **Links to other pages** go through `Ui.Nav` (`Nav.Review`, `Nav.AddGame`, `Nav.Library(query)`, `Nav.DiscoverGame`, `Nav.Entry`,
-  `Nav.FriendEntry`, `Nav.Media`, `Nav.Trait`, `Nav.Collection`, `Nav.QuickStart`, `Nav.Together`, `Nav.Friends`,
+  `Nav.FriendEntry`, `Nav.FriendPage`, `Nav.Media`, `Nav.Trait`, `Nav.Collection`, `Nav.QuickStart`, `Nav.Together`, `Nav.Friends`,
   `Nav.Taste`, `Nav.PlayNext`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
   Each opens the site until its native version lands; a native dialog replaces that one method's body, so screens
   never hard-code a site URL for something Playnite can show.
+- **A friend's pages** (`Nav.FriendPage(plugin, friendId, "dashboard" | "library" | "profile")`, Screens/FriendPages.cs)
+  are native: one window per friend with their Dashboard, Library and Taste as tabs, read only, as the site's
+  /friends/:id/... pages. Library and Taste are the own screens with a viewed friend (`LibraryView(..., friend)`,
+  `TasteView(plugin, friend)`: own-only controls hidden, wording about them); the Dashboard is its own variant
+  (Screens/FriendDashboard.cs: Next up for them, Currently playing, their library's numbers, Recently finished; no
+  prompts, + New entry or friend activity). Reads go through `FriendView.Path` (`users/:id/...`, Blastlog
+  docs/PLAYNITE_SYNC.md "Round 4"); their library is the sync library's cursor pages (`FriendData`). Games open as their
+  entry (`Nav.FriendEntry`). Friends (Nav.Friends) links each friend's three pages and adds a friend from a pasted link
+  (`GET friends/code/:code`, `POST friends`); the site has no friend requests.
 - **A friend's entry** (`Nav.FriendEntry`, Screens/FriendEntry.cs) is native: the site's game page for someone else's
   entry (hero, fingerprint, For you, their take with taps, review and your reactions, game details, your other friends,
   accessibility, trailers and screenshots, More like this), read only apart from reactions. Friend activity on the

@@ -111,7 +111,19 @@ public static class Nav {
     Site(plugin, "/together" + (ids != null && ids.Count > 0 ? "?with=" + string.Join(",", ids) : ""));
   }
 
-  /// <summary>The player's friends and friend groups.</summary>
+  /// <summary>
+  /// A friend's Dashboard, Library or Taste (the site's /friends/:id/dashboard, /library and /profile): one native window
+  /// with the three as tabs, read only (Screens/FriendPages.cs). <paramref name="page"/>: "dashboard", "library" or
+  /// "profile" ("taste" works too); <paramref name="name"/> when the caller knows it. Not set up yet: the site's page.
+  /// </summary>
+  public static void FriendPage(BlastlogPlugin plugin, string friendId, string page = "dashboard", string name = null) {
+    if (string.IsNullOrEmpty(friendId)) return;
+    var key = page == "library" ? "library" : page == "profile" || page == "taste" ? "profile" : "dashboard";
+    if (!plugin.Configured) { Site(plugin, $"/friends/{friendId}/{key}"); return; }
+    Blastlog.Playnite.Screens.FriendPages.Open(plugin, friendId, key, name);
+  }
+
+  /// <summary>The player's friends and friend groups: links, remove and restore, groups, and adding someone by their link (native).</summary>
   public static void Friends(BlastlogPlugin plugin) { if (plugin.Configured) Blastlog.Playnite.Screens.FriendsPage.Open(plugin); else Site(plugin, "/friends"); }
 
   /// <summary>Your taste: the native screen in Playnite's sidebar (Ui/ScreenJump.cs), the site if Playnite won't switch.</summary>
