@@ -66,6 +66,26 @@ public static class Nav {
   /// </summary>
   public static void SheetLook(BlastlogPlugin plugin) => Site(plugin, "/compare#sheets");
 
+  /// <summary>
+  /// Every game with one trait (the site's /traits/:id, "See games with …"): native (Screens/TraitPage.cs).
+  /// <paramref name="from"/>: what it was opened from ("Hades"), for its Back button.
+  /// </summary>
+  public static void Trait(BlastlogPlugin plugin, string traitId, string from = null) {
+    if (traitId == null) return;
+    if (plugin.Configured) { Blastlog.Playnite.Screens.TraitPage.Open(plugin, traitId, from); return; }
+    Site(plugin, "/traits/" + traitId);
+  }
+
+  /// <summary>
+  /// One of the player's collections (the site's /library/collections/:id): its games and the overall take, native
+  /// (Screens/CollectionPage.cs). <paramref name="done"/> runs after the window closes.
+  /// </summary>
+  public static void Collection(BlastlogPlugin plugin, string collectionId, Action done = null) {
+    if (collectionId == null) return;
+    if (plugin.Configured) { Blastlog.Playnite.Screens.CollectionPage.Open(plugin, collectionId, done); return; }
+    Site(plugin, "/library/collections/" + collectionId);
+  }
+
   /// <summary>Quick start: tap the well-known games you've played and give them stars.</summary>
   public static async void QuickStart(BlastlogPlugin plugin, Action done = null) {
     // Native once the server has the quick start routes; the site's page until then (or offline).

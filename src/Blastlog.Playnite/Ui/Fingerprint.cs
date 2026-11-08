@@ -17,6 +17,8 @@ public sealed class FingerprintOptions {
   public string SiteGameUrl;
   /// <summary>The site's address, for "See games with …" (traits/:id).</summary>
   public string ServerUrl;
+  /// <summary>Opens "See games with …" in Playnite (Nav.Trait); null opens the site's page at ServerUrl.</summary>
+  public Action<FingerprintTrait> OpenTrait;
 }
 
 /// <summary>
@@ -297,7 +299,8 @@ public static class Fingerprint {
       stack.Children.Add(row.Also(d => d.Margin = new Thickness(0, 4, 0, 2)));
     }
     var links = new WrapPanel { Margin = new Thickness(-10, 4, 0, 0) };
-    if (options.ServerUrl != null && trait.Id != null) links.Children.Add(LinkButton($"See games with “{trait.Label}” →", () => UiKit.Open(options.ServerUrl + "/traits/" + trait.Id), game: true));
+    if (trait.Id != null && (options.OpenTrait != null || options.ServerUrl != null))
+      links.Children.Add(LinkButton($"See games with “{trait.Label}” →", () => { if (options.OpenTrait != null) options.OpenTrait(trait); else UiKit.Open(options.ServerUrl + "/traits/" + trait.Id); }, game: true));
     if (options.SiteGameUrl != null) links.Children.Add(LinkButton("Flag it on Blastlog ↗", () => UiKit.Open(options.SiteGameUrl)));
     stack.Children.Add(links);
     box.Child = stack;

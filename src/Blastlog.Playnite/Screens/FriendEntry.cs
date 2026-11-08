@@ -110,7 +110,8 @@ sealed class FriendEntryView : UserControl {
       if (!worn) { worn = true; Kit.GameScope(body, plugin, Game); }
       body.Children.Add(Fingerprint.LinkButton("← Back", () => window.Close()).Also(b => { b.Margin = new Thickness(-10, 0, 0, 0); b.HorizontalAlignment = HorizontalAlignment.Left; }));
       body.Children.Add(Hero());
-      body.Children.Add(Fingerprint.Card(FingerprintData.Parse(page["fingerprint"]), new FingerprintOptions { ServerUrl = plugin.ServerUrl, SiteGameUrl = plugin.ServerUrl + "/library/" + entryId }));
+      body.Children.Add(Fingerprint.Card(FingerprintData.Parse(page["fingerprint"]), new FingerprintOptions { ServerUrl = plugin.ServerUrl, SiteGameUrl = plugin.ServerUrl + "/library/" + entryId,
+        OpenTrait = t => Nav.Trait(plugin, t.Id, $"{Owner}’s {Title}") }));
       var forYou = GamePageElement.ForYou(fit); if (forYou != null) body.Children.Add(forYou);
       body.Children.Add(GamePageElement.TwoUp(Take(), GamePageElement.Facts(Entry, Info)));
       if (friends != null && friends.Count > 0) body.Children.Add(GamePageElement.Friends(friends));
