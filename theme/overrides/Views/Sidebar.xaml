@@ -4,9 +4,13 @@
                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                     mc:Ignorable="d">
     <!--
-      Blastlog's sidebar (design.md 6; the site's .sidebar): 240px, page background, a line on the right, the mark in
-      the page's game colour next to "Blastlog", then the menu. Clicking the mark opens Playnite's main menu, as the
-      default theme's logo does. Top and bottom sidebar positions keep a compact row.
+      Blastlog's sidebar (design.md 6; the site's .sidebar in apps/web/src/App.tsx): 240px, page background, a line on
+      the right. Top: the mark in the page's game colour, "Blastlog" and the player's name (Brand). Then "My Blastlog"
+      over the menu, Friends and the Completion rate; the footer holds Send feedback, Settings and the IGDB credit.
+      Clicking the mark opens Playnite's main menu, as the default theme's logo does.
+      The plugin fills the Blastlog_Side* hosts (Ui/SidebarChrome.cs) and puts Playnite's own items in a collapsible
+      "Playnite" group under the menu; without the plugin they stay empty. Top and bottom sidebar positions keep a
+      compact row without them.
     -->
     <Style TargetType="{x:Type Sidebar}">
         <Setter Property="Template">
@@ -15,27 +19,40 @@
                     <Border BorderThickness="0,0,1,0" BorderBrush="{DynamicResource Blastlog.Line}"
                             Background="{DynamicResource Blastlog.Bg}"
                             x:Name="BorderContentHolder" Margin="{TemplateBinding Padding}">
-                        <DockPanel x:Name="DockContentHolder" Width="240" Margin="0,22,0,16">
+                        <DockPanel x:Name="DockContentHolder" Width="240" Margin="0,26,0,16">
                             <Border x:Name="PART_ElemMainMenu" Background="Transparent" DockPanel.Dock="Top"
-                                    Margin="20,0,20,40" Height="44" Cursor="Hand"
+                                    Margin="20,0,20,0" MinHeight="44" Cursor="Hand"
                                     WindowChrome.IsHitTestVisibleInChrome="True"
                                     ToolTip="Playnite menu">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Rectangle x:Name="Mark" Width="30" Height="30" Fill="{DynamicResource Blastlog.GameText}">
+                                    <Rectangle x:Name="Mark" Width="34" Height="34" Fill="{DynamicResource Blastlog.GameText}" VerticalAlignment="Center">
                                         <Rectangle.OpacityMask>
                                             <ImageBrush ImageSource="{ThemeFile 'Images/blastlog-mark.png'}" Stretch="Uniform" />
                                         </Rectangle.OpacityMask>
                                     </Rectangle>
-                                    <TextBlock x:Name="Wordmark" Text="Blastlog" Margin="11,0,0,0" VerticalAlignment="Center"
-                                               FontFamily="{DynamicResource FontFamily}" FontSize="17" FontWeight="ExtraBold"
-                                               Foreground="{DynamicResource Blastlog.Text}" />
+                                    <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock x:Name="Wordmark" Text="Blastlog"
+                                                   FontFamily="{DynamicResource FontFamily}" FontSize="17" FontWeight="ExtraBold"
+                                                   Foreground="{DynamicResource Blastlog.Text}" />
+                                        <ContentControl x:Name="Blastlog_SideName" Focusable="False" IsTabStop="False" />
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
 
+                            <ContentControl x:Name="Blastlog_SideFooter" DockPanel.Dock="Bottom" Margin="20,0,20,0"
+                                            Focusable="False" IsTabStop="False" />
+
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                                           DockPanel.Dock="Top" CanContentScroll="False" Padding="20,0,20,0"
-                                          x:Name="ScrollSidebarItems">
-                                <StackPanel x:Name="PART_PanelSideBarItems" Orientation="Vertical" />
+                                          x:Name="ScrollSidebarItems" Focusable="False">
+                                <StackPanel x:Name="SideColumn" Margin="0,40,0,12">
+                                    <TextBlock x:Name="MenuLabel" Text="My Blastlog" Margin="10,0,10,12"
+                                               FontFamily="{DynamicResource FontFamily}" FontSize="14" FontWeight="ExtraBold"
+                                               Foreground="{DynamicResource Blastlog.TextMuted}" />
+                                    <StackPanel x:Name="PART_PanelSideBarItems" Orientation="Vertical" />
+                                    <ContentControl x:Name="Blastlog_SideFriends" Focusable="False" IsTabStop="False" />
+                                    <ContentControl x:Name="Blastlog_SideCompletion" Focusable="False" IsTabStop="False" />
+                                </StackPanel>
                             </ScrollViewer>
                         </DockPanel>
                     </Border>
@@ -53,6 +70,12 @@
                             <Setter Property="HorizontalScrollBarVisibility" Value="Auto" TargetName="ScrollSidebarItems" />
                             <Setter Property="VerticalScrollBarVisibility" Value="Disabled" TargetName="ScrollSidebarItems" />
                             <Setter Property="Orientation" Value="Horizontal" TargetName="PART_PanelSideBarItems" />
+                            <Setter Property="Margin" Value="0" TargetName="SideColumn" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="MenuLabel" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideName" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFriends" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideCompletion" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFooter" />
                         </DataTrigger>
                         <DataTrigger Binding="{Settings SidebarPosition}" Value="Bottom">
                             <Setter Property="Width" Value="NaN" TargetName="DockContentHolder" />
@@ -64,6 +87,12 @@
                             <Setter Property="HorizontalScrollBarVisibility" Value="Auto" TargetName="ScrollSidebarItems" />
                             <Setter Property="VerticalScrollBarVisibility" Value="Disabled" TargetName="ScrollSidebarItems" />
                             <Setter Property="Orientation" Value="Horizontal" TargetName="PART_PanelSideBarItems" />
+                            <Setter Property="Margin" Value="0" TargetName="SideColumn" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="MenuLabel" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideName" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFriends" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideCompletion" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFooter" />
                         </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
