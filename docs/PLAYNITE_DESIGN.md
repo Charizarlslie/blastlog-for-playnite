@@ -74,12 +74,12 @@ Blastlog's menu is Dashboard, Library, Play next, Discover, Profile, Compare (de
 ### 4.1 Dashboard
 Everything on design.md's Dashboard: Search and + New entry (Search finds games in your library and friends'
 libraries; picking one opens its game page), Rate games I know / New from Steam prompts, the Next up hero (blurred cover
-under a scrim, glow in the game's colour, full cover, Recommended / Quick one / Long haul, length, platform and store
-chips, why it's up next, watch for, your own quote), Currently playing (with Finished it, Set aside with its two
-choices, Still playing check-in, Guides ↗, Reddit ↗, the pager), Your library numbers and How your stars split,
+under a scrim, glow in the game's colour, full cover with its status at the top right, Recommended / Quick one / Long haul, length, platform and store
+chips, why it's up next, watch for, your own quote), Currently playing (two cards side by side in their game's colours on a wide card; under the links Finished it, Set aside as quiet text with its two
+choices, Still playing check-in, Guides ↗, Reddit ↗, the pager), Your library numbers in one row of four and How your stars split with five boxed cells,
 Recently finished with its next steps.
 **Playnite adds:** a game you have in Playnite shows **Play** (installed) or **Install** (not installed) as the primary
-button on Next up and Currently playing rows. One that isn't in Playnite shows "Not in Playnite" and its stores.
+button on Next up, and as a square icon button (word in its tooltip) first on Currently playing cards. A Next up game that isn't in Playnite shows "Not in Playnite" and its stores.
 **Built** (`Screens/Dashboard*.cs`): everything above runs natively, including Finished it / Set aside / Still playing /
 Start another (mirror writes), the boost's Not now / Undo, and Friends lately with its reactions. Some actions open the
 site because they are site flows the plugin has no screen for yet: + New entry and + Add a new game (the add dialog) and

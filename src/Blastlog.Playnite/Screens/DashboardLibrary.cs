@@ -43,14 +43,16 @@ static class DashboardLibrary {
       new[] { Math.Round((double?)stats["completedMainPlusExtraHours"] ?? 0, MidpointRounding.AwayFromZero).ToString("N0", CultureInfo.InvariantCulture) + "h", "Finished time", $"to beat, {levelLabel}",
         $"How long the games finished take to beat ({levelLabel}){(notCounted.Count > 0 ? "; " + string.Join(", ", notCounted) + " not counted" : "")}", "status=done&sort=length&direction=desc" },
     };
-    var grid = new UniformGrid { Columns = 2, Margin = new Thickness(0, 0, 0, 16) };
+    // design.md 8 / web .lib-numbers: one row of four, a big number over its label, no boxes; the hint lives in the tooltip.
+    var grid = new UniformGrid { Columns = 4, Margin = new Thickness(0, 0, 0, 16) };
     foreach (var n in numbers) {
-      string value = n[0], label = n[1], hint = n[2], description = n[3], query = n[4];
+      string value = n[0], label = n[1], description = n[3], query = n[4];
       var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left, Children = {
-        Dash.Text(value, "Blastlog.Body", weight: FontWeights.ExtraBold, size: 26), Dash.Text(label, "Blastlog.Body", weight: FontWeights.SemiBold), Dash.Text(hint, "Blastlog.Small") } };
+        Dash.Text(value, "Blastlog.Body", weight: FontWeights.ExtraBold, size: 30).Also(t => t.TextWrapping = TextWrapping.NoWrap), Dash.Text(label, "Blastlog.Muted") } };
       var q = query;
-      var tile = new Button { Content = content, Style = Kit.Style("Blastlog.Ghost"), ToolTip = description, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(16, 12, 16, 12), HorizontalContentAlignment = HorizontalAlignment.Left };
-      tile.SetResourceReference(Control.BackgroundProperty, "Blastlog.Surface2"); tile.SetResourceReference(Control.BorderBrushProperty, "Blastlog.Line");
+      var tile = new Button { Content = content, Style = Kit.Style("Blastlog.TextButton"), ToolTip = description, Margin = new Thickness(0, 0, 12, 0), Padding = new Thickness(0),
+        HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
+      tile.Template = LeftTemplate(12);
       tile.Click += (s, e) => go(q);
       Dash.AutomationName(tile, $"{value} {label}: {description}");
       grid.Children.Add(tile);
@@ -67,12 +69,16 @@ static class DashboardLibrary {
     else {
       var shades = Dash.StarShades(counts, out var peak);
       panel.Children.Add(Split(counts.Select((c, i) => new Part(c, shades[i], "Blastlog.Star")).ToArray(), i => go($"status=done&rating={i + 1}")).Margin(0, 6, 0, 10));
+      // Web .lib-legend: five boxed cells, the count over "1★ · 12%", the most-used star in full text colour.
       var legend = new UniformGrid { Columns = 5 };
       for (var i = 0; i < 5; i++) {
         var star = i + 1;
-        var content = new StackPanel { Children = { Dash.Text(counts[i].ToString(CultureInfo.InvariantCulture), "Blastlog.Body", weight: FontWeights.ExtraBold).Also(t => t.HorizontalAlignment = HorizontalAlignment.Center),
-          Dash.Text($"{star}★ · {Pct(counts[i], sum)}", "Blastlog.Small", star == peak ? "Blastlog.Star" : null).Also(t => { t.HorizontalAlignment = HorizontalAlignment.Center; t.TextWrapping = TextWrapping.NoWrap; }) } };
-        var b = new Button { Content = content, Style = Kit.Style("Blastlog.TextButton"), Margin = new Thickness(0), Padding = new Thickness(2, 4, 2, 4) };
+        var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left, Children = { Dash.Text(counts[i].ToString(CultureInfo.InvariantCulture), "Blastlog.Body", weight: FontWeights.Bold),
+          Dash.Text($"{star}★ · {Pct(counts[i], sum)}", star == peak ? "Blastlog.Body" : "Blastlog.Small").Also(t => { t.FontSize = 14; t.TextWrapping = TextWrapping.NoWrap; t.TextTrimming = TextTrimming.CharacterEllipsis; }) } };
+        var b = new Button { Content = content, Style = Kit.Style("Blastlog.Ghost"), Margin = new Thickness(i == 0 ? 0 : 3, 0, i == 4 ? 0 : 3, 0), Padding = new Thickness(10, 8, 10, 8),
+          HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left, MinHeight = 44 };
+        b.SetResourceReference(Control.BorderBrushProperty, "Blastlog.Line");
+        b.Template = LeftTemplate(10);
         b.Click += (s, e) => go($"status=done&rating={star}");
         Dash.AutomationName(b, $"{counts[i]} games rated {star} stars, {Pct(counts[i], sum)}");
         legend.Children.Add(b);
@@ -80,6 +86,25 @@ static class DashboardLibrary {
       panel.Children.Add(legend);
     }
     return Dash.Card(panel);
+  }
+  /// <summary>The kit's button look with its content at the left (the kit template centres it): the site's library numbers
+  /// and star cells read left-aligned.</summary>
+  static ControlTemplate LeftTemplate(double radius) {
+    var t = new ControlTemplate(typeof(Button));
+    var fill = new FrameworkElementFactory(typeof(Border)) { Name = "Fill" };
+    fill.SetValue(Border.CornerRadiusProperty, new CornerRadius(radius));
+    fill.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Control.BackgroundProperty));
+    fill.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Control.BorderBrushProperty));
+    fill.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Control.BorderThicknessProperty));
+    fill.SetValue(Border.PaddingProperty, new TemplateBindingExtension(Control.PaddingProperty));
+    var content = new FrameworkElementFactory(typeof(ContentPresenter));
+    content.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left);
+    content.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+    fill.AppendChild(content);
+    t.VisualTree = fill;
+    t.Triggers.Add(new Trigger { Property = UIElement.IsMouseOverProperty, Value = true, Setters = { new Setter(UIElement.OpacityProperty, 0.88, "Fill") } });
+    t.Triggers.Add(new Trigger { Property = UIElement.IsKeyboardFocusWithinProperty, Value = true, Setters = { new Setter(UIElement.OpacityProperty, 0.88, "Fill") } });
+    return t;
   }
   static TextBlock Bold(string number, string rest) {
     var t = new TextBlock { Style = Kit.Style("Blastlog.Muted") };

@@ -13,8 +13,9 @@ using Newtonsoft.Json.Linq;
 namespace Blastlog.Playnite.Screens {
 /// <summary>
 /// Currently playing (design.md 8 Dashboard; web NowPlaying.tsx): three games a page with a pager; each row has its
-/// cover, title, time on the list and length, Guides ↗ and Reddit ↗, Play or Install when it's in Playnite, Still playing
-/// when the check-in is due, Finished it, and Set aside with its two choices. Finishing opens the rate-and-review card
+/// cover, title, time on the list and length, Guides ↗ and Reddit ↗, then under them Play or Install when it's in Playnite,
+/// Still playing when the check-in is due, Finished it, and Set aside (quiet text) with its two choices. Two cards side by
+/// side when the card is wide. Finishing opens the rate-and-review card
 /// (Later, Oops, still playing). + Start another and the empty state's Pick from your backlog open the start picker.
 /// </summary>
 sealed class DashboardPlaying : Border {
@@ -56,7 +57,7 @@ sealed class DashboardPlaying : Border {
 
     var pages = Math.Max(1, (int)Math.Ceiling(playing.Count / (double)Limit)); page = Math.Min(page, pages - 1);
     var shown = playing.Skip(page * Limit).Take(Limit).ToList();
-    foreach (var item in shown) body.Children.Add(GameRow(item, (JObject)data.Pages[(string)item["entryId"]]["entry"]));
+    if (shown.Count > 0) body.Children.Add(GameGrid(shown.Select(item => GameRow(item, (JObject)data.Pages[(string)item["entryId"]]["entry"])).ToList()));
 
     if (playing.Count > 0 && (pages > 1 || !picking)) {
       var foot = new DockPanel { Margin = new Thickness(0, 4, 0, 0), LastChildFill = false };
@@ -84,21 +85,43 @@ sealed class DashboardPlaying : Border {
   }
 
   // ---- One game ----
+  /// <summary>The games side by side as cards in their own colours on a wide card (web: @container min-width 640px), one
+  /// under another on a narrow one.</summary>
+  static FrameworkElement GameGrid(List<FrameworkElement> cards) {
+    var grid = new Grid();
+    foreach (var c in cards) grid.Children.Add(c);
+    var columns = 0;
+    void Lay(int n) {
+      columns = n; grid.ColumnDefinitions.Clear(); grid.RowDefinitions.Clear();
+      for (var i = 0; i < n; i++) grid.ColumnDefinitions.Add(new ColumnDefinition());
+      for (var i = 0; i < (cards.Count + n - 1) / n; i++) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+      for (var i = 0; i < cards.Count; i++) {
+        var col = i % n; Grid.SetColumn(cards[i], col); Grid.SetRow(cards[i], i / n);
+        cards[i].Margin = new Thickness(n > 1 && col > 0 ? 6 : 0, 0, n > 1 && col < n - 1 ? 6 : 0, 12);
+      }
+    }
+    Lay(1);
+    grid.SizeChanged += (s, e) => { try { var n = e.NewSize.Width >= 640 ? 2 : 1; if (n != columns) Lay(n); } catch (Exception) { } };
+    return grid;
+  }
+
+  /// <summary>One game, laid out as on the site's phones at every width: cover on the left; title, time on the list and
+  /// length, Guides and Reddit; the buttons under the links.</summary>
   FrameworkElement GameRow(JObject item, JObject entry) {
     var id = (string)entry["id"]; var game = Dash.Game(entry["game"]); var title = game?.Title ?? "";
     var due = (bool?)item["checkInDue"] == true; var working = busy == id;
-    var row = new Border { CornerRadius = new CornerRadius(18), Padding = new Thickness(14), Margin = new Thickness(0, 0, 0, 12), BorderThickness = new Thickness(1) };
-    row.SetResourceReference(BackgroundProperty, "Blastlog.GameTint"); row.SetResourceReference(BorderBrushProperty, due ? "Blastlog.GameEdge" : "Blastlog.GameTint2");
+    var row = new Border { CornerRadius = new CornerRadius(16), Padding = new Thickness(12), BorderThickness = new Thickness(1) };
+    row.SetResourceReference(BackgroundProperty, "Blastlog.GameTint"); row.SetResourceReference(BorderBrushProperty, "Blastlog.GameEdge");
     Kit.GameScope(row, plugin, game);
-    var grid = new Grid();
-    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-    grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+    // A DockPanel, not a Grid: the right side gets the card's real width, so the buttons wrap only when they must.
+    var grid = new DockPanel { LastChildFill = true };
+    var side = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
 
-    var cover = Kit.Cover(plugin, game, 66, ArtworkContext.Thumbnail, 12); cover.VerticalAlignment = VerticalAlignment.Top; cover.Margin = new Thickness(0, 0, 14, 0);
+    var cover = Kit.Cover(plugin, game, 60, ArtworkContext.Thumbnail, 8); cover.VerticalAlignment = VerticalAlignment.Center; cover.Margin = new Thickness(0, 0, 12, 0);
     Dash.OnClick(cover, () => Dash.OpenEntry(plugin, id)); Dash.AutomationName(cover, "Open " + title); cover.Focusable = true;
-    Grid.SetRowSpan(cover, 2); grid.Children.Add(cover);
+    DockPanel.SetDock(cover, Dock.Left); grid.Children.Add(cover);
 
-    var main = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+    var main = new StackPanel();
     var name = Dash.Text(title, "Blastlog.CardTitle"); Dash.OnClick(name, () => Dash.OpenEntry(plugin, id)); name.ToolTip = "Open " + title;
     main.Children.Add(name);
     var facts = new List<string>(); var hours = Dash.LengthText(entry["length"] as JObject);
@@ -107,35 +130,39 @@ sealed class DashboardPlaying : Border {
     main.Children.Add(Dash.Wrap(
       Dash.LinkPill("Guides", "https://www.google.com/search?q=" + Uri.EscapeDataString(title + " guide"), $"Guides for {title} (opens your browser)").Margin(0, 0, 8, 0),
       Dash.LinkPill("Reddit", "https://www.reddit.com/search/?q=" + Uri.EscapeDataString(title), $"Reddit search for {title} (opens your browser)")));
-    Grid.SetColumn(main, 1); grid.Children.Add(main);
+    side.Children.Add(main);
 
-    var actions = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
-    var tail = new StackPanel();
+    var actions = new WrapPanel();
+    var tail = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
     if (asideFor == id) {
       // design.md 8: the same question and answers for every game, with an end or without.
-      tail.Children.Add(Dash.Text("Back to your backlog to pick up later, or done with it?", "Blastlog.Body").Margin(0, 10, 0, 8));
+      tail.Children.Add(Dash.Text("Back to your backlog to pick up later, or done with it?", "Blastlog.Body").Margin(0, 0, 0, 8));
       actions.Children.Add(Kit.Button("Back to backlog", () => SetAside(entry), "Blastlog.Ghost"));
       actions.Children.Add(Kit.Button("Done with it", () => Finish(entry, "dnf"), "Blastlog.Ghost"));
       actions.Children.Add(Kit.Button("Cancel", () => { asideFor = null; Render(); }, "Blastlog.TextButton"));
-      tail.Children.Add(actions);
     } else {
-      var play = Dash.PlayButton(plugin, id); if (play != null) actions.Children.Add(play);
+      // Play or Install first is the Playnite addition (PLAYNITE_DESIGN 4.1), as a square icon button (its word in the
+      // tooltip and name) so Finished it and Set aside still fit on one line on a half-width card; Set aside is quiet text.
+      var play = Dash.PlayButton(plugin, id);
+      if (play != null && play.Content is StackPanel label && label.Children.Count == 2 && label.Children[1] is TextBlock word) {
+        play.ToolTip = word.Text + " " + title; label.Children.RemoveAt(1); ((FrameworkElement)label.Children[0]).Margin = new Thickness(0);
+        play.Tag = "icon";
+      }
+      if (play != null) actions.Children.Add(play);
       if (due) actions.Children.Add(Kit.Button("Still playing", () => StillPlaying(entry), play != null ? "Blastlog.Ghost" : "Blastlog.Primary"));
       actions.Children.Add(Kit.Button("Finished it", () => Finish(entry, "done"), "Blastlog.Ghost"));
-      actions.Children.Add(Kit.Button("Set aside", () => { asideFor = id; Render(); }, "Blastlog.Ghost"));
-      if (play == null) actions.Children.Add(Dash.Text("Not in Playnite", "Blastlog.Small").Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(4, 0, 0, 8); }));
+      actions.Children.Add(Kit.Button("Set aside", () => { asideFor = id; Render(); }, "Blastlog.TextButton"));
     }
-    foreach (var b in actions.Children.OfType<Button>()) { b.Margin = new Thickness(0, 0, 8, 8); b.IsEnabled = !working; }
-    if (asideFor != id) tail.Children.Add(actions);
-    if (asideFor != id && due) tail.Children.Add(Dash.Text(AskText(item, entry), "Blastlog.Muted").Margin(0, 2, 0, 0));
-    grid.Children.Add(tail);
-    // Buttons on the right on a wide card, under the title on a narrow one.
-    void Lay(bool wide) {
-      Grid.SetRow(tail, wide ? 0 : 1); Grid.SetColumn(tail, wide ? 2 : 1); tail.Margin = new Thickness(wide ? 14 : 0, wide ? 0 : 10, 0, 0);
-      tail.MaxWidth = wide ? 380 : double.PositiveInfinity; tail.VerticalAlignment = VerticalAlignment.Center;
+    // The site's .np-btn size (14px, 44px tall) with 6px gaps, so Play, Finished it and Set aside fit one line
+    // on a half-width card.
+    foreach (var b in actions.Children.OfType<Button>()) {
+      b.Margin = new Thickness(0, 0, b == actions.Children[actions.Children.Count - 1] ? 0 : 6, 8); b.IsEnabled = !working; b.FontSize = 14; b.MinHeight = 44;
+      var pad = (string)b.Tag == "icon" ? 0 : b.Style == Kit.Style("Blastlog.TextButton") ? 8 : 14;
+      b.Padding = new Thickness(pad, 0, pad, 0); if ((string)b.Tag == "icon") b.Width = 44;
     }
-    var wideNow = false; Lay(false);
-    grid.SizeChanged += (s, e) => { try { var w = e.NewSize.Width >= 640; if (w != wideNow) { wideNow = w; Lay(w); } } catch (Exception) { } };
+    tail.Children.Add(actions);
+    if (asideFor != id && due) tail.Children.Add(Dash.Text(AskText(item, entry), "Blastlog.Muted"));
+    side.Children.Add(tail); grid.Children.Add(side);
     row.Child = grid;
     return row;
   }
