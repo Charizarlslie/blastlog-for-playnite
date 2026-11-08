@@ -29,6 +29,11 @@ static class TasteUi {
   /// <summary>The site's stars text: "4★", "4.5★".</summary>
   public static string Stars(double n) => (Math.Abs(n - Math.Round(n)) < 1e-9 ? Math.Round(n).ToString("0", Inv) : n.ToString("0.0", Inv)) + "★";
   public static string Plural(int n, string one, string many = null) => n + " " + (n == 1 ? one : many ?? one + "s");
+  /// <summary>A token at a share of its strength over what's behind it (the site's color-mix(in srgb, var(--token) k, transparent)).</summary>
+  public static SolidColorBrush Faded(string token, double share) =>
+    new SolidColorBrush(Tint.Alpha((Color)ColorConverter.ConvertFromString(Tokens.For(ThemeBridge.CurrentMode)[token]), share));
+  /// <summary>A token's colour as a brush (for tokens the theme doesn't publish as a resource, like ok-text).</summary>
+  public static SolidColorBrush TokenBrush(string token) => new SolidColorBrush((Color)ColorConverter.ConvertFromString(Tokens.For(ThemeBridge.CurrentMode)[token]));
 
   /// <summary>Runs an event handler's work, logging instead of letting an exception reach Playnite.</summary>
   public static async void Run(Func<Task> work, string what) {

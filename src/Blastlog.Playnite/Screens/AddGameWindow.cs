@@ -130,7 +130,7 @@ sealed class AddGameFlow {
     var storeWrap = new WrapPanel(); Dash.AutomationName(storeWrap, "Where you own it");
     storePills.Clear();
     foreach (var s in AddGameParts.Stores) {
-      var key = s.Key; var pill = AddGameParts.Pill(s.Value, () => { if (!stores.Remove(key)) stores.Add(key); AddGameParts.SetPill(storePills[key], stores.Contains(key)); });
+      var key = s.Key; var pill = AddGameParts.Pill(s.Value, () => { if (!stores.Remove(key)) stores.Add(key); AddGameParts.SetPill(storePills[key], stores.Contains(key)); }, box: true);
       AddGameParts.SetPill(pill, stores.Contains(key)); storePills[key] = pill; storeWrap.Children.Add(pill);
     }
     storeBlock.Children.Add(storeWrap);
@@ -139,9 +139,10 @@ sealed class AddGameFlow {
     body.Children.Add(error.Margin(0, 10, 0, 0));
     SetOwnership(ownership);
 
-    addButton = new Button { Content = AddLabel, Style = Kit.Style("Blastlog.Primary"), IsEnabled = false };
+    // The site's .modal .actions: Add is .primary (16px, 800, 44px tall, 18px sides); Cancel is plain muted words, no edge.
+    addButton = new Button { Content = AddLabel, Style = Kit.Style("Blastlog.Primary"), IsEnabled = false, FontSize = 16, FontWeight = FontWeights.ExtraBold, MinHeight = 44, Padding = new Thickness(18, 0, 18, 0), Margin = new Thickness(0) };
     addButton.Click += (s, e) => Dash.Safe(Add, "add a game: add");
-    var cancel = Kit.Button("Cancel", () => window.Close(), "Blastlog.Ghost").Also(b => b.Margin = new Thickness(0, 0, 10, 0));
+    var cancel = Kit.Button("Cancel", () => window.Close(), "Blastlog.TextButton").Also(b => { b.Margin = new Thickness(0, 0, 10, 0); b.FontSize = 16; b.FontWeight = FontWeights.Normal; b.MinHeight = 44; b.Padding = new Thickness(11, 0, 11, 0); });
     var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, addButton } };
     var footer = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(28, 12, 28, 18), Child = buttons };
     footer.SetResourceReference(Border.BorderBrushProperty, "Blastlog.Line");

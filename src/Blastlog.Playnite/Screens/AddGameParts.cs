@@ -5,6 +5,8 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using Blastlog.Playnite.Ui;
 using Blastlog.Sync.Core;
 using Blastlog.Sync.Core.Design;
@@ -53,9 +55,11 @@ static class AddGameParts {
     text.Children.Add(Dash.Text(title, "Blastlog.Body", "Blastlog.Text", FontWeights.SemiBold).Also(t => t.TextWrapping = TextWrapping.Wrap));
     if (!string.IsNullOrEmpty(line)) text.Children.Add(Dash.Text(line, "Blastlog.Small").Also(t => { t.Margin = new Thickness(0, 3, 0, 0); t.TextWrapping = TextWrapping.Wrap; }));
     if (badge != null) {
-      var pill = new Border { CornerRadius = new CornerRadius(999), Padding = new Thickness(10, 3, 10, 4), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Left,
-        Child = Dash.Text(badge, "Blastlog.Small", "Blastlog.Ok", FontWeights.Bold) };
-      pill.SetResourceReference(Border.BackgroundProperty, "Blastlog.Surface");
+      // web .library-badge: ok-text on light-dark(#cef6e8, #12352b), 800 weight.
+      var light = ThemeBridge.CurrentMode == Mode.Light;
+      var pill = new Border { CornerRadius = new CornerRadius(999), Padding = new Thickness(7, 4, 7, 4), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Left,
+        Child = Dash.Text(badge, "Blastlog.Small", null, FontWeights.ExtraBold).Also(t => t.Foreground = new SolidColorBrush(Token("ok-text"))),
+        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(light ? "#cef6e8" : "#12352b")) };
       text.Children.Add(pill);
     }
     var content = new DockPanel { Children = { image, text } }; DockPanel.SetDock(image, Dock.Left);
@@ -70,25 +74,51 @@ static class AddGameParts {
     return b;
   }
 
-  /// <summary>The chosen row wears the accent edge and tint (web .game-results button.active).</summary>
+  // The window wears Blastlog green (AddGameWindow), as the site's modal does; its mixes are worked out from the tokens.
+  static Color Token(string key) => (Color)ColorConverter.ConvertFromString(Tokens.For(ThemeBridge.CurrentMode)[key]);
+  static Color Accent => (Color)ColorConverter.ConvertFromString(GameColour.For(GameColour.BrandGreen, ThemeBridge.CurrentMode).Game);
+
+  /// <summary>
+  /// The chosen row (web .game-results button.active): a 1px accent edge and the accent 10% into surface-2.
+  /// </summary>
   public static void Mark(Border frame, bool on) {
-    frame.SetResourceReference(Border.BorderBrushProperty, on ? "Blastlog.Game" : "Blastlog.Line");
-    frame.SetResourceReference(Border.BackgroundProperty, on ? "Blastlog.GameTint2" : "Blastlog.Surface2");
-    frame.BorderThickness = new Thickness(on ? 2 : 1);
-    frame.Padding = new Thickness(on ? 8 : 9);
+    if (on) { frame.BorderBrush = new SolidColorBrush(Accent); frame.Background = new SolidColorBrush(Tint.Mix(Accent, Token("surface-2"), 0.10)); }
+    else { frame.SetResourceReference(Border.BorderBrushProperty, "Blastlog.Line"); frame.SetResourceReference(Border.BackgroundProperty, "Blastlog.Surface2"); }
   }
 
-  /// <summary>A 44px pill that can be on or off (ownership and Where you own it; web .owned-choices label.on).</summary>
-  public static Button Pill(string label, Action click) {
-    var b = new Button { Content = label, Style = Kit.Style("Blastlog.Ghost"), MinHeight = 44, Padding = new Thickness(16, 0, 16, 0), Margin = new Thickness(0, 0, 8, 8), FontSize = 14 };
+  /// <summary>
+  /// A 44px pill that can be on or off (web .owned-choices label): muted words in 800 weight, fully rounded. Store pills
+  /// carry the site's checkbox (<paramref name="box"/>); the ownership pair stands in for the site's select, so it has none.
+  /// </summary>
+  public static Button Pill(string label, Action click, bool box = false) {
+    var row = new DockPanel { VerticalAlignment = VerticalAlignment.Center };
+    if (box) {
+      var tick = new Path { Data = Geometry.Parse("M3.5 8.5 6.5 11.5 12.5 4.5"), StrokeThickness = 2, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+        StrokeLineJoin = PenLineJoin.Round, Width = 16, Height = 16, Stretch = Stretch.None };
+      tick.SetResourceReference(Shape.StrokeProperty, "Blastlog.OnGame");
+      var square = new Border { Width = 16, Height = 16, CornerRadius = new CornerRadius(3), BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 7, 0), Child = tick };
+      DockPanel.SetDock(square, Dock.Left); row.Children.Add(square);
+    }
+    row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
+    var pill = new Border { Child = row, CornerRadius = new CornerRadius(999), BorderThickness = new Thickness(1), Padding = new Thickness(13, 6, 13, 6), MinHeight = 44 };
+    var b = new Button { Content = pill, Style = Kit.Style("Blastlog.TextButton"), MinHeight = 44, Padding = new Thickness(0), Margin = new Thickness(0, 0, 6, 6), FontSize = 14 };
     b.Click += (s, e) => { try { click(); } catch (Exception ex) { Log.Error(ex, "Blastlog add a game: " + label); } };
+    Dash.AutomationName(b, label);
+    SetPill(b, false);
     return b;
   }
+  /// <summary>On: the edge is the accent 60% into the line, the fill the accent 14% into the surface, the box ticked.</summary>
   public static void SetPill(Button b, bool on) {
-    b.SetResourceReference(Control.BorderBrushProperty, on ? "Blastlog.GameEdge" : "Blastlog.Line");
-    b.SetResourceReference(Control.BackgroundProperty, on ? "Blastlog.GameTint2" : "Blastlog.Surface");
-    b.SetResourceReference(Control.ForegroundProperty, on ? "Blastlog.GameText" : "Blastlog.Text");
-    b.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
+    if (!(b.Content is Border pill)) return;
+    if (on) { pill.BorderBrush = new SolidColorBrush(Tint.Mix(Accent, Token("line"), 0.6)); pill.Background = new SolidColorBrush(Tint.Mix(Accent, Token("surface"), 0.14)); }
+    else { pill.SetResourceReference(Border.BorderBrushProperty, "Blastlog.Line"); pill.SetResourceReference(Border.BackgroundProperty, "Blastlog.Surface"); }
+    b.SetResourceReference(Control.ForegroundProperty, "Blastlog.TextMuted");
+    b.FontWeight = FontWeights.ExtraBold;
+    if (pill.Child is DockPanel row && row.Children.Count > 1 && row.Children[0] is Border square) {
+      square.SetResourceReference(Border.BorderBrushProperty, on ? "Blastlog.Game" : "Blastlog.Edge");
+      if (on) square.SetResourceReference(Border.BackgroundProperty, "Blastlog.Game"); else square.Background = Brushes.Transparent;
+      if (square.Child != null) square.Child.Visibility = on ? Visibility.Visible : Visibility.Hidden;
+    }
     System.Windows.Automation.AutomationProperties.SetItemStatus(b, on ? "On" : "Off");
   }
 
