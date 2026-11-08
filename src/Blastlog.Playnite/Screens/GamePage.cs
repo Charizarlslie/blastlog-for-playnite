@@ -117,7 +117,8 @@ public sealed class GamePageElement : PluginUserControl {
     } catch (Exception e) { Log.Error(e, "Blastlog game page render"); }
   }
 
-  FingerprintOptions Options() => new FingerprintOptions { ServerUrl = plugin.ServerUrl, SiteGameUrl = plugin.ServerUrl + "/library/" + entryId };
+  FingerprintOptions Options() => new FingerprintOptions { ServerUrl = plugin.ServerUrl, SiteGameUrl = plugin.ServerUrl + "/library/" + entryId,
+    OpenTrait = t => Nav.Trait(plugin, t.Id, (string)Entry?["game"]?["title"]) };
   JObject Entry => page?["entry"] as JObject;
 
   // ---- The action row: status and stars, editable in place ----
@@ -402,7 +403,7 @@ public sealed class GamePageElement : PluginUserControl {
     if (collection != null) {
       body.Children.Add(Eyebrow("Part of a collection").Also(t => t.Margin = new Thickness(0, 14, 0, 6)));
       var id = (string)collection["id"];
-      body.Children.Add(Fingerprint.LinkButton(((string)collection["title"] ?? "Collection") + " ↗", () => UiKit.Open(plugin.ServerUrl + "/library/collections/" + id), game: true).Also(b => b.Margin = new Thickness(-10, 0, 0, 0)));
+      body.Children.Add(Fingerprint.LinkButton(((string)collection["title"] ?? "Collection") + " →", () => Nav.Collection(plugin, id, () => OnEntryChanged(entryId)), game: true).Also(b => b.Margin = new Thickness(-10, 0, 0, 0)));
     }
     return card;
   }
