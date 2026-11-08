@@ -16,7 +16,7 @@ namespace Blastlog.Playnite.Ui {
 /// <summary>
 /// A Blastlog screen in Playnite's sidebar. Implement it in its own file and it shows up: the plugin finds every
 /// IBlastlogScreen in this assembly (no shared list to edit, so screens can be built in parallel). Order follows the
-/// site's menu: Dashboard 10, Your library 20, Play next 30, Discover 40, Your taste 50, Compare 60.
+/// site's menu: Dashboard 10, Blastlog library 20, Play next 30, Discover 40, Your taste 50, Compare 60.
 /// </summary>
 public interface IBlastlogScreen {
   string Title { get; }
@@ -104,6 +104,9 @@ public static class Kit {
     ["quit"] = new[] { "Quit", "<path d=\"M18 6 6 18\" /><path d=\"m6 6 12 12\" />" },
     ["dnf"] = new[] { "Didn't finish", "<path d=\"M5 12h14\" />" },
     ["unplayable"] = new[] { "Unplayable", "<circle cx=\"12\" cy=\"12\" r=\"9\" /><path d=\"m5 5 14 14\" />" },
+    // The site's StatusPill draws these two with its plain circle (web StatusPill.tsx, library.ts statusLabel).
+    ["ignored"] = new[] { "Ignored", "<circle cx=\"12\" cy=\"12\" r=\"9\" />" },
+    ["unknown"] = new[] { "Unknown", "<circle cx=\"12\" cy=\"12\" r=\"9\" />" },
     ["wishlist"] = new[] { "Wishlist", "<path d=\"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z\" />" },
   };
   /// <summary>A status pill: icon plus word in fixed colours, never the game's (design.md 2.3).</summary>

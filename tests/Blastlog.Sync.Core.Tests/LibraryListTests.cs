@@ -6,9 +6,11 @@ using Xunit;
 namespace Blastlog.Sync.Core.Tests {
 /// <summary>The Library screen filters, sorts and matches searches exactly as the site (web library.test.ts, contracts search-text.test.ts).</summary>
 public class LibraryListTests {
-  static Entry E(string title, string status, double? rating, string ownership = "library", int? hours = 10, string finished = null) => new Entry {
-    EntryId = Guid.NewGuid().ToString(), Status = status, Rating = rating, Ownership = ownership, FinishedOn = finished,
-    Length = hours == null ? null : new EntryLength { Hours = hours.Value, Level = "main_plus_extra" },
+  /// <summary>hours: null = unknown, -1 = no end (length null, noEnd true, as the server sends it).</summary>
+  static Entry E(string title, string status, double? rating, string ownership = "library", int? hours = 10, string finished = null, string collection = null) => new Entry {
+    EntryId = Guid.NewGuid().ToString(), Status = status, Rating = rating, Ownership = ownership, FinishedOn = finished, CollectionId = collection,
+    Length = hours == null || hours < 0 ? null : new EntryLength { Hours = hours.Value, Level = "main_plus_extra" }, NoEnd = hours == -1,
+    Review = title == "Reviewed" ? "Useful review evidence" : null,
     Game = new Game { Id = Guid.NewGuid().ToString(), Title = title } };
   static readonly Entry[] Rows = { E("Backlog", "not_started", null), E("Finished", "done", 5, "library", 30), E("Wish", "not_started", 3, "wishlist"), E("Reviewed", "quit", 2) };
   static string[] Titles(LibraryFilters f, params Entry[] rows) => LibraryList.Filter(rows.Length > 0 ? rows : Rows, f).Select(e => e.Game.Title).ToArray();
@@ -57,9 +59,48 @@ public class LibraryListTests {
     Assert.False(SearchText.Matches("Hades", SearchText.Fold("hades 2")));
     Assert.Equal(new[] { "Reviewed" }, Titles(F(f => f.Search = "review")));
     Assert.Empty(Titles(F(f => f.Search = "PC")));
-    // The site searches review text too; the screen passes it when it has it.
-    Assert.Equal(new[] { "Finished" }, LibraryList.Filter(Rows, F(f => f.Search = "evidence"), e => e.Game.Title == "Finished" ? "Useful review evidence" : null).Select(e => e.Game.Title));
+    Assert.Equal(new[] { "Reviewed" }, Titles(F(f => f.Search = "evidence")));
   }
+
+  [Fact]
+  public void NoEndCountsAsLongestAndUnknownGoesLast() {
+    var mixed = new[] { E("Ten", "not_started", null, hours: 10), E("Unknown", "not_started", null, hours: null), E("Endless", "not_started", null, hours: -1), E("Two", "not_started", null, hours: 2) };
+    Assert.Equal(new[] { "Two", "Ten", "Endless", "Unknown" }, Titles(F(f => f.Sort = "length"), mixed));
+    Assert.Equal(new[] { "Endless", "Ten", "Two", "Unknown" }, Titles(F(f => { f.Sort = "length"; f.Direction = "desc"; }), mixed));
+  }
+
+  // Collections (web library.test.ts "collections in the library list").
+  static readonly CollectionRef Legendary = new CollectionRef { Id = "c1", Title = "Mass Effect Legendary Edition" };
+  static readonly Entry[] All = { E("Alan Wake", "done", 4), E("Mass Effect", "done", 4, collection: "c1"), E("Mass Effect 2", "done", 5, collection: "c1"),
+    E("Mass Effect 3", "playing", null, collection: "c1"), E("Zelda", "not_started", null) };
+  static string[] Show(LibraryFilters f, System.Collections.Generic.List<Entry> rows = null) =>
+    LibraryList.Group(rows ?? LibraryList.Filter(All, f), All, new[] { Legendary }, f)
+      .Select(i => i.Entry != null ? i.Entry.Game.Title : $"[{i.Collection.Title}: {string.Join(", ", i.Members.Select(m => m.Game.Title))}]").ToArray();
+
+  [Fact]
+  public void CollectionIsOneRowWhereItsTitleFalls() =>
+    Assert.Equal(new[] { "Alan Wake", "[Mass Effect Legendary Edition: Mass Effect, Mass Effect 2, Mass Effect 3]", "Zelda" }, Show(new LibraryFilters()));
+
+  [Fact]
+  public void CollectionKeepsOnlyGamesThatPass() {
+    Assert.Equal(new[] { "[Mass Effect Legendary Edition: Mass Effect 3]" }, Show(F(f => f.Status = "playing")));
+    Assert.Equal(new[] { "Zelda" }, Show(F(f => f.Status = "not_started")));
+  }
+
+  [Fact]
+  public void CollectionDropsWhenNoneOfItsGamesHaveTheTrait() {
+    var trait = F(f => f.Trait = Guid.NewGuid().ToString());
+    Assert.Equal(new[] { "Zelda" }, Show(trait, All.Where(e => e.Game.Title == "Zelda").ToList()));
+  }
+
+  [Fact]
+  public void SearchNamingTheCollectionShowsAllItsGames() =>
+    Assert.Equal(new[] { "[Mass Effect Legendary Edition: Mass Effect, Mass Effect 2, Mass Effect 3]" }, Show(F(f => f.Search = "legendary")));
+
+  [Fact]
+  public void OtherSortsPlaceTheCollectionWhereItsFirstGameFalls() =>
+    Assert.Equal(new[] { "[Mass Effect Legendary Edition: Mass Effect 2, Mass Effect, Mass Effect 3]", "Alan Wake", "Zelda" },
+      Show(F(f => { f.Sort = "rating"; f.Direction = "desc"; })));
 
   [Fact]
   public void CountsEveryChip() {

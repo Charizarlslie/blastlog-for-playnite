@@ -10,7 +10,10 @@ public sealed class GameArtwork { public string CoverImageId {get;set;} public s
 public sealed class HeroCandidate { public string ImageId {get;set;} public string Source {get;set;} public int? Width {get;set;} public int? Height {get;set;} public bool? Animated {get;set;} public bool? AlphaChannel {get;set;} public JObject ImageType {get;set;} }
 public sealed class EntryLength { public int Hours {get;set;} public string Level {get;set;} }
 public sealed class EntryLink { public string PlayniteGameId {get;set;} }
-public sealed class Entry { public string EntryId {get;set;} public int Version {get;set;} public DateTimeOffset UpdatedAt {get;set;} public Game Game {get;set;} public string Ownership {get;set;} public string Status {get;set;} public double? Rating {get;set;} public bool HasReview {get;set;} public string FinishedOn {get;set;} public string Platform {get;set;} public bool InBacklog {get;set;} public EntryLength Length {get;set;} public EntryLink Link {get;set;} }
+public sealed class Entry { public string EntryId {get;set;} public int Version {get;set;} public DateTimeOffset UpdatedAt {get;set;} public Game Game {get;set;} public string Ownership {get;set;} public string Status {get;set;} public double? Rating {get;set;} public bool HasReview {get;set;} public string FinishedOn {get;set;} public string Platform {get;set;} public bool InBacklog {get;set;} public EntryLength Length {get;set;} public EntryLink Link {get;set;}
+  /// <summary>Since 2026-11-07 (server round 3): the review text (null when none), the collection the entry is in, and
+  /// whether the game has no end (a live-service or sandbox game; <see cref="Length"/> stays null then).</summary>
+  public string Review {get;set;} public string CollectionId {get;set;} public bool NoEnd {get;set;} }
 public sealed class RemovedEntry { public string EntryId {get;set;} public DateTimeOffset RemovedAt {get;set;} }
 public sealed class LibraryPage { public List<Entry> Items {get;set;} = new List<Entry>(); public List<RemovedEntry> Removed {get;set;} = new List<RemovedEntry>(); public string NextCursor {get;set;} public bool HasMore {get;set;} }
 

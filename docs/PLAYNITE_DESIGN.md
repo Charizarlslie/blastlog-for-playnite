@@ -61,7 +61,7 @@ Blastlog's menu is Dashboard, Library, Play next, Discover, Profile, Compare (de
 
 | Blastlog | In Playnite | Drawn by |
 |---|---|---|
-| Sidebar | Playnite's left sidebar, widened with labels: Blastlog mark (game colour), Dashboard, Library, Play next, Discover, Profile, Compare, then Playnite's own items (add-ons, settings) below a line. Selected item filled with `game` / `on-game`. | Theme + plugin sidebar items |
+| Sidebar | Playnite's left sidebar, widened with labels: Blastlog mark (game colour), Dashboard, Blastlog library, Play next, Discover, Your taste, Compare, then Playnite's own items (Library, Statistics, other add-ons' views) under them (Charlie, 2026-11-07; `Ui/SidebarOrder.cs` reorders Playnite's sidebar list by reflection, since Playnite puts its own first and has no setting for it). Selected item filled with `game` / `on-game`. | Theme + plugin sidebar items |
 | Dashboard | A plugin view, and Playnite's start view if the user picks it | Plugin |
 | Library | Playnite's own library (grid view), restyled as Blastlog's Library | Theme |
 | Game page | Playnite's game details, restyled as Blastlog's game page, with Playnite's Install / Play buttons in it | Theme + plugin panels |
@@ -84,7 +84,7 @@ button on Next up and Currently playing rows. One that isn't in Playnite shows "
 Start another (mirror writes), the boost's Not now / Undo, and Friends lately with its reactions. Some actions open the
 site because they are site flows the plugin has no screen for yet: + New entry and + Add a new game (the add dialog) and
 friends' or catalogue games from Search (Discover game pages). The library links (the numbers, the star legend, Enter in
-Search) open the native Your library screen with the site's filters (`Nav.Library`, 4.2). A paired game's View details selects it in
+Search) open the native Blastlog library screen with the site's filters (`Nav.Library`, 4.2). A paired game's View details selects it in
 Playnite's library. The earlier view's Sync now / Preview sync / Pair games / Refresh sit in a card at the bottom.
 
 ### 4.2 Library (Playnite's grid, restyled)
@@ -92,7 +92,7 @@ Blastlog's cover tiles (3:4, big, rounded 14–18, game-tinted card, status pill
 the cover, two lines then cut off. Filters use Playnite's own filter panel and the `Blastlog: …` tags, styled as
 Blastlog's filter chips. Installed games get a small "Installed" mark; Playnite's sort and group stay.
 
-**Your library** (`Screens/LibraryScreen.cs`, sidebar order 20) is the site's Library page as a native screen: every
+**Blastlog library** (`Screens/LibraryScreen.cs`, sidebar order 20; named apart from Playnite's own Library) is the site's Library page as a native screen: every
 Blastlog entry, games that aren't in Playnite included, read from the sync's own library copy (`GET /sync/v1/library`
 from its cursor, refreshed on open). Header with the count, Import games (site) and + New entry (native add dialog); the
 panel with search, the status chips with counts (All records, Backlog, Completed, Wishlist, Playing, Started, Done), the
@@ -100,9 +100,13 @@ rating and sort menus and the reverse button; then cover tiles in the Library ti
 (year, length, Has review, status pill, stars, Installed). Filter and sort are `Blastlog.Sync.Core.Design.LibraryList`,
 tested against the site's `library.test.ts` cases and its search matching. A tile opens through `Nav.Entry`; coming back
 from a game shows the same filters and place. `Nav.Library(query)` opens it with the site's query (`status=done&rating=4`),
-in place when it's already open. **Not yet** (missing sync reads, listed for the server): the trait filter (needs
-`/users/:id/library-traits`), searching review text (the sync library has `hasReview`, not the text), "No end" lengths
-(the sync library drops them), collections as one row, and wishlist sale tags.
+in place when it's already open. Since server round 3 (2026-11-07): search covers review text; "No end" lengths show
+and sort as the longest; the trait filter ("Has trait…", `GET /library-traits[?trait=]`) shows "With …" with ✕ and the
+link to the trait's page (`Nav.Trait`); collections take one tile ("Collection · N games", N/M finished, overall stars,
+lengths added up) that opens `Nav.Collection` and shows its games under it on "Show its N games"
+(`LibraryList.Group`, the site's groupCollections cases); wishlist games on sale wear "On sale $x" on the cover, only
+while `GET /sale-prices` says `available`. Entries saved before those fields are read again in full once
+(`SyncStore.LibraryShape`).
 
 ### 4.3 Game page (Playnite's details, restyled)
 The game page hero: blurred background art under a scrim, glow, cover, title, and the action row: **Play / Install**

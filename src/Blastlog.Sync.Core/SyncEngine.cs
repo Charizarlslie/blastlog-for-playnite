@@ -28,6 +28,8 @@ public sealed class SyncStore {
   public Dictionary<string,Baseline> Baselines {get;set;} = new Dictionary<string,Baseline>();
   public Dictionary<string,Entry> Entries {get;set;} = new Dictionary<string,Entry>();
   public string Cursor {get;set;} public StatusMap StatusMap {get;set;} public bool FirstSyncDone {get;set;} public LastRun LastRun {get;set;}
+  /// <summary>Which library fields the saved entries were read with; older ones are read again in full once (the cursor only brings changes).</summary>
+  public int LibraryShape {get;set;}
   public static SyncStore Load(string path) {
     if (!File.Exists(path)) return new SyncStore();
     try { return JsonConvert.DeserializeObject<SyncStore>(File.ReadAllText(path)) ?? new SyncStore(); }
@@ -56,8 +58,12 @@ public sealed class SyncEngine {
 
   StatusMap Map() => store.StatusMap ??= Mapping.FromNames(playnite.Statuses());
 
+  /// <summary>The library fields this version reads (1: review, collectionId, noEnd).</summary>
+  public const int LibraryShape = 1;
+
   public async Task RefreshAsync(CancellationToken ct = default) {
-    var cursor = store.Cursor;
+    // Entries saved before a new field existed don't have it, and the cursor only brings changes: read them all once.
+    var cursor = store.LibraryShape < LibraryShape ? null : store.Cursor;
     while (true) {
       var page = (await client.LibraryAsync(cursor, 500, ct).ConfigureAwait(false)).Value;
       foreach (var e in page.Items) store.Entries[e.EntryId] = e;
@@ -66,7 +72,7 @@ public sealed class SyncEngine {
       cursor = page.NextCursor ?? cursor;
       if (!page.HasMore) break;
     }
-    store.Cursor = cursor;
+    store.Cursor = cursor; store.LibraryShape = LibraryShape;
     // A pair whose entry is gone (removed on the site) is dropped here; nothing in Playnite is touched.
     foreach (var gone in store.Pairs.Where(p => !store.Entries.ContainsKey(p.Value)).Select(p => p.Key).ToList()) { store.Pairs.Remove(gone); store.Baselines.Remove(gone); }
   }

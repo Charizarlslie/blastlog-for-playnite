@@ -101,6 +101,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public ThemeBridge Theme { get; private set; }
   public override void OnApplicationStarted(OnApplicationStartedEventArgs args) {
     Theme = new ThemeBridge(this); Theme.Install();
+    try { Ui.SidebarOrder.Start(); } catch (Exception e) { Log.Error(e, "Blastlog: sidebar order"); }
     Log.Warn($"Blastlog: started, {(Configured ? "token set" : "no token")}, {store.Pairs.Count} paired game(s), first sync {(store.FirstSyncDone ? "done" : "not done")}.");
     // Nothing shows as paired (no pills, stars or Play on Blastlog's screens) until games are paired once.
     if (Configured && store.Pairs.Count == 0) PlayniteApi.Notifications.Add(new NotificationMessage("blastlog-pair",

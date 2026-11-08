@@ -90,6 +90,17 @@ public static class SearchText {
   }
 }
 
+/// <summary>A collection as the list needs it: its id and the title it sorts and searches by.</summary>
+public sealed class CollectionRef { public string Id { get; set; } public string Title { get; set; } }
+
+/// <summary>One item of the library list: an entry, or a collection with its games that pass the filters.</summary>
+public sealed class LibraryItem {
+  public Entry Entry { get; } public CollectionRef Collection { get; } public List<Entry> Members { get; }
+  public LibraryItem(Entry entry) { Entry = entry; }
+  public LibraryItem(CollectionRef collection, List<Entry> members) { Collection = collection; Members = members; }
+  public string Title => Entry != null ? Entry.Game.Title : Collection.Title;
+}
+
 /// <summary>The Library page's list: filter and sort as the site's filterLibrary, and the status chips' counts.</summary>
 public static class LibraryList {
   /// <summary>The status chips, in the site's order, with their labels.</summary>
@@ -109,13 +120,13 @@ public static class LibraryList {
   }
 
   /// <summary>
-  /// The entries that pass, sorted. Search looks at the title (and <paramref name="reviewOf"/>'s text when given: the
-  /// site searches reviews too). <paramref name="hasTrait"/>: the trait filter's games, when one is picked.
+  /// The entries that pass, sorted. Search looks at the title and the review (the game, not the hardware: platform labels
+  /// aren't searched). <paramref name="hasTrait"/>: the trait filter's games, when one is picked.
   /// </summary>
-  public static List<Entry> Filter(IEnumerable<Entry> entries, LibraryFilters f, Func<Entry, string> reviewOf = null, Func<Entry, bool> hasTrait = null) {
+  public static List<Entry> Filter(IEnumerable<Entry> entries, LibraryFilters f, Func<Entry, bool> hasTrait = null) {
     var query = SearchText.Fold((f.Search ?? "").Trim());
     var rows = entries.Where(e => e?.Game != null).Where(e => {
-      if (query.Length > 0 && !SearchText.Matches(e.Game.Title + " " + (reviewOf?.Invoke(e) ?? ""), query)) return false;
+      if (query.Length > 0 && !SearchText.Matches(e.Game.Title + " " + (e.Review ?? ""), query)) return false;
       if (!PassesStatus(e, f.Status)) return false;
       if (f.Rating != "all" && (e.Rating == null || Math.Abs(e.Rating.Value - double.Parse(f.Rating, CultureInfo.InvariantCulture)) > 0.001)) return false;
       if (hasTrait != null && !hasTrait(e)) return false;
@@ -130,13 +141,49 @@ public static class LibraryList {
     switch (sort) {
       case "rating": left = a.Rating; right = b.Rating; break;
       case "finished": left = a.FinishedOn; right = b.FinishedOn; break;
-      // Unknown lengths go last either way (docs/GAME_LENGTH.md D6).
-      case "length": left = a.Length != null ? (IComparable)(double)a.Length.Hours : null; right = b.Length != null ? (IComparable)(double)b.Length.Hours : null; break;
+      // Games with no end count as the longest; unknown lengths go last either way (docs/GAME_LENGTH.md D6).
+      case "length": left = LengthKey(a); right = LengthKey(b); break;
       default: left = a.Game.Title; right = b.Game.Title; break;
     }
     if (Equals(left, right)) return Titles.Compare(a.Game.Title, b.Game.Title);
     if (left == null) return 1; if (right == null) return -1;
     return (left is string ls ? (sort == "title" ? Titles.Compare(ls, (string)right) : string.CompareOrdinal(ls, (string)right)) : left.CompareTo(right)) * factor;
+  }
+
+  static IComparable LengthKey(Entry e) => e.NoEnd ? double.MaxValue : e.Length != null ? (IComparable)(double)e.Length.Hours : null;
+
+  /// <summary>
+  /// The list with collections (web library.ts groupCollections; docs/COLLECTIONS.md): a collection takes one item (by
+  /// its own title when sorting by title, else where its first game falls) and its games that pass the filters go under
+  /// it, not in the list. A search that names the collection shows it with all its games. Unfiltered and unsearched,
+  /// every collection shows, even an empty one. <paramref name="rows"/> is <see cref="Filter"/>'s answer; <paramref name="all"/>
+  /// the whole library.
+  /// </summary>
+  public static List<LibraryItem> Group(List<Entry> rows, IEnumerable<Entry> all, IEnumerable<CollectionRef> collections, LibraryFilters f) {
+    var list = collections?.Where(c => c?.Id != null).ToList() ?? new List<CollectionRef>();
+    var byId = new Dictionary<string, CollectionRef>(); foreach (var c in list) byId[c.Id] = c;
+    var query = SearchText.Fold((f.Search ?? "").Trim());
+    var unfiltered = f.Status == "all" && f.Rating == "all" && string.IsNullOrEmpty(f.Trait);
+    var members = new Dictionary<string, List<Entry>>();
+    foreach (var e in rows) {
+      var id = e.CollectionId;
+      if (id != null && byId.ContainsKey(id)) { if (!members.TryGetValue(id, out var m)) members[id] = m = new List<Entry>(); m.Add(e); }
+    }
+    foreach (var c in list) if (unfiltered && query.Length > 0 && SearchText.Matches(c.Title, query))
+      members[c.Id] = all.Where(e => e?.Game != null && e.CollectionId == c.Id).OrderBy(e => e.Game.Title, Titles).ToList();
+    if (unfiltered && query.Length == 0) foreach (var c in list) if (!members.ContainsKey(c.Id)) members[c.Id] = new List<Entry>();
+    var items = new List<LibraryItem>(); var placed = new HashSet<string>();
+    void Place(CollectionRef c) { if (!placed.Add(c.Id)) return; items.Add(new LibraryItem(c, members[c.Id])); }
+    foreach (var e in rows) {
+      if (e.CollectionId == null || !byId.TryGetValue(e.CollectionId, out var c)) { items.Add(new LibraryItem(e)); continue; }
+      if (f.Sort != "title") Place(c);
+    }
+    var rest = list.Where(c => members.ContainsKey(c.Id) && !placed.Contains(c.Id)).ToList();
+    if (f.Sort != "title") { foreach (var c in rest) Place(c); return items; }
+    // By title: each collection goes where its own title falls.
+    var factor = f.Direction == "desc" ? -1 : 1;
+    var merged = items.Concat(rest.Select(c => new LibraryItem(c, members[c.Id]))).ToList();
+    return merged.OrderBy(i => i, Comparer<LibraryItem>.Create((a, b) => Titles.Compare(a.Title, b.Title) * factor)).ToList();
   }
 
   /// <summary>How many games each status chip holds, over the whole library (the approved board's counts).</summary>

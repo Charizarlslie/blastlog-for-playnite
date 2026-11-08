@@ -5,9 +5,9 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
 
 ## Two kinds of screen
 
-- **Plugin screens** (Dashboard, Your library, Play next, Discover, Your taste, Compare): a class implementing
+- **Plugin screens** (Dashboard, Blastlog library, Play next, Discover, Your taste, Compare): a class implementing
   `Ui.IBlastlogScreen` in its own file under `src/Blastlog.Playnite/Screens/`. The plugin finds it by reflection and adds
-  it to Playnite's sidebar in `Order` (Dashboard 10, Your library 20, Play next 30, Discover 40, Your taste 50, Compare 60). No shared list
+  it to Playnite's sidebar in `Order` (Dashboard 10, Blastlog library 20, Play next 30, Discover 40, Your taste 50, Compare 60). No shared list
   to edit. `Create` returns the content; `Kit.Page` wraps it in the page background, padding, scrolling and Kit styles.
 - **Two themes:** Blastlog (dark) and Blastlog Light share `theme/overrides/`; Light only swaps `Constants.xaml`
   (`theme/overrides-light/`), and the plugin builds game colours for whichever is active (`ThemeBridge.CurrentMode`).
