@@ -99,8 +99,8 @@ sealed partial class ImportBatchView {
       var choices = new WrapPanel { Margin = new Thickness(0, 16, 0, 0) };
       for (var i = 0; i < ImportSort.Quick.Count; i++) { var q = ImportSort.Quick[i]; choices.Children.Add(Choice(q.label, (i + 1).ToString(CultureInfo.InvariantCulture), () => QuickChoose(q.change))); }
       panel.Children.Add(choices);
-      panel.Children.Add(Wrap(T("Tap, or press the number. ", "Blastlog.Muted"), backButton, T(" undoes the last one. Stop any time: the rest stay Backlog.", "Blastlog.Muted")));
-    } else panel.Children.Add(Wrap(T("That’s all of them. ", "Blastlog.Body"), backButton, T(" to change the last one, or Done to import.", "Blastlog.Body")));
+      panel.Children.Add(Wrap(backButton, T("undoes the last one. Tap, or press the number. Stop any time: the rest stay Backlog.", "Blastlog.Muted").Also(t => t.VerticalAlignment = VerticalAlignment.Center)));
+    } else panel.Children.Add(Stack(null, T("That’s all of them. Back changes the last one; Done goes back to import.", "Blastlog.Body"), backButton.Also(b => b.HorizontalAlignment = HorizontalAlignment.Left)));
     var card = Kit.Card(panel, game: row != null); card.Margin = new Thickness(0, 0, 0, 18);
     if (row != null) Kit.GameScope(card, plugin, new BlastlogGame { Id = row.GameId ?? row.Id, Title = row.Name, CoverUrl = CoverUrl(row) });
     AutomationProperties.SetName(card, "Quick sort");

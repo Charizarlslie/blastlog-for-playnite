@@ -29,7 +29,8 @@ static class ImportPage {
     Window window = null;
     try {
       window = plugin.Api.Dialogs.CreateWindow(new WindowCreationOptions { ShowCloseButton = true, ShowMaximizeButton = true, ShowMinimizeButton = false });
-      window.Title = "Import your games"; window.Width = 1100; window.Height = 880;
+      // Fits the screen it opens on (the work area is in the same units as the window's size).
+      window.Title = "Import your games"; window.Width = Math.Min(1100, SystemParameters.WorkArea.Width * 0.95); window.Height = Math.Min(880, SystemParameters.WorkArea.Height * 0.92);
       window.Owner = plugin.Api.Dialogs.GetCurrentAppWindow();
       window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
       var host = new Host(plugin, window);
@@ -62,6 +63,25 @@ static class ImportPage {
     void Top() { try { (Parent as ScrollViewer ?? FindScroll(this))?.ScrollToTop(); } catch (Exception) { } }
     static ScrollViewer FindScroll(DependencyObject d) { for (var p = System.Windows.Media.VisualTreeHelper.GetParent(d); p != null; p = System.Windows.Media.VisualTreeHelper.GetParent(p)) if (p is ScrollViewer s) return s; return null; }
     public void Close() { try { window.Close(); } catch (Exception) { } }
+  }
+
+  /// <summary>
+  /// A wrapping line of text with links in it (the site's inline links): each part is a string, or (label, action) for a
+  /// link in the game's text colour. Links are keyboard-reachable like any hyperlink.
+  /// </summary>
+  internal static TextBlock Sentence(string style, params object[] parts) {
+    var t = Kit.Text("", style); t.TextWrapping = TextWrapping.Wrap; t.MaxWidth = 900; t.HorizontalAlignment = HorizontalAlignment.Left;
+    foreach (var p in parts) {
+      if (p is string s) t.Inlines.Add(new System.Windows.Documents.Run(s));
+      else if (p is ValueTuple<string, Action> link) {
+        var h = new System.Windows.Documents.Hyperlink(new System.Windows.Documents.Run(link.Item1)) { TextDecorations = null, FontWeight = FontWeights.Bold, Cursor = Cursors.Hand };
+        h.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "Blastlog.GameText");
+        var act = link.Item2;
+        h.Click += (sender, e) => { try { act(); } catch (Exception ex) { Log.Error(ex, "Blastlog import: link " + link.Item1); } };
+        t.Inlines.Add(h);
+      }
+    }
+    return t;
   }
 
   /// <summary>Imports the player gives a look later on this device ("Keep sorting" picks up where they stopped).</summary>
@@ -113,8 +133,8 @@ static class ImportPage {
       // Steam sync's daily finds wait here to be sorted.
       foreach (var b in batches.Where(b => b.S("origin") == "steam_sync" && b.S("status") == "ready")) {
         var total = (int?)b["counts"]?.D("total") ?? 0;
-        var line = Wrap(T($"New from Steam: {Plural(total, ImportSort.IsWishlist(b.S("format")) ? "wishlist game" : "game")} waiting to be sorted. ", "Blastlog.Body", "Blastlog.Ok", 15, FontWeights.SemiBold),
-          Fingerprint.LinkButton("Sort them", () => host.ShowBatch(b.S("id")), game: true));
+        var line = Sentence("Blastlog.Body", $"New from Steam: {Plural(total, ImportSort.IsWishlist(b.S("format")) ? "wishlist game" : "game")} waiting to be sorted. ", ("Sort them", (Action)(() => host.ShowBatch(b.S("id")))));
+        line.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.Ok"); line.FontWeight = FontWeights.SemiBold;
         line.Margin = new Thickness(0, 0, 0, 14); body.Children.Add(line);
       }
       if (list["steamLink"] is JObject link) {
@@ -126,10 +146,10 @@ static class ImportPage {
           "Blastlog checks Steam once a day for games and wishlist games it hasn’t seen and puts them here, ready to sort. It only remembers your Steam ID." + when + (result != null ? ": " + result.ToLowerInvariant() + "." : "."),
           Wrap(Kit.Button("Check now or stop it on Blastlog ↗", () => Nav.SiteOnly(plugin, "/library/import"), "Blastlog.Ghost"))));
       }
-      body.Children.Add(Wrap(T("No list handy, or just want picks fast? ", "Blastlog.Body"), Fingerprint.LinkButton("Rate 10 games you know", () => { host.Close(); Nav.QuickStart(plugin); }, game: true),
-        T(" instead. It takes a couple of minutes.", "Blastlog.Body")).Also(w => w.Margin = new Thickness(0, 0, 0, 6)));
-      body.Children.Add(Wrap(T("Already imported? ", "Blastlog.Body"), Fingerprint.LinkButton("Fill in your library ↗", () => Nav.Site(plugin, "/library/import/fill-in"), game: true),
-        T(": the rest of your series, and games your friends played.", "Blastlog.Body")).Also(w => w.Margin = new Thickness(0, 0, 0, 16)));
+      body.Children.Add(Sentence("Blastlog.Body", "No list handy, or just want picks fast? ", ("Rate 10 games you know", (Action)(() => { host.Close(); Nav.QuickStart(plugin); })),
+        " instead. It takes a couple of minutes.").Also(w => w.Margin = new Thickness(0, 0, 0, 8)));
+      body.Children.Add(Sentence("Blastlog.Body", "Already imported? ", ("Fill in your library ↗", (Action)(() => Nav.Site(plugin, "/library/import/fill-in"))),
+        ": the rest of your series, and games your friends played.").Also(w => w.Margin = new Thickness(0, 0, 0, 18)));
       var needsLook = (int?)list.D("needsLook") ?? 0;
       if (!list.B("canImport")) body.Children.Add(LinkPages.Notice("Importing isn’t open yet. You can still add games one at a time from your library.", false));
       if (needsLook > 0) body.Children.Add(LinkPages.Notice($"{Plural(needsLook, "game")} from your imports still {(needsLook == 1 ? "needs" : "need")} a look. Open the import below to pick the right one.", true));

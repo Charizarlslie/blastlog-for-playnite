@@ -149,8 +149,8 @@ sealed partial class ImportBatchView : StackPanel {
     if (s == "committed" && show == "list") AddedList();
     if (s == "committed" && show != "cards") { var look = LookSection(); if (look != null) body.Children.Add(look); }
     if (s == "committed" && show == "summary" && !Wishlist)
-      body.Children.Add(Wrap(T("Next: ", "Blastlog.Body"), Fingerprint.LinkButton("Fill in your library ↗", () => Nav.Site(plugin, "/library/import/fill-in"), game: true),
-        T(": the rest of your series, and games your friends played.", "Blastlog.Body")).Also(w => w.Margin = new Thickness(0, 4, 0, 0)));
+      body.Children.Add(ImportPage.Sentence("Blastlog.Body", "Next: ", ("Fill in your library ↗", (Action)(() => Nav.Site(plugin, "/library/import/fill-in"))),
+        ": the rest of your series, and games your friends played.").Also(w => w.Margin = new Thickness(0, 4, 0, 0)));
     if (focusSearch && searchInput != null) Dispatcher.BeginInvoke(new Action(() => { try { searchInput.Focus(); searchInput.CaretIndex = searchInput.Text.Length; } catch (Exception) { } }), DispatcherPriority.Input);
   }
 
