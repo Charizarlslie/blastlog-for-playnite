@@ -71,8 +71,10 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   (`Nav.Media`, Ui/MediaViewer.cs): the site's MediaViewer, stepping through the trailers then every screenshot with the
   arrows, Home and End (order and labels are Core `MediaSequence`, tested against the site). Trailers play on YouTube in
   the browser (Playnite has no player).
-- **Still on the site** because the mirror has no route for them yet: the character sheet's look (`Nav.SheetLook`;
-  needs `PUT /sync/v1/me/sheet-style`), reporting a review, import sorting, account settings. Year in review
+- **The character sheet's look** is native: a "Look" select on your own sheet on Compare saves with
+  `PUT me/sheet-style` and reloads Compare; `Nav.SheetLook` opens Compare scrolled to it.
+- **Still on the site** because the mirror has no route for them yet: reporting a review, import sorting, account
+  settings. Year in review
   (`/year/:year`) has no mirror read and nothing in the plugin links to it (the site links it from Support only), so it
   has no native version.
 - **Rate & review** (Nav.Review, Screens/ReviewDialog.cs) is native: the site's pop-up (ownership, status, completion
