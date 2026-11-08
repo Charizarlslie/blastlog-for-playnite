@@ -46,7 +46,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public string ServerUrl => (settings.Data.ServerUrl ?? "").TrimEnd('/');
   public bool Configured => settings.Token != null && Uri.TryCreate(ServerUrl, UriKind.Absolute, out _);
   BlastlogClient Client() => new BlastlogClient(Http, new Uri(ServerUrl), settings.Token);
-  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.3.2" })
+  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.4.0" })
     { Rule = settings.Data.ConflictRule, IncludeHidden = settings.Data.IncludeHidden };
   void SaveStore() { try { store.Save(storePath); } catch (Exception e) { Log.Error(e, "Blastlog: couldn't save the sync store"); } }
 
@@ -197,7 +197,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
   public async Task StillPlaying(string entryId) {
-    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.3.2" } };
+    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.4.0" } };
     push.CheckIns.Add(new JObject { ["entryId"] = entryId, ["answer"] = "still_playing" });
     try { await Task.Run(() => Client().PushAsync(push)); cache.Remove("now-playing"); } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
