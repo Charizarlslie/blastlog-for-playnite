@@ -14,7 +14,7 @@ namespace Blastlog.Playnite.Screens {
 /// <summary>
 /// The dashboard's search (design.md 8 Dashboard; web DashboardSearch.tsx): as you type, your games, games in friends'
 /// libraries (whose, and their status or stars) and any other game Blastlog has read ("See how it fits you"). Your own
-/// open their game page (Playnite's when paired); the rest open on Blastlog. Enter searches your library on Blastlog.
+/// open their game page (Playnite's when paired); the rest open on Blastlog. Enter searches your library (the Library screen).
 /// </summary>
 sealed class DashboardSearch : Grid {
   static readonly ILogger Log = LogManager.GetLogger();

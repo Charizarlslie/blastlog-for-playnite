@@ -42,6 +42,15 @@ public static class Nav {
     Site(plugin, "/library/" + entryId);
   }
 
+  /// <summary>
+  /// The player's whole Blastlog library (native, Screens/LibraryScreen.cs), with the site's filters as a query
+  /// ("status=done&amp;rating=4", "search=hades"); the site's Library page if Playnite won't switch.
+  /// </summary>
+  public static void Library(BlastlogPlugin plugin, string query = null) {
+    if (plugin.Configured && Blastlog.Playnite.Screens.LibraryView.Open(query)) return;
+    Site(plugin, "/library" + (string.IsNullOrEmpty(query) ? "" : "?" + query));
+  }
+
   /// <summary>Quick start: tap the well-known games you've played and give them stars.</summary>
   public static async void QuickStart(BlastlogPlugin plugin, Action done = null) {
     // Native once the server has the quick start routes; the site's page until then (or offline).
