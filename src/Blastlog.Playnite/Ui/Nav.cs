@@ -42,6 +42,30 @@ public static class Nav {
     Site(plugin, "/library/" + entryId);
   }
 
+  /// <summary>
+  /// A friend's library entry (the site's /library/:id for someone else's entry): their stars, taps, review, status and
+  /// reactions, with the game's fingerprint and details, natively (Screens/FriendEntry.cs). <paramref name="owner"/> is
+  /// the friend's name when the caller knows it. Not set up yet: the site's page.
+  /// </summary>
+  public static void FriendEntry(BlastlogPlugin plugin, string entryId, string owner = null, Action done = null) {
+    if (entryId == null) return;
+    if (!plugin.Configured) { Site(plugin, "/library/" + entryId); return; }
+    global::Blastlog.Playnite.Screens.FriendEntryPage.Open(plugin, entryId, owner, done);
+  }
+
+  /// <summary>
+  /// A game's trailers and screenshots, one at a time, starting at <paramref name="start"/> (native, Ui/MediaViewer.cs).
+  /// Trailers open on YouTube in the browser from there.
+  /// </summary>
+  public static void Media(BlastlogPlugin plugin, string title, List<global::Blastlog.Sync.Core.Design.MediaItem> items, int start, string poster = null) =>
+    MediaViewer.Open(plugin, title, items, start, poster);
+
+  /// <summary>
+  /// The look of your character sheet on Compare. Stays on the site: the mirror has no write for it yet (the site's
+  /// PUT /me/sheet-style); a native picker on Compare replaces this once PUT /sync/v1/me/sheet-style exists.
+  /// </summary>
+  public static void SheetLook(BlastlogPlugin plugin) => Site(plugin, "/compare#sheets");
+
   /// <summary>Quick start: tap the well-known games you've played and give them stars.</summary>
   public static async void QuickStart(BlastlogPlugin plugin, Action done = null) {
     // Native once the server has the quick start routes; the site's page until then (or offline).
