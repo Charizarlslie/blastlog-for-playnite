@@ -320,7 +320,7 @@ public sealed class GamePageElement : PluginUserControl {
     var status = (string)entry?["status"]; var wishlist = (string)entry?["ownership"] == "wishlist";
     Row("Status", Kit.StatusPill(wishlist && status == "not_started" ? "wishlist" : status));
     Row("Ownership", Kit.Text(wishlist ? "Wishlist" : (string)entry?["ownership"] == "library" ? "In library" : "Unknown"));
-    var platforms = (page["info"]?["platforms"] as JArray ?? entry?["game"]?["releasePlatforms"] as JArray ?? new JArray()).Select(p => (string)p).Where(p => !string.IsNullOrEmpty(p)).ToList();
+    var platforms = ((page["info"] as JObject)?["platforms"] as JArray ?? entry?["game"]?["releasePlatforms"] as JArray ?? new JArray()).Select(p => (string)p).Where(p => !string.IsNullOrEmpty(p)).ToList();
     Row("Release platforms", Kit.Text(platforms.Count > 0 ? string.Join(", ", platforms) : "Not available"));
     var length = entry?["length"] as JObject;
     var level = (string)length?["level"];
@@ -382,7 +382,7 @@ public sealed class GamePageElement : PluginUserControl {
 
   /// <summary>Where you own it (the site's stores), and the collection it's part of.</summary>
   FrameworkElement OwnedAndCollection(JObject entry) {
-    var rows = (page["stores"]?["stores"] as JArray ?? new JArray()).OfType<JObject>().ToList();
+    var rows = ((page["stores"] as JObject)?["stores"] as JArray ?? new JArray()).OfType<JObject>().ToList();
     var collection = entry?["collection"] as JObject;
     var card = Card(null, out var body);
     body.Children.Add(Eyebrow("Where you own it"));
@@ -409,7 +409,7 @@ public sealed class GamePageElement : PluginUserControl {
 
   /// <summary>More like this: one row of small covers, each wearing its own game; one in Playnite opens there, the rest on Blastlog.</summary>
   FrameworkElement MoreLikeThis(string title) {
-    var items = (page["like"]?["items"] as JArray ?? new JArray()).OfType<JObject>().ToList();
+    var items = ((page["like"] as JObject)?["items"] as JArray ?? new JArray()).OfType<JObject>().ToList();
     if (items.Count == 0) return null;
     var card = Card("More like " + title, out var body);
     body.Children.Add(Kit.Text("Games you haven’t played yet that play the most like it, from your library, your friends’ games and Discover.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, -6, 0, 12)));
