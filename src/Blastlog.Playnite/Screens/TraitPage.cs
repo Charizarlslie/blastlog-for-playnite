@@ -16,7 +16,7 @@ namespace Blastlog.Playnite.Screens {
 /// "Games with" and the trait's name and definition, then In your library (not played yet first), Your friends' games and
 /// From Discover, each best match first, each tile wearing its own game. A game in the player's library opens its own page
 /// (Playnite's when paired), any other its Discover page. Reads GET /sync/v1/traits/:traitId (the site's own answer).
-/// The page wears Blastlog green, as the site's does (it sets no page colour).
+/// The page wears the player's usual colour (Next up's game), as the site's does (it sets no page colour of its own).
 /// </summary>
 static class TraitPage {
   /// <summary>Opens the page. <paramref name="from"/>: what it was opened from ("Hades"), for the Back button.</summary>
@@ -37,8 +37,8 @@ static class TraitPage {
     public View(BlastlogPlugin plugin, string traitId, string from, Action close) {
       this.plugin = plugin; this.traitId = traitId; this.from = from; this.close = close;
       MaxWidth = 1180; HorizontalAlignment = HorizontalAlignment.Left;
-      Kit.GameScope(this, GameColour.BrandGreen);
-      Children.Add(Fingerprint.LinkButton(from != null ? "← Back to " + from : "← Back", close, game: true)
+      CollectionUi.WearUsual(this, plugin);
+      Children.Add(Fingerprint.LinkButton(from != null ? "← Back to " + from : "← Back", close)
         .Also(b => { b.Margin = new Thickness(-10, 0, 0, 10); b.HorizontalAlignment = HorizontalAlignment.Left; }));
       Children.Add(body);
       body.Children.Add(T("Finding games with it…", "Blastlog.Muted"));
