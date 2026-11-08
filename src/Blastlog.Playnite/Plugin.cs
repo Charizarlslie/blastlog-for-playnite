@@ -32,6 +32,8 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
 
   public override Guid Id => new Guid("80b79ef3-134e-4e5e-92f2-6baeffbfc8a5");
   public BlastlogPlugin(IPlayniteAPI api) : base(api) {
+    // Before the main window lays out, so every fully rounded border in the theme and the screens gets the site's shape.
+    try { Ui.PillShape.Start(); } catch (Exception e) { Log.Error(e, "Blastlog: pill shapes"); }
     settings = new BlastlogSettings(this);
     Properties = new GenericPluginProperties { HasSettings = true };
     storePath = Path.Combine(GetPluginUserDataPath(), "sync.json"); cachePath = Path.Combine(GetPluginUserDataPath(), "mirror-cache.json");
@@ -46,7 +48,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
   public string ServerUrl => (settings.Data.ServerUrl ?? "").TrimEnd('/');
   public bool Configured => settings.Token != null && Uri.TryCreate(ServerUrl, UriKind.Absolute, out _);
   BlastlogClient Client() => new BlastlogClient(Http, new Uri(ServerUrl), settings.Token);
-  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.4.1" })
+  SyncEngine Engine() => new SyncEngine(Client(), new PlayniteLibrary(PlayniteApi), store, new ClientInfo { Version = PlayniteApi.ApplicationInfo.ApplicationVersion.ToString(), Plugin = "0.4.2" })
     { Rule = settings.Data.ConflictRule, IncludeHidden = settings.Data.IncludeHidden };
   void SaveStore() { try { store.Save(storePath); } catch (Exception e) { Log.Error(e, "Blastlog: couldn't save the sync store"); } }
 
@@ -198,7 +200,7 @@ public sealed partial class BlastlogPlugin : GenericPlugin {
     catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
   public async Task StillPlaying(string entryId) {
-    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.4.1" } };
+    var push = new PushRequest { Origin = "panel", Client = new ClientInfo { Plugin = "0.4.2" } };
     push.CheckIns.Add(new JObject { ["entryId"] = entryId, ["answer"] = "still_playing" });
     try { await Task.Run(() => Client().PushAsync(push)); cache.Remove("now-playing"); } catch (BlastlogException e) { PlayniteApi.Dialogs.ShowErrorMessage(Words(e), "Blastlog"); }
   }
