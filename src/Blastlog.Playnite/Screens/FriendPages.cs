@@ -119,7 +119,7 @@ static class FriendPages {
     try {
       if (string.IsNullOrEmpty(name)) name = await NameOf(plugin, friendId);
       var friend = new FriendView(friendId, name);
-      LinkPages.Show(plugin, friend.Name, close => new Shell(plugin, friend, page), width: 1280, height: 880);
+      LinkPages.Show(plugin, friend.Name, close => new Shell(plugin, friend, page));
     } catch (Exception e) { Log.Error(e, "Blastlog friend pages"); }
   }
 
