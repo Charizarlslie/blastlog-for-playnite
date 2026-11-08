@@ -45,7 +45,7 @@ public static class SidebarOrder {
       int Rank(object w) { var side = SideOf(w); return side != null && side.Type == SiderbarItemType.View && ours.TryGetValue(Clean(side.Title), out var o) ? o : int.MaxValue; }
       var items = list.Cast<object>().ToList();
       var wanted = items.Select((w, i) => (w, i)).OrderBy(x => Rank(x.w) == int.MaxValue ? 1 : 0).ThenBy(x => Rank(x.w)).ThenBy(x => x.i).Select(x => x.w).ToList();
-      if (!reported) { reported = true; Log.Info("Blastlog sidebar: " + list.GetType().Name + ", " + string.Join(" | ", items.Select(w => Clean(SideOf(w)?.Title) + (Rank(w) < int.MaxValue ? "*" : "")))); }
+      if (!reported) { reported = true; Log.Info("Blastlog sidebar, as Playnite made it: " + list.GetType().Name + ", " + string.Join(" | ", items.Select(w => Clean(SideOf(w)?.Title) + (Rank(w) < int.MaxValue ? "*" : "")))); }
       if (!wanted.SequenceEqual(items)) {
         var move = list.GetType().GetMethod("Move", new[] { typeof(int), typeof(int) });
         for (var i = 0; i < wanted.Count; i++) {
@@ -53,6 +53,10 @@ public static class SidebarOrder {
           if (at == i) continue;
           if (move != null) move.Invoke(list, new object[] { at, i }); else { list.RemoveAt(at); list.Insert(i, wanted[i]); }
         }
+        // A moved item gets a new button, but its icon element still belongs to the old one, so the new button would draw
+        // none: give every Blastlog item a fresh icon.
+        var icons = Screens.All().ToDictionary(s => s.Title, s => s.Icon);
+        foreach (var w in wanted) { var side = SideOf(w); if (side != null && icons.TryGetValue(Clean(side.Title), out var svg)) side.Icon = Icons.Make(svg, 18); }
       }
       if (!hooked && list is INotifyCollectionChanged changes) {
         hooked = true;
