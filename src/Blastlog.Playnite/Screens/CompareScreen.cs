@@ -448,9 +448,8 @@ sealed class CompareView : Grid {
           T(contributors.Count > 0 ? $"From {p.Name}’s games: {string.Join(", ", contributors)}" : "Nothing here stands out above the group.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, 4, 0, 0))));
       }
       if (classes.Count > 1) s.Children.Add(T("Also a fit: " + string.Join(", ", classes.Skip(1).Select(ClassName)), "Blastlog.Small"));
-      // The look is picked on the site (Account settings links to it); friends see the owner's choice here too.
-      if (p.Id == meId) s.Children.Add(Row(T("Look: " + (LookNames.TryGetValue(look, out var n) ? n : look), "Blastlog.Small").Also(t => t.VerticalAlignment = VerticalAlignment.Center),
-        Link("Change ↗", () => Nav.SheetLook(plugin))).Also(r => r.Margin = new Thickness(0, 8, 0, 0)));
+      // Your own sheet gets the look picker (the site's "Look" select); friends see the owner's choice.
+      if (p.Id == meId) s.Children.Add(LookPicker(look));
       return (UIElement)SheetCard(s, p, look);
     }).ToList();
     var about = Disclosure("How the sheets work", () => {
@@ -465,6 +464,32 @@ sealed class CompareView : Grid {
     });
     about.Margin = new Thickness(0, 8, 0, 0);
     return Stack(null, Columns(300, sheets), about);
+  }
+  /// <summary>Automation name of the look picker; Nav.SheetLook scrolls to it.</summary>
+  internal const string LookPickerName = "Your character sheet’s look";
+  static readonly string[] Looks = { "classic", "ledger", "arcade", "blueprint" };
+  bool savingLook;
+  /// <summary>
+  /// "Look" and a select of the four looks (web Compare.tsx CharacterSheets): picking one saves it at once
+  /// (PUT me/sheet-style), then Compare reloads so the sheet wears it; disabled while it saves.
+  /// </summary>
+  FrameworkElement LookPicker(string look) {
+    var box = new ComboBox { MinHeight = 44, MinWidth = 180, FontSize = 15, IsEnabled = !savingLook, VerticalAlignment = VerticalAlignment.Center };
+    foreach (var key in Looks) box.Items.Add(new ComboBoxItem { Content = LookNames[key], Tag = key, IsSelected = key == look });
+    AutomationProperties.SetName(box, LookPickerName);
+    box.SelectionChanged += (s, e) => {
+      try {
+        if (!(box.SelectedItem is ComboBoxItem i) || (string)i.Tag == look || savingLook) return;
+        var style = (string)i.Tag;
+        savingLook = true; box.IsEnabled = false;
+        Run(async () => {
+          try { await plugin.Write("me/sheet-style", new { style }, System.Net.Http.HttpMethod.Put); await Read(true); }
+          finally { savingLook = false; Render(); }
+        }, "sheet look");
+      } catch (Exception ex) { global::Playnite.SDK.LogManager.GetLogger().Error(ex, "Blastlog sheet look"); }
+    };
+    var label = T("Look", "Blastlog.Small", null, 0, FontWeights.Bold).Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(0, 0, 10, 0); });
+    return Row(label, box).Also(r => r.Margin = new Thickness(0, 10, 0, 0));
   }
   static Hyperlink Hyper(string text, string url) {
     var h = new Hyperlink(new Run(text)) { NavigateUri = new Uri(url) };

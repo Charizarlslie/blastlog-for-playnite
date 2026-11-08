@@ -61,10 +61,12 @@ public static class Nav {
     MediaViewer.Open(plugin, title, items, start, poster);
 
   /// <summary>
-  /// The look of your character sheet on Compare. Stays on the site: the mirror has no write for it yet (the site's
-  /// PUT /me/sheet-style); a native picker on Compare replaces this once PUT /sync/v1/me/sheet-style exists.
+  /// The look of your character sheet: the native Compare screen, scrolled to the Look picker on your sheet
+  /// (Screens/CompareScreen.cs); the site's Compare if Playnite won't switch.
   /// </summary>
-  public static void SheetLook(BlastlogPlugin plugin) => Site(plugin, "/compare#sheets");
+  public static void SheetLook(BlastlogPlugin plugin) {
+    if (!plugin.Configured || !ScreenJump.To("Compare", global::Blastlog.Playnite.Screens.CompareView.LookPickerName)) Site(plugin, "/compare#sheets");
+  }
 
   /// <summary>
   /// Every game with one trait (the site's /traits/:id, "See games with …"): native (Screens/TraitPage.cs).
