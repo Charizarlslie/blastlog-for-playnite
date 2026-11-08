@@ -60,7 +60,7 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   `plugin.Api.StartGame(id)` / `plugin.Api.InstallGame(id)`.
 - **Links to other pages** go through `Ui.Nav` (`Nav.Review`, `Nav.AddGame`, `Nav.Library(query)`, `Nav.DiscoverGame`, `Nav.Entry`,
   `Nav.FriendEntry`, `Nav.FriendPage`, `Nav.Media`, `Nav.Trait`, `Nav.Collection`, `Nav.QuickStart`, `Nav.Together`, `Nav.Friends`,
-  `Nav.Taste`, `Nav.PlayNext`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
+  `Nav.Taste`, `Nav.PlayNext`, `Nav.Sharpen`, `Nav.Settings`, `Nav.Year`, `Nav.Feedback`, `Nav.PlayniteLibrary`, and `Nav.Site(path)` for pages that stay on the site).
   Each opens the site until its native version lands; a native dialog replaces that one method's body, so screens
   never hard-code a site URL for something Playnite can show.
 - **A friend's pages** (`Nav.FriendPage(plugin, friendId, "dashboard" | "library" | "profile")`, Screens/FriendPages.cs)
@@ -93,10 +93,20 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   closed. The plugin setting "Hide Playnite's own menu items" hides the group's buttons only (the items stay in
   Playnite's list, so `Nav.Entry` still switches to the Library view) and adds "Playnite library" to the footer.
   Playnite redraws every sidebar button when its item list changes, so the group is re-applied by a 1-second check.
-- **Still on the site** because the mirror has no route for them yet: reporting a review, import sorting, account
-  settings. Year in review
-  (`/year/:year`) has no mirror read and nothing in the plugin links to it (the site links it from Support only), so it
-  has no native version.
+- **Settings** (`Nav.Settings`, Screens/SettingsWindow.cs) is native: the site's Settings menu and Account settings in
+  one window. Your picture (Screens/SettingsPicture.cs: pick a file, middle square at 512px, JPEG under 400 KB,
+  `PUT`/`DELETE me/picture`), appearance (`PUT me/appearance`, the site's look; Playnite's look is its theme), game
+  lengths (`PUT taste/length-level`), subscriptions, comfort picks, sale alerts, notifications (`PUT` on `subscriptions`,
+  `replay-picks`, `sale-alerts`, `notifications`), the token this PC uses (`GET me`), your extras, your data and signing
+  Playnite out (`plugin.ForgetToken()`). Every card is the site's own read (`GET settings`, `notifications`, ...); a
+  card whose read fails is left out, as the site hides switched-off cards. Saves use `plugin.TryWrite` (PluginAccount.cs),
+  which answers in words on the card instead of a dialog. Making and revoking tokens (a token can't list tokens: 401),
+  downloading your data, deleting the account, linked sign-ins, taste history and guided start link to the site.
+  Your taste's "Change picture" and "Account settings" and the sidebar's Settings open it.
+- **Year in games** (`Nav.Year(year)`, Screens/YearPage.cs) is native and read only: `GET year/:year` (the site's
+  YearInGames: the card with Save the card as a PNG, Month by month, top five, how your taste moved, highlights). Settings'
+  Your extras links it.
+- **Still on the site** because the mirror has no route for them yet: reporting a review.
 - **Rate & review** (Nav.Review, Screens/ReviewDialog.cs) is native: the site's pop-up (ownership, status, completion
   date, stars, taps, review, the questions). It saves with PATCH entries/:id (expectedVersion; a ersion_conflict loads
   the latest and keeps the player's edits), then PUT entries/:id/picks; the taps hide if the picks can't be read. The
