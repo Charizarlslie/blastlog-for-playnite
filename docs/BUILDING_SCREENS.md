@@ -58,8 +58,9 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   and response shapes: `docs/PLAYNITE_SYNC.md` in the Blastlog repo ("Reads for the native screens", "Mirror writes").
   Paired games: `plugin.EntryFor(playniteGameId)`, `plugin.GameFor(entryId)`; Play/Install go through
   `plugin.Api.StartGame(id)` / `plugin.Api.InstallGame(id)`.
-- **Links to other pages** go through `Ui.Nav` (`Nav.Review`, `Nav.AddGame`, `Nav.DiscoverGame`, `Nav.QuickStart`,
-  `Nav.Together`, `Nav.Friends`, `Nav.Taste`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
+- **Links to other pages** go through `Ui.Nav` (`Nav.Review`, `Nav.AddGame`, `Nav.DiscoverGame`, `Nav.Entry`,
+  `Nav.FriendEntry`, `Nav.Media`, `Nav.Trait`, `Nav.Collection`, `Nav.QuickStart`, `Nav.Together`, `Nav.Friends`,
+  `Nav.Taste`, `Nav.PlayNext`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
   Each opens the site until its native version lands; a native dialog replaces that one method's body, so screens
   never hard-code a site URL for something Playnite can show.
 - **A friend's entry** (`Nav.FriendEntry`, Screens/FriendEntry.cs) is native: the site's game page for someone else's
