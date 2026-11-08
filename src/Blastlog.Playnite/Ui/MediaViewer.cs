@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -16,7 +17,9 @@ namespace Blastlog.Playnite.Ui {
 /// its label with ✕ on top, the item in the middle, Previous and Next either side. The arrow keys step, Home and End jump
 /// to the ends, Escape, ✕ or a click beside the picture closes. A trailer shows a poster whose play button opens it on
 /// YouTube in the browser (Playnite has no player); screenshots are IGDB's 1080p pictures, cached like covers, and the
-/// neighbours load ahead so stepping shows them straight away.
+/// neighbours load ahead so stepping shows them straight away. The counter is the site's: the place in the whole
+/// sequence ("7 of 12", trailers included), then the item's own label, where screenshots are counted on their own
+/// ("Screenshot 1"; web media-viewer.ts itemLabel).
 /// </summary>
 public static class MediaViewer {
   static readonly ILogger Log = LogManager.GetLogger();
@@ -30,16 +33,29 @@ public static class MediaViewer {
     if (items == null || items.Count == 0) return;
     try {
       var window = plugin.Api.Dialogs.CreateWindow(new WindowCreationOptions { ShowCloseButton = true, ShowMaximizeButton = true, ShowMinimizeButton = false });
-      var owner = plugin.Api.Dialogs.GetCurrentAppWindow();
+      // Owned by the window it was opened from (a game page window, or Playnite's main window), so it sits on top of that
+      // one and closing it goes straight back there, with focus on whatever opened it (the site's viewer does the same).
+      var main = plugin.Api.Dialogs.GetCurrentAppWindow();
+      var owner = OpenerWindow() ?? main;
+      var opener = Keyboard.FocusedElement as IInputElement;
       window.Title = title + ": trailers and screenshots";
-      window.Width = Math.Max(760, (owner?.ActualWidth ?? 1400) * 0.92); window.Height = Math.Max(560, (owner?.ActualHeight ?? 900) * 0.92);
+      window.Width = Math.Max(760, (main?.ActualWidth ?? 1400) * 0.92); window.Height = Math.Max(560, (main?.ActualHeight ?? 900) * 0.92);
       window.Owner = owner; window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+      window.ShowInTaskbar = false;
       var view = new View(plugin, title, items, start, poster, window);
       window.Content = view;
       // Playnite's window takes the arrow keys for its own focus moves first, so listen for handled keys too.
       window.AddHandler(UIElement.PreviewKeyDownEvent, new KeyEventHandler((s, e) => { try { view.Key(e); } catch (Exception ex) { Log.Error(ex, "Blastlog media viewer key"); } }), true);
       window.ShowDialog();
+      try { owner?.Activate(); opener?.Focus(); } catch (Exception) { }
     } catch (Exception e) { Log.Error(e, "Blastlog media viewer"); }
+  }
+
+  /// <summary>The window the click came from: the active one of Playnite's windows, else the one with keyboard focus.</summary>
+  static Window OpenerWindow() {
+    var windows = Application.Current?.Windows.OfType<Window>().Where(w => w.IsVisible).ToList() ?? new List<Window>();
+    return windows.FirstOrDefault(w => w.IsActive)
+      ?? (Keyboard.FocusedElement is DependencyObject focused ? Window.GetWindow(focused) : null);
   }
 
   sealed class View : Border {
