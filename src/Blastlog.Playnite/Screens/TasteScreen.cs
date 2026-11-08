@@ -300,8 +300,9 @@ sealed class TasteView : Grid {
 
     var border = Kit.Card(card);
     border.Margin = new Thickness(0);
+    // The site's .tp-spot top: ok (or danger) at 40%, not full strength.
     border.BorderThickness = new Thickness(0, 3, 0, 0);
-    border.SetResourceReference(Border.BorderBrushProperty, love ? "Blastlog.Ok" : "Blastlog.Danger");
+    border.BorderBrush = Faded(love ? "ok" : "danger", 0.4);
     return border;
   }
 
@@ -418,8 +419,9 @@ sealed class TasteView : Grid {
     return Columns(300, picks.Select(r => {
       var neg = (D(r, "sentiment") ?? 0) < 0;
       var b = Box(Stack(null, T(Quoted(S(r, "quote")), "Blastlog.Body", null, 17), T(S(r, "gameTitle"), "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 10, 0, 0))),
-        "Blastlog.Surface", 18, new Thickness(20), neg ? "Blastlog.Warn" : "Blastlog.GameEdge");
-      b.BorderThickness = new Thickness(4, 0, 0, 0);
+        "Blastlog.Surface", 18, new Thickness(22, 20, 22, 20));
+      // The site's .tp-wall blockquote: a 3px left edge, ok (or danger) at 33%.
+      b.BorderThickness = new Thickness(3, 0, 0, 0); b.BorderBrush = Faded(neg ? "danger" : "ok", 0.333);
       return (UIElement)b;
     }), 14);
   }
@@ -429,10 +431,12 @@ sealed class TasteView : Grid {
     foreach (var p in new[] { "want", "avoid" }) {
       var list = questions.Where(q => S(q, "polarity") == p).OrderByDescending(q => D(q, "strength") ?? 0).ToList();
       if (list.Count == 0) continue;
-      var s = Stack(null, T(p == "want" ? "Must-haves" : "Dealbreakers", "Blastlog.CardTitle").Also(t => t.Margin = new Thickness(0, 0, 0, 10)));
+      // The site's .tp-must: no coloured edge; the title is in ok-text (or danger).
+      var title = T(p == "want" ? "Must-haves" : "Dealbreakers", "Blastlog.CardTitle").Also(t => t.Margin = new Thickness(0, 0, 0, 10));
+      if (p == "want") title.Foreground = TokenBrush("ok-text"); else title.SetResourceReference(TextBlock.ForegroundProperty, "Blastlog.Danger");
+      var s = Stack(null, title);
       foreach (var q in list) s.Children.Add(Stack(new Thickness(0, 0, 0, 10), T(S(q, "label"), "Blastlog.Body", null, 0, FontWeights.Bold), T(S(q, "question"), "Blastlog.Muted")));
-      var card = Kit.Card(s); card.Margin = new Thickness(0); card.BorderThickness = new Thickness(0, 3, 0, 0);
-      card.SetResourceReference(Border.BorderBrushProperty, p == "want" ? "Blastlog.Ok" : "Blastlog.Danger");
+      var card = Kit.Card(s); card.Margin = new Thickness(0);
       cols.Add(card);
     }
     return Columns(340, cols);
