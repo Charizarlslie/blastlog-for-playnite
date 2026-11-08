@@ -5,9 +5,9 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
 
 ## Two kinds of screen
 
-- **Plugin screens** (Dashboard, Play next, Discover, Your taste, Compare): a class implementing
+- **Plugin screens** (Dashboard, Your library, Play next, Discover, Your taste, Compare): a class implementing
   `Ui.IBlastlogScreen` in its own file under `src/Blastlog.Playnite/Screens/`. The plugin finds it by reflection and adds
-  it to Playnite's sidebar in `Order` (Dashboard 10, Play next 30, Discover 40, Your taste 50, Compare 60). No shared list
+  it to Playnite's sidebar in `Order` (Dashboard 10, Your library 20, Play next 30, Discover 40, Your taste 50, Compare 60). No shared list
   to edit. `Create` returns the content; `Kit.Page` wraps it in the page background, padding, scrolling and Kit styles.
 - **Two themes:** Blastlog (dark) and Blastlog Light share `theme/overrides/`; Light only swaps `Constants.xaml`
   (`theme/overrides-light/`), and the plugin builds game colours for whichever is active (`ThemeBridge.CurrentMode`).
@@ -58,7 +58,7 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   and response shapes: `docs/PLAYNITE_SYNC.md` in the Blastlog repo ("Reads for the native screens", "Mirror writes").
   Paired games: `plugin.EntryFor(playniteGameId)`, `plugin.GameFor(entryId)`; Play/Install go through
   `plugin.Api.StartGame(id)` / `plugin.Api.InstallGame(id)`.
-- **Links to other pages** go through `Ui.Nav` (`Nav.Review`, `Nav.AddGame`, `Nav.DiscoverGame`, `Nav.Entry`,
+- **Links to other pages** go through `Ui.Nav` (`Nav.Review`, `Nav.AddGame`, `Nav.Library(query)`, `Nav.DiscoverGame`, `Nav.Entry`,
   `Nav.FriendEntry`, `Nav.Media`, `Nav.Trait`, `Nav.Collection`, `Nav.QuickStart`, `Nav.Together`, `Nav.Friends`,
   `Nav.Taste`, `Nav.PlayNext`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
   Each opens the site until its native version lands; a native dialog replaces that one method's body, so screens

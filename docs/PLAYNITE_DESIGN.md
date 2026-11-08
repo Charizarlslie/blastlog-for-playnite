@@ -82,15 +82,27 @@ Recently finished with its next steps.
 button on Next up and Currently playing rows. One that isn't in Playnite shows "Not in Playnite" and its stores.
 **Built** (`Screens/Dashboard*.cs`): everything above runs natively, including Finished it / Set aside / Still playing /
 Start another (mirror writes), the boost's Not now / Undo, and Friends lately with its reactions. Some actions open the
-site because they are site flows the plugin has no screen for yet: + New entry and + Add a new game (the add dialog), the
-library links (the numbers, the star legend, Enter in
-Search) and friends' or catalogue games from Search (Discover game pages). A paired game's View details selects it in
+site because they are site flows the plugin has no screen for yet: + New entry and + Add a new game (the add dialog) and
+friends' or catalogue games from Search (Discover game pages). The library links (the numbers, the star legend, Enter in
+Search) open the native Your library screen with the site's filters (`Nav.Library`, 4.2). A paired game's View details selects it in
 Playnite's library. The earlier view's Sync now / Preview sync / Pair games / Refresh sit in a card at the bottom.
 
 ### 4.2 Library (Playnite's grid, restyled)
 Blastlog's cover tiles (3:4, big, rounded 14–18, game-tinted card, status pill with icon and word, stars), title under
 the cover, two lines then cut off. Filters use Playnite's own filter panel and the `Blastlog: …` tags, styled as
 Blastlog's filter chips. Installed games get a small "Installed" mark; Playnite's sort and group stay.
+
+**Your library** (`Screens/LibraryScreen.cs`, sidebar order 20) is the site's Library page as a native screen: every
+Blastlog entry, games that aren't in Playnite included, read from the sync's own library copy (`GET /sync/v1/library`
+from its cursor, refreshed on open). Header with the count, Import games (site) and + New entry (native add dialog); the
+panel with search, the status chips with counts (All records, Backlog, Completed, Wishlist, Playing, Started, Done), the
+rating and sort menus and the reverse button; then cover tiles in the Library tile's look with the site row's facts
+(year, length, Has review, status pill, stars, Installed). Filter and sort are `Blastlog.Sync.Core.Design.LibraryList`,
+tested against the site's `library.test.ts` cases and its search matching. A tile opens through `Nav.Entry`; coming back
+from a game shows the same filters and place. `Nav.Library(query)` opens it with the site's query (`status=done&rating=4`),
+in place when it's already open. **Not yet** (missing sync reads, listed for the server): the trait filter (needs
+`/users/:id/library-traits`), searching review text (the sync library has `hasReview`, not the text), "No end" lengths
+(the sync library drops them), collections as one row, and wishlist sale tags.
 
 ### 4.3 Game page (Playnite's details, restyled)
 The game page hero: blurred background art under a scrim, glow, cover, title, and the action row: **Play / Install**

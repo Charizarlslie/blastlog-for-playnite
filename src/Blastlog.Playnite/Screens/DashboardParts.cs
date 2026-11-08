@@ -167,7 +167,8 @@ static class Dash {
   /// <summary>Rate and review (its questions are what teach Blastlog).</summary>
   public static void Review(BlastlogPlugin plugin, string entryId) => Nav.Review(plugin, entryId);
   public static void DiscoverGame(BlastlogPlugin plugin, string gameId) => Nav.DiscoverGame(plugin, gameId);
-  public static void Library(BlastlogPlugin plugin, string query) => Site(plugin, "/library" + (string.IsNullOrEmpty(query) ? "" : "?" + query));
+  /// <summary>The Library screen with the site's filters (Nav.Library).</summary>
+  public static void Library(BlastlogPlugin plugin, string query) => Nav.Library(plugin, query);
 
   /// <summary>
   /// Playnite adds (PLAYNITE_DESIGN 4.1): Play when the paired game is installed, Install when it isn't; null when the

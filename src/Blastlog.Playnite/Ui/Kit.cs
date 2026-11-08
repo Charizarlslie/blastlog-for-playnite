@@ -16,7 +16,7 @@ namespace Blastlog.Playnite.Ui {
 /// <summary>
 /// A Blastlog screen in Playnite's sidebar. Implement it in its own file and it shows up: the plugin finds every
 /// IBlastlogScreen in this assembly (no shared list to edit, so screens can be built in parallel). Order follows the
-/// site's menu: Dashboard 10, Play next 30, Discover 40, Your taste 50, Compare 60.
+/// site's menu: Dashboard 10, Your library 20, Play next 30, Discover 40, Your taste 50, Compare 60.
 /// </summary>
 public interface IBlastlogScreen {
   string Title { get; }
