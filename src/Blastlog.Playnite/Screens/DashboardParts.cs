@@ -161,7 +161,7 @@ static class Dash {
   }
 
   // ---- Going places ----
-  public static void Site(BlastlogPlugin plugin, string path) => UiKit.Open(plugin.ServerUrl + path);
+  public static void Site(BlastlogPlugin plugin, string path) => Nav.Site(plugin, path);
   /// <summary>A game's page: Playnite's own (selected in the library) when it's paired, else Blastlog's.</summary>
   public static void OpenEntry(BlastlogPlugin plugin, string entryId) => Nav.Entry(plugin, entryId);
   /// <summary>Rate and review (its questions are what teach Blastlog).</summary>
