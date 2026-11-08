@@ -123,7 +123,24 @@ public static class Nav {
   /// <summary>Sharpen your picks: the full list of games worth rating or reviewing.</summary>
   public static void Sharpen(BlastlogPlugin plugin) { if (!ScreenJump.To("Play next", "Sharpen your picks")) Site(plugin, "/recommendations#sharpen"); }
 
-  /// <summary>A page that stays on the site (import sorting, account settings, the picture).</summary>
+  /// <summary>
+  /// Settings: the site's Settings menu and Account settings in one native window (Screens/SettingsWindow.cs): your
+  /// picture, appearance, game lengths, subscriptions, comfort picks, sale alerts, notifications, Playnite sync tokens,
+  /// your data and signing out. The sidebar's Settings and Your taste's picture and Account settings open it.
+  /// <paramref name="done"/> runs after it closes.
+  /// </summary>
+  public static void Settings(BlastlogPlugin plugin, Action done = null) => global::Blastlog.Playnite.Screens.SettingsWindow.Open(plugin, done);
+
+  /// <summary>Year in games (the site's /year/:year), native and read only (Screens/YearPage.cs); this year by default.</summary>
+  public static void Year(BlastlogPlugin plugin, int? year = null) {
+    if (plugin.Configured) { global::Blastlog.Playnite.Screens.YearPage.Open(plugin, year ?? DateTime.Now.Year); return; }
+    Site(plugin, "/year/" + (year ?? DateTime.Now.Year));
+  }
+
+  /// <summary>
+  /// A page that stays on the site: making and revoking tokens, downloading your data, deleting the account, linked
+  /// sign-ins, taste history, guided start, the policies.
+  /// </summary>
   public static void Site(BlastlogPlugin plugin, string path) => UiKit.Open(plugin.ServerUrl + path);
 }
 }
