@@ -49,6 +49,7 @@ public sealed class GamePageElement : PluginUserControl {
   int generation; string entryId; JObject page; JObject fit; JArray friends; JArray history;
   // The last change made here, for its Undo (one at a time, as the site's toasts).
   string undoRun, undoLabel; bool busy;
+  CollectionPicker collectionPicker;
 
   public GamePageElement(BlastlogPlugin plugin, string kind) {
     this.plugin = plugin; this.kind = kind;
@@ -400,11 +401,9 @@ public sealed class GamePageElement : PluginUserControl {
       body.Children.Add(line);
     }
     body.Children.Add(Fingerprint.LinkButton(rows.Count > 0 ? "Change on Blastlog ↗" : "Add where you own it on Blastlog ↗", () => UiKit.Open(plugin.ServerUrl + "/library/" + entryId)).Also(b => b.Margin = new Thickness(-10, 4, 0, 0)));
-    if (collection != null) {
-      body.Children.Add(Eyebrow("Part of a collection").Also(t => t.Margin = new Thickness(0, 14, 0, 6)));
-      var id = (string)collection["id"];
-      body.Children.Add(Fingerprint.LinkButton(((string)collection["title"] ?? "Collection") + " →", () => Nav.Collection(plugin, id, () => OnEntryChanged(entryId)), game: true).Also(b => b.Margin = new Thickness(-10, 0, 0, 0)));
-    }
+    // Part of a collection, and the quiet control to put it in one, move it or take it out (Screens/CollectionPicker.cs).
+    body.Children.Add(Eyebrow("Collection").Also(t => t.Margin = new Thickness(0, 14, 0, 2)));
+    body.Children.Add(CollectionPicker.Attach(ref collectionPicker, plugin, entryId, collection, () => OnEntryChanged(entryId)));
     return card;
   }
 
