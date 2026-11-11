@@ -135,15 +135,6 @@ public static class Nav {
   /// <summary>Sharpen your picks: the full list of games worth rating or reviewing.</summary>
   public static void Sharpen(BlastlogPlugin plugin) { if (!ScreenJump.To("Play next", "Sharpen your picks")) Site(plugin, "/recommendations#sharpen"); }
 
-  /// <summary>
-  /// A friend's Dashboard, Library or Taste from the sidebar's Friends (<paramref name="page"/> "dashboard", "library" or
-  /// "profile", the site's /friends/:id/:page). The site's page until the native friend pages land.
-  /// </summary>
-  public static void FriendPage(BlastlogPlugin plugin, string friendId, string page) {
-    if (friendId == null) return;
-    Site(plugin, "/friends/" + friendId + "/" + (page ?? "dashboard"));
-  }
-
   /// <summary>The sidebar's Settings: the plugin's settings until the native Blastlog settings land.</summary>
   public static void Settings(BlastlogPlugin plugin) {
     try { plugin.OpenSettingsView(); } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Error(e, "Blastlog settings"); }
