@@ -119,7 +119,12 @@ static class FriendPages {
     try {
       if (string.IsNullOrEmpty(name)) name = await NameOf(plugin, friendId);
       var friend = new FriendView(friendId, name);
-      LinkPages.Show(plugin, friend.Name, close => new Shell(plugin, friend, page));
+      // A whole page, so it opens at the page size the game pages use (FriendEntry, DiscoverGame), only wider: the
+      // dashboard and library lay out for up to 1500 wide.
+      var owner = plugin.Api.Dialogs.GetCurrentAppWindow();
+      var width = Math.Max(900, Math.Min(1500, (owner?.ActualWidth ?? 1400) * 0.9));
+      var height = Math.Max(640, Math.Min(1100, (owner?.ActualHeight ?? 900) * 0.9));
+      LinkPages.Show(plugin, friend.Name, close => new Shell(plugin, friend, page), width: width, height: height);
     } catch (Exception e) { Log.Error(e, "Blastlog friend pages"); }
   }
 
