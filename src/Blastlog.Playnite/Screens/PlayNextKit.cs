@@ -216,7 +216,7 @@ static class PnKit {
   /// <summary>Play (installed) or Install for a game the player has in Playnite; null when it isn't in Playnite.</summary>
   public static Button PlayOrInstall(BlastlogPlugin plugin, string entryId, bool primary = true) {
     var game = string.IsNullOrEmpty(entryId) ? null : plugin.GameFor(entryId);
-    if (game == null) return null;
+    if (game == null || !Dash.CanLaunch(plugin, game)) return null; // nothing this PC can launch or install
     var id = game.Id;
     return game.IsInstalled ? Kit.Button("Play", () => plugin.Api.StartGame(id), primary ? "Blastlog.Primary" : "Blastlog.Ghost")
       : Kit.Button("Install", () => plugin.Api.InstallGame(id), primary ? "Blastlog.Primary" : "Blastlog.Ghost");

@@ -94,6 +94,23 @@ static class DashHero {
     return box;
   }
 
+  /// <summary>
+  /// The card's title: two lines at most (the rest ends in "…", the whole title in its tooltip), so a long title can't
+  /// make the card taller (web b079062).
+  /// </summary>
+  public static TextBlock Title(string title) {
+    var t = Dash.Text(title, "Blastlog.HeroTitle");
+    t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.CharacterEllipsis; t.ToolTip = title;
+    t.LineStackingStrategy = LineStackingStrategy.BlockLineHeight; t.LineHeight = Math.Round(t.FontSize * 1.12); t.MaxHeight = t.LineHeight * 2;
+    return t;
+  }
+  /// <summary>
+  /// Now playing's minimum height: room for a two-line title with its chips, links and one row of buttons, so swapping
+  /// between games (or a long title) keeps the card one size, as on the site. Extra copy (the check-in, Set aside's
+  /// question, the start picker) still grows it.
+  /// </summary>
+  public const double SteadyHeight = 500;
+
   /// <summary>The label chip at the top left ("Next up", "Now playing", "Just finished").</summary>
   public static Border Label(string text) => new Border { Style = Kit.Style("Blastlog.NeutralChip"), Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left,
     VerticalAlignment = VerticalAlignment.Center, Child = Dash.Text(text, "Blastlog.Small", "Blastlog.Text", FontWeights.Bold).Also(t => t.TextWrapping = TextWrapping.NoWrap) };

@@ -176,12 +176,31 @@ static class Dash {
   /// </summary>
   public static Button PlayButton(BlastlogPlugin plugin, string entryId, string style = "Blastlog.Primary") {
     var game = entryId != null ? plugin.GameFor(entryId) : null;
-    if (game == null) return null;
+    if (game == null || !CanLaunch(plugin, game)) return null;
     var installed = game.IsInstalled;
     var b = Kit.Button(installed ? "Play" : "Install", () => { if (installed) plugin.Api.StartGame(game.Id); else plugin.Api.InstallGame(game.Id); }, style);
     b.Content = IconLabel(installed ? Play : Download, installed ? "Play" : "Install");
     AutomationName(b, (installed ? "Play " : "Install ") + game.Name);
     return b;
+  }
+  /// <summary>
+  /// Whether Play or Install would do something on this PC, from Playnite's own data (never the title). Installed: it
+  /// has a play action (its own, or an emulator's) or a library add-on that plays it. Not installed: a library add-on
+  /// that's loaded here must handle the install, and the game must be a PC game (a Switch or PlayStation copy can't be
+  /// installed on Windows). Otherwise no button, e.g. Ocarina of Time on Switch added by hand.
+  /// </summary>
+  public static bool CanLaunch(BlastlogPlugin plugin, global::Playnite.SDK.Models.Game game) {
+    var library = game.PluginId != Guid.Empty && plugin.Api.Addons.Plugins.Any(p => p.Id == game.PluginId);
+    if (game.IsInstalled) return library || game.GameActions?.Any(a => a.IsPlayAction) == true;
+    return library && IsPcGame(game);
+  }
+  static readonly string[] PcSpecs = { "pc_windows", "pc_dos", "pc_linux", "macintosh" };
+  /// <summary>A PC game, or one with no platform set (most store libraries leave it to the add-on).</summary>
+  static bool IsPcGame(global::Playnite.SDK.Models.Game game) {
+    var platforms = game.Platforms;
+    if (platforms == null || platforms.Count == 0) return true;
+    return platforms.Any(p => (p.SpecificationId != null && PcSpecs.Contains(p.SpecificationId))
+      || (p.SpecificationId == null && p.Name != null && (p.Name.IndexOf("PC", StringComparison.Ordinal) >= 0 || p.Name.IndexOf("Windows", StringComparison.OrdinalIgnoreCase) >= 0)));
   }
   public static void AutomationName(DependencyObject d, string name) => System.Windows.Automation.AutomationProperties.SetName(d, name);
 

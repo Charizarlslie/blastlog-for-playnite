@@ -192,7 +192,7 @@ sealed partial class DiscoverGameView : UserControl {
   /// <summary>Play (installed) or Install for a game the player has in Playnite; the window shuts first.</summary>
   Button PlayOrInstall(string entryId) {
     var game = entryId != null ? plugin.GameFor(entryId) : null;
-    if (game == null) return null;
+    if (game == null || !Dash.CanLaunch(plugin, game)) return null; // nothing this PC can launch or install
     var id = game.Id; var installed = game.IsInstalled;
     var b = PnKit.Btn(PnKit.IconWord(installed ? "<polygon points=\"6 3 20 12 6 21 6 3\" />" : "<path d=\"M12 15V3\" /><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\" /><path d=\"m7 10 5 5 5-5\" />", installed ? "Play" : "Install"),
       () => { AfterClose = () => { try { if (installed) plugin.Api.StartGame(id); else plugin.Api.InstallGame(id); } catch (Exception e) { Log.Error(e, "Blastlog play"); } }; window.Close(); return Task.CompletedTask; },
