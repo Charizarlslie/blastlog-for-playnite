@@ -154,6 +154,14 @@ static class ImportPage {
       if (!list.B("canImport")) body.Children.Add(LinkPages.Notice("Importing isn’t open yet. You can still add games one at a time from your library.", false));
       if (needsLook > 0) body.Children.Add(LinkPages.Notice($"{Plural(needsLook, "game")} from your imports still {(needsLook == 1 ? "needs" : "need")} a look. Open the import below to pick the right one.", true));
 
+      // Sorting happens here, bringing games in on the site: so once there are imports, they come first.
+      if (batches.Count > 0) {
+        var rows = new StackPanel { HorizontalAlignment = HorizontalAlignment.Stretch };
+        foreach (var b in batches) rows.Children.Add(BatchRow(b));
+        body.Children.Add(LinkPages.Card("Your imports", "Open one to sort its games, change where they went, pick the right game for any that need a look, or undo it.", rows)
+          .Also(c => c.HorizontalAlignment = HorizontalAlignment.Stretch));
+      }
+
       body.Children.Add(LinkPages.Card("Where are your games?",
         "Steam, PlayStation, Xbox, Nintendo Switch, GOG, Epic, another tracker or any list. Bringing them in happens on Blastlog (Connect Steam, or copy your list and paste it); the import then shows up here to sort.",
         Wrap(Kit.Button("Import games on Blastlog ↗", () => Nav.SiteOnly(plugin, "/library/import")),
@@ -168,15 +176,24 @@ static class ImportPage {
             if (made?.S("id") is string madeId) host.ShowBatch(madeId);
           }))));
 
-      if (batches.Count > 0) {
-        var rows = new StackPanel();
-        foreach (var b in batches) rows.Children.Add(BatchRow(b));
-        body.Children.Add(LinkPages.Card("Your imports", null, rows));
-      }
       body.Children.Add(T(plugin.CacheLine(), "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 6, 0, 0)));
     }
 
-    /// <summary>One import in "Your imports": its name, date and size, and its badge; opens its page.</summary>
+    /// <summary>
+    /// A full-width row (the site's .imp-history link): a line under each, the surface tint on hover, Blastlog's focus
+    /// ring from the keyboard. The kit's buttons centre their content, so rows get their own template.
+    /// </summary>
+    static readonly ControlTemplate RowTemplate = (ControlTemplate)System.Windows.Markup.XamlReader.Parse(
+      "<ControlTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" TargetType=\"Button\">" +
+      "<Border x:Name=\"Row\" Background=\"Transparent\" BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"0,0,0,1\">" +
+      "<Border x:Name=\"Ring\" BorderThickness=\"2\" BorderBrush=\"Transparent\" CornerRadius=\"10\" Padding=\"{TemplateBinding Padding}\">" +
+      "<ContentPresenter HorizontalAlignment=\"Stretch\" VerticalAlignment=\"Center\" /></Border></Border>" +
+      "<ControlTemplate.Triggers>" +
+      "<Trigger Property=\"IsMouseOver\" Value=\"True\"><Setter TargetName=\"Row\" Property=\"Background\" Value=\"{DynamicResource Blastlog.Surface2}\" /></Trigger>" +
+      "<Trigger Property=\"IsKeyboardFocused\" Value=\"True\"><Setter TargetName=\"Ring\" Property=\"BorderBrush\" Value=\"{DynamicResource Blastlog.Focus}\" /></Trigger>" +
+      "</ControlTemplate.Triggers></ControlTemplate>");
+
+    /// <summary>One import in "Your imports": its name, date and size, its badge and a chevron; the whole row opens its page.</summary>
     FrameworkElement BatchRow(JObject b) {
       var counts = b["counts"] as JObject;
       var total = (int?)counts?.D("total") ?? 0; var look = (int?)counts?.D("needs_look") ?? 0;
@@ -189,11 +206,16 @@ static class ImportPage {
       words.VerticalAlignment = VerticalAlignment.Center;
       grid.Children.Add(words);
       var status = b.S("status");
+      grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
       var badge = Kit.Chip(ImportSort.StatusText(status, look), neutral: status != "ready");
       badge.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(badge, 1); grid.Children.Add(badge);
-      var button = new Button { Content = grid, Style = Kit.Style("Blastlog.TextButton"), HorizontalContentAlignment = HorizontalAlignment.Stretch, MinHeight = 56,
-        Padding = new Thickness(4, 8, 4, 8), BorderThickness = new Thickness(0, 0, 0, 1) };
+      // The whole row opens the import, as the site's row link does; the chevron says so.
+      var chevron = T("›", "Blastlog.Body", "Blastlog.TextMuted", 26).Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(14, -4, 4, 0); });
+      Grid.SetColumn(chevron, 2); grid.Children.Add(chevron);
+      var button = new Button { Content = grid, Template = RowTemplate, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
+        MinHeight = 60, Padding = new Thickness(12, 10, 8, 10), Cursor = System.Windows.Input.Cursors.Hand, FocusVisualStyle = null };
       button.SetResourceReference(Control.BorderBrushProperty, "Blastlog.Line");
+      button.SetResourceReference(Control.ForegroundProperty, "Blastlog.Text");
       System.Windows.Automation.AutomationProperties.SetName(button, $"{ImportSort.ImportName(b.S("door"), b.S("format"), b.S("origin"))}, {date}, {Plural(total, "game")}, {ImportSort.StatusText(status, look)}");
       button.Click += (s, e) => { try { host.ShowBatch(b.S("id")); } catch (Exception ex) { Log.Error(ex, "Blastlog import: open"); } };
       return button;
