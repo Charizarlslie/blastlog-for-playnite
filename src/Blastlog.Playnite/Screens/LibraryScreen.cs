@@ -109,7 +109,7 @@ sealed class LibraryView : StackPanel {
   public LibraryView(BlastlogPlugin plugin, (LibraryFilters filters, double scroll, int shown, HashSet<string> open) start, FriendView friend = null) {
     this.plugin = plugin; this.friend = friend; filters = start.filters; restoreScroll = start.scroll; restoreShown = start.shown;
     if (start.open != null) open.UnionWith(start.open);
-    MaxWidth = 1500;
+    // No width cap: the site's Library fills the window.
     if (friend == null) current = new WeakReference<LibraryView>(this);
     else title.Text = friend.Name + "’s library";
 
@@ -602,7 +602,17 @@ sealed class LibraryView : StackPanel {
         image.DecodePixelWidth = 500; image.EndInit(); image.Freeze();
         cover.Background = new ImageBrush(image) { Stretch = Stretch.UniformToFill }; cover.Child = null;
       }
-      Kit.GameScope(card, await plugin.Theme.SeedFor(game));
+      // The colour comes from the cover file just loaded (its page colour on Blastlog wins), so it can't miss when the
+      // picture showed; anything else falls back to the shared lookup, and a fall back to green says why in the log.
+      string seed = null;
+      if (game?.Accent != null && Colour.ParseHex(game.Accent) != null) seed = game.Accent.ToLowerInvariant();
+      else if (file != null) {
+        var pixels = await Task.Run(() => ThemeBridge.CoverPixels(file));
+        seed = pixels != null && pixels.Count > 0 ? CoverColours.Of(pixels).FirstOrDefault() : null;
+      }
+      if (seed == null) seed = await plugin.Theme.SeedFor(game);
+      if (seed == GameColour.BrandGreen) Log.Info("Blastlog library: no cover colour for " + game?.Title + (file == null ? " (no cover file)" : " (no strong colour in the cover)"));
+      Kit.GameScope(card, seed);
     } catch (Exception ex) { Log.Warn("Blastlog library: cover for " + game?.Title + ": " + ex.Message); }
   }
 
