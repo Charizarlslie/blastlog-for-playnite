@@ -93,6 +93,12 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   closed. The plugin setting "Hide Playnite's own menu items" hides the group's buttons only (the items stay in
   Playnite's list, so `Nav.Entry` still switches to the Library view) and adds "Playnite library" to the footer.
   Playnite redraws every sidebar button when its item list changes, so the group is re-applied by a 1-second check.
+- **Importing** (`Nav.Import`, Screens/ImportPage.cs, ImportBatch.cs, ImportSorting.cs) is native: the site's import page
+  (Steam sync's finds, Your imports) and each import (add step, sort step with piles, playtime groups and Quick sort,
+  needs a look with options and search, then the "Finished it?" cards, the whole list and Undo). The decisions are Core
+  `ImportSort`, tested against the site's (`ImportSortTests`). `Nav.Site("/library/import[/:id]")` opens it natively;
+  bringing games in (the store doors, Connect Steam) stays on the site through `Nav.SiteOnly`. The demo has a pretend
+  Steam import for trying it.
 - **Settings** (`Nav.Settings`, Screens/SettingsWindow.cs) is native: the site's Settings menu and Account settings in
   one window. Your picture (Screens/SettingsPicture.cs: pick a file, middle square at 512px, JPEG under 400 KB,
   `PUT`/`DELETE me/picture`), appearance (`PUT me/appearance`, the site's look; Playnite's look is its theme), game

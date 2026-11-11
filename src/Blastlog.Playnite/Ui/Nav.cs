@@ -158,9 +158,27 @@ public static class Nav {
   }
 
   /// <summary>
-  /// A page that stays on the site: making and revoking tokens, downloading your data, deleting the account, linked
-  /// sign-ins, taste history, guided start, the policies.
+  /// The Import page (the site's /library/import): Steam sync's finds and "Your imports", each import's sorting, commit
+  /// and Undo, natively (Screens/ImportPage.cs, ImportBatch.cs). Bringing new games in (the store doors) stays on the site.
+  /// <paramref name="batchId"/> opens one import. Not set up yet: the site's page.
   /// </summary>
-  public static void Site(BlastlogPlugin plugin, string path) => UiKit.Open(plugin.ServerUrl + path);
+  public static void Import(BlastlogPlugin plugin, string batchId = null, Action done = null) {
+    if (!plugin.Configured) { SiteOnly(plugin, "/library/import" + (batchId != null ? "/" + batchId : "")); return; }
+    global::Blastlog.Playnite.Screens.ImportPage.Open(plugin, batchId, done);
+  }
+
+  /// <summary>
+  /// A page that stays on the site (making and revoking tokens, downloading your data, deleting the account, linked
+  /// sign-ins, taste history, guided start, the policies), unless Playnite has it: /library/import and
+  /// /library/import/:id open natively (Import), so screens that still pass those paths get the native page.
+  /// </summary>
+  public static void Site(BlastlogPlugin plugin, string path) {
+    var m = System.Text.RegularExpressions.Regex.Match(path ?? "", @"^/library/import(?:/([0-9a-fA-F-]{8,}))?/?$");
+    if (m.Success && plugin.Configured) { Import(plugin, m.Groups[1].Success ? m.Groups[1].Value : null); return; }
+    SiteOnly(plugin, path);
+  }
+
+  /// <summary>Always the site, even where Playnite has its own page (Import games, whose doors are on the site).</summary>
+  public static void SiteOnly(BlastlogPlugin plugin, string path) => UiKit.Open(plugin.ServerUrl + path);
 }
 }

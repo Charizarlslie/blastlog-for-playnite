@@ -264,7 +264,7 @@ static class TasteUi {
   }
 
   /// <summary>Opens a page on the player's Blastlog (things that stay on the site: pictures, account settings).</summary>
-  public static void Site(BlastlogPlugin plugin, string path) => UiKit.Open(plugin.ServerUrl + path);
+  public static void Site(BlastlogPlugin plugin, string path) => Nav.Site(plugin, path);
 
   /// <summary>A Playnite window holding Blastlog content (Compare's look-up of one game).</summary>
   public static void Dialog(BlastlogPlugin plugin, string title, FrameworkElement content, double width = 980, double height = 720) {
