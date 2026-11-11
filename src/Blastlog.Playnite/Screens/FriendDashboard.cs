@@ -162,7 +162,7 @@ sealed class FriendDashboardView : StackPanel {
     var strip = list.Count > 1 ? DashHero.Strip(plugin, list.Select(e => new DashHero.StripGame { Id = e.EntryId, Game = e.Game, Title = e.Game?.Title ?? "" }).ToList(),
       id, pick => { shownId = pick; Draw(hero, NowPlayingHero); }, null) : null;
     var copy = new StackPanel();
-    copy.Children.Add(Dash.Text(title, "Blastlog.HeroTitle").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 26, 0, 14));
+    copy.Children.Add(DashHero.Title(title).Margin(0, 26, 0, 14));
     var length = shown.NoEnd ? "No end" : shown.Length != null ? "~" + shown.Length.Hours.ToString(CultureInfo.InvariantCulture) + "h" : null;
     if (length != null) copy.Children.Add(Dash.Wrap(DashHero.Chip(Dash.Clock, length, "How long it takes to beat")).Margin(0, 0, 0, 6));
     copy.Children.Add(DashHero.Links(title).Margin(0, 12, 0, 0));
@@ -171,7 +171,7 @@ sealed class FriendDashboardView : StackPanel {
     Dash.AutomationName(details, $"View {friend.Name}’s {title}");
     copy.Children.Add(details);
     return DashHero.Frame(plugin, shown.Game, DashHero.TopRow(DashHero.Label("Now playing"), strip), copy, "playing", $"Cover of {title}",
-      () => Nav.FriendEntry(plugin, id, friend.Name), scope: true);
+      () => Nav.FriendEntry(plugin, id, friend.Name), scope: true).Also(c => c.MinHeight = DashHero.SteadyHeight);
   }
 
   // ---- Currently playing: their Playing games, newest first ----

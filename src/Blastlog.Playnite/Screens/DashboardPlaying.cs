@@ -141,18 +141,20 @@ sealed class DashboardPlaying : Border {
     var top = DashHero.TopRow(DashHero.Label("Now playing"), strip);
 
     var copy = new StackPanel();
-    copy.Children.Add(Dash.Text(title, "Blastlog.HeroTitle").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 26, 0, 14));
+    copy.Children.Add(DashHero.Title(title).Margin(0, 26, 0, 14));
     var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
     chips.Children.Add(DashHero.Chip(Icons.Gamepad, OnListText(item)));
     var hours = Dash.LengthText(entry["length"]); if (hours != null) chips.Children.Add(DashHero.Chip(Dash.Clock, hours, "How long it takes to beat"));
     copy.Children.Add(chips);
     if (due && asideFor != id) copy.Children.Add(Dash.Text(AskText(item, entry), "Blastlog.Body").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 6, 0, 0));
-    // design.md 8: the same question and answers for every game, with an end or without.
-    if (asideFor == id) copy.Children.Add(Dash.Text("Back to your backlog to pick up later, or done with it?", "Blastlog.Body", weight: FontWeights.SemiBold).Margin(0, 6, 0, 0));
+    // The Set aside question replaces the buttons, under the links (the site's order); the same question and answers for
+    // every game, with an end or without (design.md 8).
     copy.Children.Add(DashHero.Links(title).Margin(0, 12, 0, 0));
     if (message != null) copy.Children.Add(Dash.Text(message, "Blastlog.Body", "Blastlog.GameText").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 12, 0, 0));
 
     var actions = new WrapPanel { Margin = new Thickness(0, 18, 0, 0) };
+    if (asideFor == id) copy.Children.Add(Dash.Text("Back to your backlog to pick up later, or done with it?", "Blastlog.Body", weight: FontWeights.SemiBold).Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 18, 0, 0));
+    if (asideFor == id) actions.Margin = new Thickness(0, 10, 0, 0);
     if (asideFor == id) {
       actions.Children.Add(Kit.Button("Back to backlog", () => SetAside(entry), "Blastlog.Ghost"));
       actions.Children.Add(Kit.Button("Done with it", () => Finish(entry, "dnf"), "Blastlog.Ghost"));
@@ -170,7 +172,8 @@ sealed class DashboardPlaying : Border {
     foreach (var b in actions.Children.OfType<Button>()) { b.Margin = new Thickness(0, 0, 8, 8); b.IsEnabled = !working; b.FontSize = 14; b.Padding = new Thickness(16, 0, 16, 0); }
     copy.Children.Add(actions);
     if (picking) copy.Children.Add(PickerPanel());
-    return DashHero.Frame(plugin, game, top, copy, "playing", "Cover of " + title, () => Dash.OpenEntry(plugin, id), scope: true);
+    // One size for every game (Charlie, 2026-11-08): room for a two-line title, so a long one doesn't resize the card.
+    return DashHero.Frame(plugin, game, top, copy, "playing", "Cover of " + title, () => Dash.OpenEntry(plugin, id), scope: true).Also(c => c.MinHeight = DashHero.SteadyHeight);
   }
 
   /// <summary>The start picker on the big card, on a plain panel so it reads over the art.</summary>
@@ -186,7 +189,7 @@ sealed class DashboardPlaying : Border {
     var judged = entry["rating"] != null && entry["rating"].Type != JTokenType.Null || !string.IsNullOrWhiteSpace((string)entry["review"]);
     view.Wear(game);
     var copy = new StackPanel();
-    copy.Children.Add(Dash.Text(title, "Blastlog.HeroTitle").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 26, 0, 14));
+    copy.Children.Add(DashHero.Title(title).Margin(0, 26, 0, 14));
     copy.Children.Add(Dash.Wrap(DashHero.Chip(PnKit.Check, item.Status == "done" ? "Marked finished" : "Marked didn't finish")).Margin(0, 0, 0, 6));
     copy.Children.Add(Dash.Text(item.Status == "done" ? "Nice! How was it?" : "How was it, as far as you got?", "Blastlog.Body", weight: FontWeights.SemiBold).Margin(0, 8, 0, 2));
     copy.Children.Add(Dash.Text("A few quick questions help Blastlog learn what you love and what loses you.", "Blastlog.Muted").Also(t => t.TextWrapping = TextWrapping.Wrap));
@@ -200,7 +203,7 @@ sealed class DashboardPlaying : Border {
     }), "Blastlog.TextButton"));
     foreach (var b in buttons.Children.OfType<Button>()) { b.Margin = new Thickness(0, 0, 10, 8); b.IsEnabled = busy == null; }
     copy.Children.Add(buttons);
-    return DashHero.Frame(plugin, game, DashHero.TopRow(DashHero.Label("Just finished"), null), copy, (string)entry["status"], "Cover of " + title, () => Dash.OpenEntry(plugin, id), scope: true);
+    return DashHero.Frame(plugin, game, DashHero.TopRow(DashHero.Label("Just finished"), null), copy, (string)entry["status"], "Cover of " + title, () => Dash.OpenEntry(plugin, id), scope: true).Also(c => c.MinHeight = DashHero.SteadyHeight);
   }
 
   // ---- One game ----

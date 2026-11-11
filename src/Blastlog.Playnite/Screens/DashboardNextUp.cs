@@ -277,7 +277,7 @@ sealed class DashboardNextUp : Border {
     review.Content = Dash.IconLabel(Dash.Pencil, reviewed ? "Edit review" : "Add review");
     row.Children.Add(review);
     foreach (FrameworkElement b in row.Children) b.Margin = new Thickness(0, 0, 10, 8);
-    if (play == null) row.Children.Add(Dash.Text("Not in Playnite", "Blastlog.Muted").Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(6, 0, 0, 8); t.ToolTip = "Pair it in Blastlog, Pair games, once it's in your Playnite library"; }));
+    if (play == null && plugin.GameFor(id) == null) row.Children.Add(Dash.Text("Not in Playnite", "Blastlog.Muted").Also(t => { t.VerticalAlignment = VerticalAlignment.Center; t.Margin = new Thickness(6, 0, 0, 8); t.ToolTip = "Pair it in Blastlog, Pair games, once it's in your Playnite library"; }));
     return row;
   }
 
