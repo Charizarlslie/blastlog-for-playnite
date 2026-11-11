@@ -68,8 +68,17 @@ sealed class TasteView : Grid {
   FrameworkElement fineTune;
   StackPanel fineResults, addResults;
 
-  public TasteView(BlastlogPlugin plugin) {
-    this.plugin = plugin;
+  /// <summary>
+  /// A friend's taste (Screens/FriendPages.cs, the site's /friends/:id/profile) when set: their profile, read only (no
+  /// corrections, Sharpen your picks, picture or settings), worded about them.
+  /// </summary>
+  readonly FriendView friend;
+  bool Own => friend == null;
+  /// <summary>The line about the player (<paramref name="you"/>) or about the friend (<paramref name="them"/>).</summary>
+  string Say(string you, string them) => Own ? you : them;
+
+  public TasteView(BlastlogPlugin plugin, FriendView friend = null) {
+    this.plugin = plugin; this.friend = friend;
     Children.Add(page);
     toast = new UndoToast(this);
     Loaded += (s, e) => { if (!loaded) { loaded = true; Run(Load, "taste load"); } };
@@ -82,6 +91,12 @@ sealed class TasteView : Grid {
     await Read(true); Render();
   }
   async Task Read(bool fresh) {
+    if (!Own) {
+      data = (await plugin.Mirror(friend.Path("taste-profile"), fresh)).Value ?? data;
+      myName = friend.Name;
+      traits = Arr(data?["traits"]).Select(TasteTrait.From).Where(t => t.Id != null).ToList();
+      return;
+    }
     data = (await plugin.Mirror("taste-profile", fresh)).Value ?? data;
     help = (await plugin.Mirror("taste-help", fresh)).Value ?? help;
     changes = (await plugin.Mirror("taste-changes", fresh)).Value ?? changes;
@@ -91,7 +106,7 @@ sealed class TasteView : Grid {
 
   // ---- Writes ----
   async Task SetStance(string id, string stance, string label, string before, bool undo) {
-    if (busy) return;
+    if (busy || !Own) return;
     busy = true; Render();
     try {
       var body = new JObject { ["characteristicId"] = id, ["stance"] = stance == null ? JValue.CreateNull() : (JToken)stance };
@@ -110,12 +125,12 @@ sealed class TasteView : Grid {
     Run(() => SetStance(id, stance, trait?.Label ?? label ?? "That trait", before, false), "taste stance");
   }
   void OnReading(string id, string action) => Run(async () => {
-    if (busy) return; busy = true; Render();
+    if (busy || !Own) return; busy = true; Render();
     try { if (await plugin.Write($"taste/readings/{id}/correction", new JObject { ["action"] = action == null ? JValue.CreateNull() : (JToken)action }) != null) await Read(true); }
     finally { busy = false; Render(); }
   }, "taste reading");
   void RemoveQuestion(string id) => Run(async () => {
-    if (busy) return; busy = true; Render();
+    if (busy || !Own) return; busy = true; Render();
     try { if (await plugin.Write($"taste/questions/{id}/remove", new JObject()) != null) await Read(true); }
     finally { busy = false; Render(); }
   }, "taste question");
@@ -146,7 +161,7 @@ sealed class TasteView : Grid {
     page.Children.Clear();
     page.Children.Add(Header());
     if (!plugin.Configured) { page.Children.Add(Kit.Card(T("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog to see your taste here."))); return; }
-    if (data == null) { page.Children.Add(T(loaded ? "Loading your taste…" : "", "Blastlog.Muted")); return; }
+    if (data == null) { page.Children.Add(T(loaded ? Say("Loading your taste…", $"Loading {friend?.Name}’s taste…") : "", "Blastlog.Muted")); return; }
     if (error != null) page.Children.Add(T(error, "Blastlog.Body", "Blastlog.Danger"));
     var items = Arr(changes?["items"]);
     if (items.Count > 0) page.Children.Add(RecentChanges(items));
@@ -163,17 +178,18 @@ sealed class TasteView : Grid {
     var sweet = SweetGroups();
     var inOwnWords = Arr(data["inOwnWords"]);
 
-    if (loves.Count > 0) page.Children.Add(Chapter(Next(), "What hooks you", "The things that most reliably make a game land for you.",
+    if (loves.Count > 0) page.Children.Add(Chapter(Next(), Say("What hooks you", "What hooks them"), Say("The things that most reliably make a game land for you.", "The things that most reliably make a game land for them."),
       Columns(380, loves.Select(t => (UIElement)Spotlight(t, true)))));
-    if (avoids.Count > 0) page.Children.Add(Chapter(Next(), "What loses you", "What tends to make you check out, and the exceptions that still win you over.",
+    if (avoids.Count > 0) page.Children.Add(Chapter(Next(), Say("What loses you", "What loses them"), Say("What tends to make you check out, and the exceptions that still win you over.", "What tends to make them check out, and the exceptions that still win them over."),
       Columns(340, avoids.Select(t => (UIElement)Spotlight(t, false)))));
     if (traits.Count >= 6) page.Children.Add(Chapter(Next(), "Area by area",
-      "Where you lean in each part of a game. Solid leans toward, striped leans away; faded bars are early signals (fewer than 6 games).", Areas()));
-    page.Children.Add(Chapter(Next(), "Your numbers", "Your ratings at a glance.", Glance()));
-    if (sweet.Count > 0) page.Children.Add(Chapter(Next(), "Sweet spots", "How you rate games, on average, by how long they take to beat and when they came out.", SweetSpots(sweet)));
-    if (inOwnWords.Count > 0) page.Children.Add(Chapter(Next(), "In your own words", "Things said about games in general, pulled from reviews.", QuoteWall(inOwnWords)));
-    if (questions.Count > 0) page.Children.Add(Chapter(Next(), "Must-haves & dealbreakers", "The sharpest wants and dealbreakers in your reviews. Every game is checked for them.", MustHaves(questions)));
-    fineTune = Chapter(Next(), "Fine-tune", "Everything Blastlog has worked out, and how to correct it. Your corrections always win, and change Play next and Next up right away.",
+      Say("Where you lean", "Where they lean") + " in each part of a game. Solid leans toward, striped leans away; faded bars are early signals (fewer than 6 games).", Areas()));
+    page.Children.Add(Chapter(Next(), Say("Your numbers", "Their numbers"), Say("Your ratings at a glance.", "Their ratings at a glance."), Glance()));
+    if (sweet.Count > 0) page.Children.Add(Chapter(Next(), "Sweet spots", Say("How you rate", "How they rate") + " games, on average, by how long they take to beat and when they came out.", SweetSpots(sweet)));
+    if (inOwnWords.Count > 0) page.Children.Add(Chapter(Next(), Say("In your own words", "In their own words"), "Things said about games in general, pulled from reviews.", QuoteWall(inOwnWords)));
+    if (questions.Count > 0) page.Children.Add(Chapter(Next(), "Must-haves & dealbreakers", Say("The sharpest wants and dealbreakers in your reviews.", "The sharpest wants and dealbreakers in their reviews.") + " Every game is checked for them.", MustHaves(questions)));
+    fineTune = Chapter(Next(), "Fine-tune", Say("Everything Blastlog has worked out, and how to correct it. Your corrections always win, and change Play next and Next up right away.",
+        $"Everything Blastlog has worked out about {friend?.Name}’s taste. Only they can correct it."),
       FineTune(fineLoves, fineAvoids, yours));
     page.Children.Add(fineTune);
     page.Children.Add(T(plugin.CacheLine(), "Blastlog.Small").Also(t => t.Margin = new Thickness(0, 30, 0, 0)));
@@ -188,17 +204,19 @@ sealed class TasteView : Grid {
     AutomationProperties.SetName(face, name);
     who.Children.Add(face);
     // Pictures and account settings stay on the site (PLAYNITE_DESIGN 4: "Open in Blastlog").
-    who.Children.Add(Link("Change picture ↗", () => Site(plugin, "/profile")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
-    who.Children.Add(Link("Account settings ↗", () => Site(plugin, "/profile?settings=1")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
+    if (Own) {
+      who.Children.Add(Link("Change picture ↗", () => Site(plugin, "/profile")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
+      who.Children.Add(Link("Account settings ↗", () => Site(plugin, "/profile?settings=1")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
+    }
     who.Children.Add(Link("Refresh", () => Run(async () => { await Read(true); Render(); }, "taste refresh")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
     var head = Stack(null, who);
     head.Children.Add(T("Taste", "Blastlog.Small", "Blastlog.GameText", 0, FontWeights.Bold).Also(t => t.Margin = new Thickness(0, 18, 0, 2)));
-    head.Children.Add(T("Your taste", "Blastlog.PageTitle"));
+    head.Children.Add(T(Say("Your taste", friend?.Name + "’s taste"), "Blastlog.PageTitle"));
     if (data != null) {
       var read = I(data["analysis"], "read");
-      head.Children.Add(T($"What you love, what you skip, and why: from {I(data, "ratedTotal")} ratings{(read > 0 ? $" and {read} reviews" : "")}.", "Blastlog.Muted", null, 17).Also(t => t.Margin = new Thickness(0, 8, 0, 0)));
+      head.Children.Add(T($"{Say("What you love, what you skip", "What they love, what they skip")}, and why: from {I(data, "ratedTotal")} ratings{(read > 0 ? $" and {read} reviews" : "")}.", "Blastlog.Muted", null, 17).Also(t => t.Margin = new Thickness(0, 8, 0, 0)));
     }
-    var k = help?["knowledge"];
+    var k = Own ? help?["knowledge"] : null;
     if (k != null) {
       var level = D(k, "level");
       var badge = level == null || level == 0
@@ -211,8 +229,8 @@ sealed class TasteView : Grid {
       head.Children.Add(row);
     }
     var key = Stack(new Thickness(0, 14, 0, 0),
-      Row(Pill("You said", filled: true), T("you set it, and it always wins", "Blastlog.Small").Also(t => t.VerticalAlignment = VerticalAlignment.Center)),
-      Row(Pill("Blastlog’s read"), T("worked out from your ratings and reviews; correct it any time", "Blastlog.Small").Also(t => t.VerticalAlignment = VerticalAlignment.Center)),
+      Row(Pill(Say("You said", "They said"), filled: true), T(Say("you set it, and it always wins", "they set it, and it always wins"), "Blastlog.Small").Also(t => t.VerticalAlignment = VerticalAlignment.Center)),
+      Row(Pill("Blastlog’s read"), T(Say("worked out from your ratings and reviews; correct it any time", "worked out from their ratings and reviews"), "Blastlog.Small").Also(t => t.VerticalAlignment = VerticalAlignment.Center)),
       Row(Pill("Early signal", dashed: true), T("fewer than 6 games behind it", "Blastlog.Small").Also(t => t.VerticalAlignment = VerticalAlignment.Center)));
     foreach (UIElement r in key.Children) ((FrameworkElement)r).Margin = new Thickness(0, 0, 0, 6);
     head.Children.Add(key);
@@ -251,7 +269,7 @@ sealed class TasteView : Grid {
 
     var card = new StackPanel();
     var head = new DockPanel { LastChildFill = true };
-    var source = Pill(t.Correction != null ? "You said" : "Blastlog’s read", filled: t.Correction != null); source.Margin = new Thickness(10, 0, 0, 0);
+    var source = Pill(t.Correction != null ? Say("You said", "They said") : "Blastlog’s read", filled: t.Correction != null); source.Margin = new Thickness(10, 0, 0, 0);
     DockPanel.SetDock(source, Dock.Right); head.Children.Add(source);
     head.Children.Add(T(t.Label, "Blastlog.CardTitle"));
     card.Children.Add(head);
@@ -262,15 +280,15 @@ sealed class TasteView : Grid {
     foreach (var s in CardSteps) {
       var on = current == s.key;
       var b = Kit.Button(s.label, () => OnStance(t.Id, s.key), on ? "Blastlog.Primary" : "Blastlog.TextButton");
-      b.Margin = new Thickness(1); b.MinHeight = 40; b.Padding = new Thickness(4, 0, 4, 0); b.FontSize = 14; b.IsEnabled = !busy;
+      b.Margin = new Thickness(1); b.MinHeight = 40; b.Padding = new Thickness(4, 0, 4, 0); b.FontSize = 14; b.IsEnabled = !busy && Own;
       AutomationProperties.SetName(b, s.label + (on ? ", selected" : ""));
-      AutomationProperties.SetHelpText(b, $"How much {t.Label} matters to you");
+      AutomationProperties.SetHelpText(b, $"How much {t.Label} matters to {Say("you", "them")}");
       steps.Children.Add(b);
     }
     card.Children.Add(Box(steps, "Blastlog.Surface2", 12, new Thickness(3)).Also(x => x.Margin = new Thickness(0, 14, 0, 14)));
 
     UIElement Evidence(string label, UIElement value) => Stack(new Thickness(0, 0, 0, 12), T(label, "Blastlog.Small", null, 0, FontWeights.Bold), value);
-    card.Children.Add(Evidence("What you told Blastlog", T(t.Correction != null ? StanceLabel(t.Correction) : "Nothing yet.")));
+    card.Children.Add(Evidence(Say("What you told Blastlog", "What they told Blastlog"), T(t.Correction != null ? StanceLabel(t.Correction) : "Nothing yet.")));
     var ratingsShow = Stack(null, T(gameCount > 0 ? $"{Plural(gameCount, "rated game")} with it{(average != null ? $", average {Stars(Math.Round(average.Value * 10) / 10)}" : "")}" : "No rated games with it yet."));
     if (games.Count > 0) {
       var covers = Row();
@@ -281,8 +299,8 @@ sealed class TasteView : Grid {
       }
       ratingsShow.Children.Add(covers);
     }
-    card.Children.Add(Evidence("What your ratings show", ratingsShow));
-    card.Children.Add(Evidence("What your reviews say", quote != null
+    card.Children.Add(Evidence(Say("What your ratings show", "What their ratings show"), ratingsShow));
+    card.Children.Add(Evidence(Say("What your reviews say", "What their reviews say"), quote != null
       ? Runs("Blastlog.Body", (Quoted(S(quote, "quote")) + " ", false, null), ("— " + S(quote, "gameTitle"), false, "Blastlog.TextMuted"))
       : T("No review mentions it.", "Blastlog.Muted")));
     var exceptionGames = Arr(t.Exceptions?["games"]);
@@ -296,7 +314,7 @@ sealed class TasteView : Grid {
       T($" · {Plural(gameCount, "game")}{(reviews > 0 ? ", " + Plural(reviews, "review") : "")}", "Blastlog.Small").Also(x => x.VerticalAlignment = VerticalAlignment.Center));
     lean.VerticalAlignment = VerticalAlignment.Center; lean.Margin = new Thickness(0, 0, 14, 8);
     correct.Margin = new Thickness(0);
-    card.Children.Add(Wrap(lean, correct));
+    card.Children.Add(Own ? Wrap(lean, correct) : Wrap(lean));
 
     var border = Kit.Card(card);
     border.Margin = new Thickness(0);
@@ -448,9 +466,9 @@ sealed class TasteView : Grid {
     var a = data["analysis"];
     if (I(a, "withText") > 0 && I(a, "read") < I(a, "withText"))
       panel.Children.Add(T($"{(I(a, "pending") > 0 ? $"Reading {I(a, "pending")} reviews now… " : "")}{I(a, "read")} of {I(a, "withText")} reviews read so far.", "Blastlog.Muted").Also(t => t.Margin = new Thickness(0, 0, 0, 12)));
-    panel.Children.Add(AddStance());
+    if (Own) panel.Children.Add(AddStance());
     var questions = Arr(data["tasteQuestions"]); var words = Arr(data["inOwnWords"]); var lengthNotes = Arr(data["lengthNotes"]);
-    var tabs = new[] { ("loves", "Loves & likes", loves.Count), ("avoids", "Avoids & dislikes", avoids.Count), ("yours", "You set", yours.Count),
+    var tabs = new[] { ("loves", "Loves & likes", loves.Count), ("avoids", "Avoids & dislikes", avoids.Count), ("yours", Say("You set", "They set"), yours.Count),
       ("questions", "Wants & dealbreakers", questions.Count), ("words", "Own words", words.Count), ("length", "Length & pacing", lengthNotes.Count) }.Where(t => t.Item3 > 0).ToList();
     if (tabs.Count > 0 && !tabs.Any(t => t.Item1 == fineTab)) fineTab = tabs[0].Item1;
     var bar = Wrap(); bar.Margin = new Thickness(0, 16, 0, 8);
@@ -460,7 +478,7 @@ sealed class TasteView : Grid {
       var list = fineTab == "loves" ? loves : fineTab == "yours" ? yours : avoids;
       var (box, input) = SearchField("Find a trait…");
       input.Text = fineSearch;
-      var legend = Row(Legend(true, "Your call"), Legend(false, "Blastlog’s read from your ratings and reviews"));
+      var legend = Row(Legend(true, Say("Your call", "Their call")), Legend(false, Say("Blastlog’s read from your ratings and reviews", "Blastlog’s read from their ratings and reviews")));
       legend.Margin = new Thickness(18, 0, 0, 0); legend.VerticalAlignment = VerticalAlignment.Center;
       panel.Children.Add(Wrap(box, legend));
       fineResults = new StackPanel { Margin = new Thickness(0, 16, 0, 0) };
@@ -571,7 +589,7 @@ sealed class TasteView : Grid {
         if (step.key == "instant_yes" || step.key == "dealbreaker") { asking = step.key; askingFor = id; Render(); return; }
         pick(step.key);
       }, step.label + (read ? ", Blastlog’s read" : "") + (on ? ", selected" : ""));
-      b.Margin = new Thickness(3, 0, 3, 0); b.IsEnabled = !busy; b.VerticalContentAlignment = VerticalAlignment.Bottom; b.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+      b.Margin = new Thickness(3, 0, 3, 0); b.IsEnabled = !busy && Own; b.VerticalContentAlignment = VerticalAlignment.Bottom; b.HorizontalContentAlignment = HorizontalAlignment.Stretch;
       b.ToolTip = $"{step.label}: {step.help}{(read ? " (Blastlog’s read)" : "")}";
       bars.Children.Add(b);
     }
@@ -590,11 +608,11 @@ sealed class TasteView : Grid {
     var now = chosen ?? guessed;
     var foot = new DockPanel { Margin = new Thickness(0, 6, 0, 0), LastChildFill = true };
     var reset = Kit.Button("Reset", () => pick(null), "Blastlog.TextButton");
-    reset.IsEnabled = !busy && chosen != null; reset.Visibility = chosen != null ? Visibility.Visible : Visibility.Hidden;
+    reset.IsEnabled = !busy && chosen != null && Own; reset.Visibility = chosen != null && Own ? Visibility.Visible : Visibility.Hidden;
     reset.ToolTip = guessed != null ? $"Back to Blastlog’s read ({StanceLabel(guessed)})" : "Let Blastlog decide";
     DockPanel.SetDock(reset, Dock.Right); foot.Children.Add(reset);
-    foot.Children.Add((now != null ? Runs("Blastlog.Small", (StanceLabel(now), true, "Blastlog.Text"), (" · " + (chosen != null ? (setBy != null && setBy != myName ? $"{setBy} set this" : "your call") : "Blastlog’s read"), false, null))
-      : T("Pick how much it matters", "Blastlog.Small")).Also(x => x.VerticalAlignment = VerticalAlignment.Center));
+    foot.Children.Add((now != null ? Runs("Blastlog.Small", (StanceLabel(now), true, "Blastlog.Text"), (" · " + (chosen != null ? (setBy != null && setBy != myName ? $"{setBy} set this" : Say("your call", "their call")) : "Blastlog’s read"), false, null))
+      : T(Say("Pick how much it matters", "Not set"), "Blastlog.Small")).Also(x => x.VerticalAlignment = VerticalAlignment.Center));
     panel.Children.Add(foot);
     return panel;
   }
@@ -621,7 +639,8 @@ sealed class TasteView : Grid {
       ? Runs("Blastlog.Small", ("→ counts toward ", false, null), (characteristic, true, "Blastlog.Text"), (S(r, "linkFit") == "part_of" ? " (as an example of it)" : "", false, null))
       : T("→ explanation only (no matching characteristic)", "Blastlog.Small"));
     var actions = Wrap();
-    if (correction != null) actions.Children.Add(Link("Undo", () => OnReading(id, null)));
+    if (!Own) { }
+    else if (correction != null) actions.Children.Add(Link("Undo", () => OnReading(id, null)));
     else {
       actions.Children.Add(preference ? Link("That was about this game", () => OnReading(id, "game_only")) : Link("That’s my general taste", () => OnReading(id, "general")));
       actions.Children.Add(Link("Not what I meant", () => OnReading(id, "dismiss")));
@@ -666,7 +685,7 @@ sealed class TasteView : Grid {
     if (confirmingQuestion == id) {
       var row = Wrap(Kit.Button("Remove it", () => { confirmingQuestion = null; RemoveQuestion(id); }, "Blastlog.DangerButton"), Kit.Button("Keep", () => { confirmingQuestion = null; Render(); }, "Blastlog.Ghost"));
       row.Margin = new Thickness(0, 10, 0, 0); s.Children.Add(row);
-    } else s.Children.Add(Link("That’s not me", () => { confirmingQuestion = id; Render(); }).Also(b => { b.IsEnabled = !busy; b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(-6, 6, 0, 0); }));
+    } else if (Own) s.Children.Add(Link("That’s not me", () => { confirmingQuestion = id; Render(); }).Also(b => { b.IsEnabled = !busy; b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(-6, 6, 0, 0); }));
     var card = Kit.Card(s); card.Margin = new Thickness(0); if (!used) card.Opacity = .75;
     return card;
   }

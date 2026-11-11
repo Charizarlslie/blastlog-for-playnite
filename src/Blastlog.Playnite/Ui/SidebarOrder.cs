@@ -30,9 +30,16 @@ public static class SidebarOrder {
     timer.Start();
   }
 
-  static string Clean(string title) => (title ?? "").Replace("​", "").Trim();
+  public static string Clean(string title) => (title ?? "").Replace("​", "").Trim();
+  /// <summary>True for a sidebar item (the view model's wrapper, each sidebar button's DataContext) that is a Blastlog screen.</summary>
+  public static bool IsBlastlog(object wrapper) {
+    var side = SideOf(wrapper);
+    return side != null && side.Type == SiderbarItemType.View && Titles.Contains(Clean(side.Title));
+  }
+  static HashSet<string> titles;
+  static HashSet<string> Titles => titles ?? (titles = new HashSet<string>(Screens.All().Select(s => s.Title)));
   static Dictionary<string, int> OurOrder() => Screens.All().ToDictionary(s => s.Title, s => s.Order);
-  static SidebarItem SideOf(object wrapper) => wrapper?.GetType().GetProperty("SideItem")?.GetValue(wrapper) as SidebarItem;
+  public static SidebarItem SideOf(object wrapper) => wrapper?.GetType().GetProperty("SideItem")?.GetValue(wrapper) as SidebarItem;
 
   /// <summary>Puts Blastlog's items first; true once the sidebar was found (moved or already in order).</summary>
   static bool Apply() {

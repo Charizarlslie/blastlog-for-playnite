@@ -35,6 +35,8 @@ public sealed class BlastlogSettingsData {
   public bool IncludeHidden {get;set;}
   public bool BlastlogTags {get;set;} = true;
   public bool TraitTags {get;set;} = true;
+  /// <summary>Hide Playnite's own sidebar items (Library, Statistics, other add-ons) instead of grouping them (Ui/SidebarChrome.cs).</summary>
+  public bool HidePlayniteItems {get;set;}
 }
 
 public sealed class BlastlogSettings : ISettings {
@@ -69,7 +71,7 @@ public sealed class BlastlogSettings : ISettings {
   }
   public void ForgetToken() { Data.ProtectedToken = null; plugin.SavePluginSettings(Data); plugin.SettingsChanged(); }
   static BlastlogSettingsData Clone(BlastlogSettingsData d) => new BlastlogSettingsData { ServerUrl = d.ServerUrl, ProtectedToken = d.ProtectedToken, AutoSync = d.AutoSync,
-    ConflictRule = d.ConflictRule, IncludeHidden = d.IncludeHidden, BlastlogTags = d.BlastlogTags, TraitTags = d.TraitTags };
+    ConflictRule = d.ConflictRule, IncludeHidden = d.IncludeHidden, BlastlogTags = d.BlastlogTags, TraitTags = d.TraitTags, HidePlayniteItems = d.HidePlayniteItems };
 }
 
 /// <summary>Settings view, built in code: server, token (paste once), test connection, the sync choices.</summary>
@@ -108,6 +110,8 @@ public sealed class BlastlogSettingsView : UserControl {
       rule.Items.Add(new ComboBoxItem { Content = choice.Value, Tag = choice.Key, IsSelected = d.ConflictRule == choice.Key });
     rule.SelectionChanged += (s, e) => { if (rule.SelectedItem is ComboBoxItem i) d.ConflictRule = (ConflictRule)i.Tag; };
     stack.Children.Add(rule);
+    UiKit.Heading(stack, "Sidebar");
+    stack.Children.Add(UiKit.Check("Hide Playnite's own menu items (Library, Statistics, other add-ons). The sidebar then offers \"Playnite library\" at the bottom for installing and launching.", d.HidePlayniteItems, v => d.HidePlayniteItems = v));
     stack.Children.Add(UiKit.Text("Nothing is ever deleted by a sync, and every sync can be undone on Blastlog (Your account → Playnite sync).", muted: true));
     var packNote = UiKit.Text("", muted: true);
     stack.Children.Add(UiKit.Button("Load a settings pack…", () => {

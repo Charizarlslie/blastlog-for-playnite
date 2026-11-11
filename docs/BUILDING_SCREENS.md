@@ -59,10 +59,19 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   Paired games: `plugin.EntryFor(playniteGameId)`, `plugin.GameFor(entryId)`; Play/Install go through
   `plugin.Api.StartGame(id)` / `plugin.Api.InstallGame(id)`.
 - **Links to other pages** go through `Ui.Nav` (`Nav.Review`, `Nav.AddGame`, `Nav.Library(query)`, `Nav.DiscoverGame`, `Nav.Entry`,
-  `Nav.FriendEntry`, `Nav.Media`, `Nav.Trait`, `Nav.Collection`, `Nav.QuickStart`, `Nav.Together`, `Nav.Friends`,
+  `Nav.FriendEntry`, `Nav.FriendPage`, `Nav.Media`, `Nav.Trait`, `Nav.Collection`, `Nav.QuickStart`, `Nav.Together`, `Nav.Friends`,
   `Nav.Taste`, `Nav.PlayNext`, `Nav.Sharpen`, and `Nav.Site(path)` for pages that stay on the site).
   Each opens the site until its native version lands; a native dialog replaces that one method's body, so screens
   never hard-code a site URL for something Playnite can show.
+- **A friend's pages** (`Nav.FriendPage(plugin, friendId, "dashboard" | "library" | "profile")`, Screens/FriendPages.cs)
+  are native: one window per friend with their Dashboard, Library and Taste as tabs, read only, as the site's
+  /friends/:id/... pages. Library and Taste are the own screens with a viewed friend (`LibraryView(..., friend)`,
+  `TasteView(plugin, friend)`: own-only controls hidden, wording about them); the Dashboard is its own variant
+  (Screens/FriendDashboard.cs: Next up for them, Currently playing, their library's numbers, Recently finished; no
+  prompts, + New entry or friend activity). Reads go through `FriendView.Path` (`users/:id/...`, Blastlog
+  docs/PLAYNITE_SYNC.md "Round 4"); their library is the sync library's cursor pages (`FriendData`). Games open as their
+  entry (`Nav.FriendEntry`). Friends (Nav.Friends) links each friend's three pages and adds a friend from a pasted link
+  (`GET friends/code/:code`, `POST friends`); the site has no friend requests.
 - **A friend's entry** (`Nav.FriendEntry`, Screens/FriendEntry.cs) is native: the site's game page for someone else's
   entry (hero, fingerprint, For you, their take with taps, review and your reactions, game details, your other friends,
   accessibility, trailers and screenshots, More like this), read only apart from reactions. Friend activity on the
@@ -73,8 +82,24 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   the browser (Playnite has no player).
 - **The character sheet's look** is native: a "Look" select on your own sheet on Compare saves with
   `PUT me/sheet-style` and reloads Compare; `Nav.SheetLook` opens Compare scrolled to it.
-- **Still on the site** because the mirror has no route for them yet: reporting a review, import sorting, account
-  settings. Year in review
+- **The sidebar** matches the site's (App.tsx Brand, Navigation, FriendsNav, SidebarCompletion, FeedbackButton,
+  AccountMenu, SiteCredit). `theme/overrides/Views/Sidebar.xaml` lays it out with empty hosts by name
+  (`Blastlog_SideName`, `Blastlog_SideFriends`, `Blastlog_SideCompletion`, `Blastlog_SideFooter`) and the "My Blastlog"
+  label; `Ui/SidebarChrome.cs` finds them in the main window and fills them from the `me`, `friends` and `dashboard`
+  reads (friend links go through `Nav.FriendPage`, "Add or manage friends" `Nav.Friends`, Send feedback `Nav.Feedback`
+  → Screens/FeedbackDialog.cs posting `feedback`, Settings `Nav.Settings`). Playnite's own items (Library, Statistics,
+  other add-ons' views) sit after Blastlog's (Ui/SidebarOrder.cs) in one collapsible "Playnite" group under a divider,
+  closed by default and remembered in the plugin's `sidebar.json`; a selected Playnite item stays visible while it's
+  closed. The plugin setting "Hide Playnite's own menu items" hides the group's buttons only (the items stay in
+  Playnite's list, so `Nav.Entry` still switches to the Library view) and adds "Playnite library" to the footer.
+  Playnite redraws every sidebar button when its item list changes, so the group is re-applied by a 1-second check.
+- **Importing** (`Nav.Import`, Screens/ImportPage.cs, ImportBatch.cs, ImportSorting.cs) is native: the site's import page
+  (Steam sync's finds, Your imports) and each import (add step, sort step with piles, playtime groups and Quick sort,
+  needs a look with options and search, then the "Finished it?" cards, the whole list and Undo). The decisions are Core
+  `ImportSort`, tested against the site's (`ImportSortTests`). `Nav.Site("/library/import[/:id]")` opens it natively;
+  bringing games in (the store doors, Connect Steam) stays on the site through `Nav.SiteOnly`. The demo has a pretend
+  Steam import for trying it.
+- **Still on the site** because the mirror has no route for them yet: reporting a review, account settings. Year in review
   (`/year/:year`) has no mirror read and nothing in the plugin links to it (the site links it from Support only), so it
   has no native version.
 - **Rate & review** (Nav.Review, Screens/ReviewDialog.cs) is native: the site's pop-up (ownership, status, completion

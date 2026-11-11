@@ -111,7 +111,19 @@ public static class Nav {
     Site(plugin, "/together" + (ids != null && ids.Count > 0 ? "?with=" + string.Join(",", ids) : ""));
   }
 
-  /// <summary>The player's friends and friend groups.</summary>
+  /// <summary>
+  /// A friend's Dashboard, Library or Taste (the site's /friends/:id/dashboard, /library and /profile): one native window
+  /// with the three as tabs, read only (Screens/FriendPages.cs). <paramref name="page"/>: "dashboard", "library" or
+  /// "profile" ("taste" works too); <paramref name="name"/> when the caller knows it. Not set up yet: the site's page.
+  /// </summary>
+  public static void FriendPage(BlastlogPlugin plugin, string friendId, string page = "dashboard", string name = null) {
+    if (string.IsNullOrEmpty(friendId)) return;
+    var key = page == "library" ? "library" : page == "profile" || page == "taste" ? "profile" : "dashboard";
+    if (!plugin.Configured) { Site(plugin, $"/friends/{friendId}/{key}"); return; }
+    Blastlog.Playnite.Screens.FriendPages.Open(plugin, friendId, key, name);
+  }
+
+  /// <summary>The player's friends and friend groups: links, remove and restore, groups, and adding someone by their link (native).</summary>
   public static void Friends(BlastlogPlugin plugin) { if (plugin.Configured) Blastlog.Playnite.Screens.FriendsPage.Open(plugin); else Site(plugin, "/friends"); }
 
   /// <summary>Your taste: the native screen in Playnite's sidebar (Ui/ScreenJump.cs), the site if Playnite won't switch.</summary>
@@ -122,6 +134,19 @@ public static class Nav {
 
   /// <summary>Sharpen your picks: the full list of games worth rating or reviewing.</summary>
   public static void Sharpen(BlastlogPlugin plugin) { if (!ScreenJump.To("Play next", "Sharpen your picks")) Site(plugin, "/recommendations#sharpen"); }
+
+  /// <summary>The sidebar's Settings: the plugin's settings until the native Blastlog settings land.</summary>
+  public static void Settings(BlastlogPlugin plugin) {
+    try { plugin.OpenSettingsView(); } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Error(e, "Blastlog settings"); }
+  }
+
+  /// <summary>Send feedback: an idea or a bug, with the screen it came from (native, Screens/FeedbackDialog.cs).</summary>
+  public static void Feedback(BlastlogPlugin plugin, string page = null) => Blastlog.Playnite.Screens.FeedbackDialog.Open(plugin, page);
+
+  /// <summary>Playnite's own library (installing and launching), for when its menu items are hidden.</summary>
+  public static void PlayniteLibrary(BlastlogPlugin plugin) {
+    try { plugin.Api.MainView.SwitchToLibraryView(); } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Error(e, "Blastlog: Playnite library"); }
+  }
 
   /// <summary>
   /// The Import page (the site's /library/import): Steam sync's finds and "Your imports", each import's sorting, commit

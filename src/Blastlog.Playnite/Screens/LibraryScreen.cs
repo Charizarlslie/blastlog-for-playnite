@@ -99,11 +99,19 @@ sealed class LibraryView : StackPanel {
   readonly DispatcherTimer typing = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
   bool quiet;
 
-  public LibraryView(BlastlogPlugin plugin, (LibraryFilters filters, double scroll, int shown, HashSet<string> open) start) {
-    this.plugin = plugin; filters = start.filters; restoreScroll = start.scroll; restoreShown = start.shown;
+  /// <summary>
+  /// A friend's library (Screens/FriendPages.cs, the site's /friends/:id/library) when set: their entries, collections and
+  /// traits, read only (no Import, + New entry, sale tags or Play), and games open as their entry (Nav.FriendEntry).
+  /// </summary>
+  readonly FriendView friend;
+  string Path(string read) => friend == null ? read : friend.Path(read);
+
+  public LibraryView(BlastlogPlugin plugin, (LibraryFilters filters, double scroll, int shown, HashSet<string> open) start, FriendView friend = null) {
+    this.plugin = plugin; this.friend = friend; filters = start.filters; restoreScroll = start.scroll; restoreShown = start.shown;
     if (start.open != null) open.UnionWith(start.open);
     MaxWidth = 1500;
-    current = new WeakReference<LibraryView>(this);
+    if (friend == null) current = new WeakReference<LibraryView>(this);
+    else title.Text = friend.Name + "’s library";
 
     // Header: the title and how many show, Import games and + New entry beside it (the approved board).
     var head = new DockPanel { LastChildFill = true, Margin = new Thickness(0, 0, 0, 24) };
@@ -112,7 +120,7 @@ sealed class LibraryView : StackPanel {
     import.ToolTip = "Bring in games from Steam, PlayStation, Xbox, Nintendo, GOG, Epic or any list (on Blastlog)";
     var add = Kit.Button("+ New entry", () => Nav.AddGame(plugin, null, () => Safe(() => Refresh())));
     add.ToolTip = "Search for a game and add it to your Blastlog library"; add.Margin = new Thickness(0);
-    actions.Children.Add(import); actions.Children.Add(add);
+    if (friend == null) { actions.Children.Add(import); actions.Children.Add(add); }
     DockPanel.SetDock(actions, Dock.Right); head.Children.Add(actions);
     subtitle.Margin = new Thickness(0, 6, 0, 0);
     head.Children.Add(new StackPanel { Children = { title, subtitle } });
@@ -206,8 +214,8 @@ sealed class LibraryView : StackPanel {
       return;
     }
     // The saved copies at once (the last sync's read, the last collections, traits and prices), then what changed since.
-    all = plugin.LibraryEntries(); readOnce = all.Count > 0;
-    UseCollections(plugin.SavedRead("collections")); UseTraits(plugin.SavedRead("library-traits")); UseSales(plugin.SavedRead("sale-prices"));
+    all = friend != null ? FriendData.SavedEntries(plugin, friend) : plugin.LibraryEntries(); readOnce = all.Count > 0;
+    UseCollections(plugin.SavedRead(Path("collections"))); UseTraits(plugin.SavedRead(Path("library-traits"))); if (friend == null) UseSales(plugin.SavedRead("sale-prices"));
     var restore = restoreShown; Apply(filters, Math.Max(Batch, restore));
     if (restore > 0 && page != null) { var to = restoreScroll; restoreScroll = 0; restoreShown = 0; Dispatcher.BeginInvoke(new Action(() => { try { page.ScrollToVerticalOffset(to); } catch (Exception) { } }), DispatcherPriority.Loaded); }
     ShowName();
@@ -216,6 +224,7 @@ sealed class LibraryView : StackPanel {
   }
 
   async void ShowName() {
+    if (friend != null) return;
     try {
       void Use(JObject me) { var name = Dash.Str(me?["user"], "displayName"); if (!string.IsNullOrEmpty(name)) title.Text = name + "’s library"; }
       Use(plugin.SavedRead("me"));
@@ -226,7 +235,8 @@ sealed class LibraryView : StackPanel {
   /// <summary>Collections, the trait list and sale prices from the server; each redraws only when it changed.</summary>
   async void ReadExtras() {
     try {
-      var reads = new[] { "collections", "library-traits", "sale-prices" }.Select(async path => (path, value: (await plugin.Mirror(path, false)).Value)).ToList();
+      var reads = (friend == null ? new[] { "collections", "library-traits", "sale-prices" } : new[] { "collections", "library-traits" })
+        .Select(async path => (path, value: (await plugin.Mirror(Path(path), false)).Value)).ToList();
       var changed = false;
       foreach (var read in reads) {
         var (path, value) = await read;
@@ -261,8 +271,9 @@ sealed class LibraryView : StackPanel {
 
   /// <summary>Reads what changed on Blastlog and redraws when anything did, keeping how far the list was shown.</summary>
   public async Task Refresh() {
-    var ok = await plugin.RefreshLibrary();
-    var fresh = plugin.LibraryEntries();
+    var read = friend != null ? await FriendData.Entries(plugin, friend, true) : null;
+    var ok = friend != null ? read != null : await plugin.RefreshLibrary();
+    var fresh = friend != null ? read ?? all : plugin.LibraryEntries();
     readFailed = !ok; readOnce |= ok;
     if (Same(all, fresh) && grid.Children.Count > 0) return;
     all = fresh;
@@ -394,7 +405,7 @@ sealed class LibraryView : StackPanel {
   async void ReadTraitGames(string id) {
     traitFor = id; traitGames = null;
     try {
-      var path = "library-traits?trait=" + Uri.EscapeDataString(id);
+      var path = Path("library-traits?trait=" + Uri.EscapeDataString(id));
       var saved = plugin.SavedRead(path);
       if (saved != null) { traitGames = new HashSet<string>(saved.Strings("gameIds")); }
       var value = (await plugin.Mirror(path, false)).Value;
@@ -448,6 +459,7 @@ sealed class LibraryView : StackPanel {
 
   FrameworkElement Empty() {
     if (all.Count == 0 && !readOnce) return Dash.Card(Dash.Text(readFailed ? "Couldn't reach Blastlog. Your library shows here once it answers." : "Loading your library…", "Blastlog.Muted"));
+    if (all.Count == 0 && friend != null) return Dash.Card(Dash.Text(friend.Name + "’s library is empty.", "Blastlog.Muted"));
     if (all.Count == 0) {
       var body = new StackPanel();
       body.Children.Add(Kit.Text("Your library is empty", "Blastlog.CardTitle"));
@@ -509,13 +521,16 @@ sealed class LibraryView : StackPanel {
     if (e.Rating != null) { var stars = Kit.Stars(e.Rating, 15); stars.VerticalAlignment = VerticalAlignment.Center; info.Children.Add(stars); }
 
     var card = Frame(new StackPanel { Children = { host, TileTitle(game.Title), meta, info } });
-    var played = plugin.GameFor(e.EntryId);
-    var whereText = played != null ? (played.IsInstalled ? "installed in Playnite" : "in Playnite") : "not in Playnite";
+    var played = friend == null ? plugin.GameFor(e.EntryId) : null;
+    var whereText = friend != null ? friend.Name + "’s entry" : played != null ? (played.IsInstalled ? "installed in Playnite" : "in Playnite") : "not in Playnite";
     if (played?.IsInstalled == true) info.Children.Insert(0, Installed());
     var label = $"{game.Title}, {Dash.StatusWord(status == "wishlist" ? "not_started" : status)}{(status == "wishlist" ? ", wishlist" : "")}{(e.Rating != null ? $", {e.Rating} stars" : "")}, {whereText}"
       + (inCollection != null ? ", in " + inCollection.Title : "");
     var id = e.EntryId;
-    var button = PnKit.Bare(card, () => { Remember(); Nav.Entry(plugin, id, () => Safe(() => Refresh())); }, label);
+    var button = PnKit.Bare(card, () => {
+      if (friend != null) { Nav.FriendEntry(plugin, id, friend.Name); return; }
+      Remember(); Nav.Entry(plugin, id, () => Safe(() => Refresh()));
+    }, label);
     button.ToolTip = game.Title;
     Wear(card, cover, game);
     return button;
@@ -592,6 +607,9 @@ sealed class LibraryView : StackPanel {
   }
 
   /// <summary>Opening a game or collection: coming back to the screen shows the same filters, opened collections and place.</summary>
-  void Remember() { left = filters; leftScroll = page?.VerticalOffset ?? 0; leftShown = grid.Children.Count; leftOpen = new HashSet<string>(open); }
+  /// <summary>Puts the site's filters on in place ("status=done&amp;rating=4"); a friend's dashboard links use it.</summary>
+  internal void ApplyQuery(string query) => Apply(LibraryFilters.Parse(query), 0);
+
+  void Remember() { if (friend != null) return; left = filters; leftScroll = page?.VerticalOffset ?? 0; leftShown = grid.Children.Count; leftOpen = new HashSet<string>(open); }
 }
 }
