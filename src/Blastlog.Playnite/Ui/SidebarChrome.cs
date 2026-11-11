@@ -43,7 +43,7 @@ public static class SidebarChrome {
   static readonly HashSet<INotifyPropertyChanged> watched = new HashSet<INotifyPropertyChanged>();
   static List<JObject> friends = new List<JObject>();
   static string openFriend, displayName;
-  static bool demo, loading, logged;
+  static bool demo, loading;
   static double? rate;
   static State state = new State();
 
@@ -283,9 +283,7 @@ public static class SidebarChrome {
       if (b == groupHeader || SidebarOrder.IsBlastlog(b.DataContext)) continue;
       var selected = b.DataContext?.GetType().GetProperty("Selected")?.GetValue(b.DataContext) as bool? == true;
       b.Visibility = HidePlaynite ? Visibility.Collapsed : state.PlayniteOpen || selected ? Visibility.Visible : Visibility.Collapsed;
-      if (!logged && b.DataContext != null) Log.Info("Blastlog sidebar item " + SidebarOrder.Clean(SidebarOrder.SideOf(b.DataContext)?.Title) + ": " + string.Join(", ", b.DataContext.GetType().GetProperties().Select(p => { try { return p.Name + "=" + p.GetValue(b.DataContext); } catch { return p.Name; } })));
     }
-    logged = true;
   }
 
   static Border Header() {
@@ -333,11 +331,11 @@ public static class SidebarChrome {
   /// <summary>A section label ("Friends"), like the theme's "My Blastlog".</summary>
   static TextBlock Label(string text) => Words(text, 14, FontWeights.ExtraBold, "Blastlog.TextMuted").Also(t => t.Margin = new Thickness(10, 0, 10, 10));
 
-  static StackPanel IconWords(string svg, string text, double iconSize, double gap, FontWeight weight) {
-    var row = new StackPanel { Orientation = Orientation.Horizontal };
-    var icon = Icons.Make(svg, iconSize); icon.VerticalAlignment = VerticalAlignment.Center;
+  static DockPanel IconWords(string svg, string text, double iconSize, double gap, FontWeight weight) {
+    var row = new DockPanel { LastChildFill = true }; // the text gets the rest of the width and wraps rather than being cut off
+    var icon = Icons.Make(svg, iconSize); icon.VerticalAlignment = VerticalAlignment.Center; DockPanel.SetDock(icon, Dock.Left);
     row.Children.Add(icon);
-    row.Children.Add(Words(text, 14, weight).Also(t => { t.Margin = new Thickness(gap, 0, 0, 0); t.VerticalAlignment = VerticalAlignment.Center; t.TextTrimming = TextTrimming.CharacterEllipsis; }));
+    row.Children.Add(Words(text, 14, weight).Also(t => { t.Margin = new Thickness(gap, 0, 0, 0); t.VerticalAlignment = VerticalAlignment.Center; t.TextWrapping = TextWrapping.Wrap; }));
     return row;
   }
 
