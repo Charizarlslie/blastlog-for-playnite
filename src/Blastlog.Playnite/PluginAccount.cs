@@ -22,6 +22,9 @@ public sealed partial class BlastlogPlugin {
     catch (Exception e) { Log.Warn("Blastlog write failed (" + path + "): " + e.Message); return (null, "offline"); }
   }
 
+  /// <summary>The last copy of a mirror read, however old, without asking Blastlog (null when there's none).</summary>
+  public JObject Cached(string path) => cache.TryGetValue(path, out var hit) ? hit.Value : null;
+
   /// <summary>Words for a refusal the cards don't explain themselves.</summary>
   public static string RefusalWords(string error) => error == "offline" ? "That didn't work. Check your connection and try again."
     : error == "not_configured" ? "Add your Blastlog sync token in Add-ons, Extension settings, Blastlog first."

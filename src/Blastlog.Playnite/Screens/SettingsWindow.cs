@@ -61,6 +61,9 @@ static class SettingsWindow {
       if (lengthLevel == null) lengthLevel = (await plugin.Mirror("taste-profile", false)).Value.S("lengthLevel");
       if (me == null && settings == null) { Unavailable(); return; }
       Build();
+      // Your extras links Year in games, which Blastlog takes a few seconds to work out: ask for it now, after the
+      // cards, so it's usually ready by the time it's opened (YearPage shows the last copy meanwhile).
+      Run(() => plugin.Mirror("year/" + DateTime.Now.Year.ToString(CultureInfo.InvariantCulture), false), "year ahead");
     }
 
     void NotSignedIn() {
