@@ -17,7 +17,11 @@ namespace Blastlog.Playnite.Screens {
 /// Next up (design.md 8 Dashboard; web App.tsx NextUpCard and Recommendations.tsx NextUpReasons): the whole cover, sharp,
 /// on a blurred copy of itself under a scrim with the game's glow; Recommended / Quick one / Long haul; status on the cover; length,
 /// platforms and where you own it; Why it's up next and one Watch for; a boost with Not now and Undo; the quote from your
-/// own review; Play or Install when it's in Playnite, View details, Add review (Edit review once written).
+/// own review; Play or Install when it's in Playnite, Start playing (a backlog game you own), View details, Add review
+/// (Edit review once written). This is the big card only while nothing is being played. Otherwise Now playing has the top
+/// (Charlie, 2026-11-08) and Next up is the medium card beside Your library (web App.tsx NextUpCompact): the modes, cover,
+/// title, status and length, the one-line "predicted · because you like", Start playing and View details. In that case
+/// the page wears the playing game, not this one.
 /// </summary>
 sealed class DashboardNextUp : Border {
   internal static string Mode = "recommended";
@@ -28,11 +32,20 @@ sealed class DashboardNextUp : Border {
     new Choice { Key = "long", Label = "Long haul", Tip = "Something to sink hours into: the best match among long games" },
   };
   readonly BlastlogPlugin plugin; readonly DashboardView view;
+  readonly bool compact; readonly Action<JObject> start;
   JObject data; JObject droppedBoost; int switchId;
   readonly Grid layers = new Grid();
 
-  public DashboardNextUp(BlastlogPlugin plugin, DashboardView view, JObject data) {
-    this.plugin = plugin; this.view = view; this.data = data;
+  /// <param name="compact">The medium card beside Your library (while something is being played).</param>
+  /// <param name="start">Puts a backlog pick on the Playing list (own dashboard); null hides Start playing.</param>
+  public DashboardNextUp(BlastlogPlugin plugin, DashboardView view, JObject data, bool compact = false, Action<JObject> start = null) {
+    this.plugin = plugin; this.view = view; this.data = data; this.compact = compact; this.start = start;
+    if (compact) {
+      Style = Kit.Style("Blastlog.Card"); Padding = new Thickness(22);
+      Render();
+      foreach (var m in Modes.Where(m => m.Key != Mode)) _ = plugin.Mirror($"next-up?mode={m.Key}", fresh: false);
+      return;
+    }
     CornerRadius = new CornerRadius(28); BorderThickness = new Thickness(1); Margin = new Thickness(0, 0, 0, 18); MinHeight = 420;
     SetResourceReference(BackgroundProperty, "Blastlog.Surface"); SetResourceReference(BorderBrushProperty, "Blastlog.GameEdge");
     Child = layers;
@@ -55,39 +68,16 @@ sealed class DashboardNextUp : Border {
   }, "next up mode");
 
   void Render() {
-    layers.Children.Clear();
     var entry = data?["entry"] as JObject;
     var showing = (string)data?["mode"] ?? Mode;
     var game = Dash.Game(entry?["game"]);
+    if (compact) { Child = Compact(entry, showing, game); return; }
+    layers.Children.Clear();
     if (showing == Mode) view.Wear(game);
-    var art = Artwork.Url(game, ArtworkContext.Backdrop);
+    DashHero.Backdrop(plugin, layers, game);
 
-    // Art, scrim, glow.
-    if (art != null) {
-      // A rectangle filled with the art takes the card's size instead of setting it (an Image would stretch the card to the cover's shape).
-      // The blur comes from decoding the cover tiny and letting it stretch smoothly: a live BlurEffect this size is redrawn on
-      // every scroll step and made the page crawl.
-      var blurred = new Rectangle { Opacity = 0.9, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1.25, 1.25) };
-      RenderOptions.SetBitmapScalingMode(blurred, BitmapScalingMode.Linear);
-      Dash.LoadFill(plugin, art, blurred, 24);
-      layers.Children.Add(blurred);
-    }
-    var scrim = new Rectangle { OpacityMask = new LinearGradientBrush(new GradientStopCollection {
-      new GradientStop(Color.FromArgb(235, 0, 0, 0), 0), new GradientStop(Color.FromArgb(200, 0, 0, 0), 0.55), new GradientStop(Color.FromArgb(120, 0, 0, 0), 1) }, 0) };
-    scrim.SetResourceReference(Shape.FillProperty, "Blastlog.Bg");
-    layers.Children.Add(scrim);
-    // The glow: the game colour fading out from the top left (design.md 2.2: dark 24% fading by 66% of the radius, light 10% by 42%).
-    var light = ThemeBridge.CurrentMode == Blastlog.Sync.Core.Design.Mode.Light;
-    var glow = new Rectangle { Width = 900, Height = 700, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(-300, -280, 0, 0),
-      IsHitTestVisible = false, OpacityMask = new RadialGradientBrush(new GradientStopCollection {
-        new GradientStop(Color.FromArgb((byte)(light ? 26 : 61), 0, 0, 0), 0), new GradientStop(Color.FromArgb(0, 0, 0, 0), light ? 0.42 : 0.66) }) };
-    glow.SetResourceReference(Shape.FillProperty, "Blastlog.Game");
-    layers.Children.Add(glow);
-
-    var content = new Grid { Margin = new Thickness(36, 30, 36, 34) };
-    content.ColumnDefinitions.Add(new ColumnDefinition()); content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
     var left = new StackPanel();
-    left.Children.Add(TopRow());
+    left.Children.Add(DashHero.TopRow(DashHero.Label("Next up"), ModeBox()));
     var copy = new StackPanel();
     var entryId = (string)entry?["id"];
     copy.Children.Add(Dash.Text(entry != null ? (string)entry["game"]?["title"] : showing == "recommended" ? "No backlog game" : "Nothing fits", "Blastlog.HeroTitle").Margin(0, 26, 0, 14));
@@ -98,22 +88,63 @@ sealed class DashboardNextUp : Border {
       copy.Children.Add(Actions(entry));
     } else copy.Children.Add(Empty(showing));
     left.Children.Add(copy);
-    content.Children.Add(left);
-    if (entry != null) {
-      var cover = CoverBox(entry, game);
-      Grid.SetColumn(cover, 1); content.Children.Add(cover);
-    }
-    layers.Children.Add(content);
-    if (SystemParameters.ClientAreaAnimation) copy.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(240)));
+    layers.Children.Add(DashHero.Content(left, entry != null ? DashHero.Cover(plugin, game, Status(entry)) : null));
+    DashHero.FadeIn(copy);
+  }
+  static string Status(JObject entry) => (string)entry["ownership"] == "wishlist" ? "wishlist" : (string)entry["status"];
+  /// <summary>A pick that can go straight onto the Playing list (Charlie, 2026-11-08): a backlog game the player owns.</summary>
+  static bool Startable(JObject entry) => (string)entry["ownership"] != "wishlist" && ((string)entry["status"] == "not_started" || (string)entry["status"] == "started");
+
+  /// <summary>The medium card: header with the modes, then the pick's cover, title, status and length, why, and buttons.</summary>
+  FrameworkElement Compact(JObject entry, string showing, Blastlog.Sync.Core.Game game) {
+    var panel = new StackPanel();
+    var icon = Icons.Make(Icons.Star, 20, null); icon.Margin = new Thickness(0, 0, 10, 0); icon.VerticalAlignment = VerticalAlignment.Center;
+    ((Shape)((Canvas)((Viewbox)icon).Child).Children[0]).SetResourceReference(Shape.StrokeProperty, "Blastlog.GameText");
+    var head = Dash.Row(0, icon, Dash.Text("Next up", "Blastlog.CardTitle").Also(t => t.VerticalAlignment = VerticalAlignment.Center));
+    panel.Children.Add(DashHero.TopRow(head, ModeBox()).Margin(0, 0, 0, 16));
+    if (entry == null) { panel.Children.Add(Empty(showing)); return panel; }
+    var id = (string)entry["id"]; var title = game?.Title ?? (string)entry["game"]?["title"] ?? "";
+    var body = new DockPanel { LastChildFill = true };
+    Kit.GameScope(body, plugin, game);
+    var cover = PnKit.Bare(Kit.Cover(plugin, game, 88, ArtworkContext.Cover, 12), () => Dash.OpenEntry(plugin, id), "Open " + title);
+    cover.Width = 88; cover.VerticalAlignment = VerticalAlignment.Top; cover.Margin = new Thickness(0, 0, 16, 0);
+    DockPanel.SetDock(cover, Dock.Left); body.Children.Add(cover);
+    var main = new StackPanel();
+    var name = Dash.Text(title, "Blastlog.CardTitle"); name.TextWrapping = TextWrapping.Wrap; Dash.OnClick(name, () => Dash.OpenEntry(plugin, id)); name.ToolTip = "Open " + title;
+    main.Children.Add(name);
+    var meta = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
+    meta.Children.Add(Kit.StatusPill(Status(entry)).Also(p => p.Margin = new Thickness(0, 0, 10, 0)));
+    var length = Dash.LengthText(entry["length"]); if (length != null) meta.Children.Add(Dash.Text(length, "Blastlog.Muted").Also(t => t.VerticalAlignment = VerticalAlignment.Center));
+    main.Children.Add(meta);
+    var why = WhyLine(); if (why != null) main.Children.Add(why.Also(t => t.Margin = new Thickness(0, 10, 0, 0)));
+    var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+    var canStart = start != null && Startable(entry);
+    if (canStart) actions.Children.Add(Kit.Button("Start playing", () => start(entry)));
+    actions.Children.Add(Kit.Button("View details", () => Dash.OpenEntry(plugin, id), canStart ? "Blastlog.Ghost" : "Blastlog.Primary"));
+    foreach (var b in actions.Children.OfType<Button>()) { b.Margin = new Thickness(0, 0, 8, 8); b.FontSize = 14; b.MinHeight = 44; b.Padding = new Thickness(16, 0, 16, 0); }
+    main.Children.Add(actions);
+    body.Children.Add(main);
+    panel.Children.Add(body);
+    return panel;
+  }
+  /// <summary>"★ 4.6 predicted · because you like Story-driven" (the one-line why), or null without a reason.</summary>
+  TextBlock WhyLine() {
+    var explanation = (string)data?["profileSource"] == "fingerprint_v2" ? data["explanation"] as JObject : null;
+    var reason = Dash.Arr(explanation?["reasons"]).Select(r => (string)r).FirstOrDefault(r => !string.IsNullOrWhiteSpace(r));
+    if (reason == null) return null;
+    var line = new TextBlock { Style = Kit.Style("Blastlog.Body"), TextWrapping = TextWrapping.Wrap };
+    var predicted = (double?)explanation["predictedRating"];
+    if (predicted != null) {
+      var star = new Run("★ " + predicted.Value.ToString("0.0", CultureInfo.InvariantCulture)) { FontWeight = FontWeights.Bold };
+      star.SetResourceReference(TextElement.ForegroundProperty, "Blastlog.Star");
+      line.Inlines.Add(star); line.Inlines.Add(new Run(" predicted · because you like "));
+    } else line.Inlines.Add(new Run("Because you like "));
+    line.Inlines.Add(new Run(reason) { FontWeight = FontWeights.Bold });
+    return line;
   }
 
-  /// <summary>"Next up" and the three modes (a segmented control; the pressed one in the game's colour).</summary>
-  FrameworkElement TopRow() {
-    // The chip keeps its own width (Auto, no wrapping); the space between them gives way first.
-    var grid = new Grid(); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-    var label = new Border { Style = Kit.Style("Blastlog.NeutralChip"), Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center,
-      Child = Dash.Text("Next up", "Blastlog.Small", "Blastlog.Text", FontWeights.Bold).Also(t => t.TextWrapping = TextWrapping.NoWrap) };
-    grid.Children.Add(label);
+  /// <summary>The three modes (a segmented control; the pressed one in the game's colour).</summary>
+  FrameworkElement ModeBox() {
     var toggle = new StackPanel { Orientation = Orientation.Horizontal };
     foreach (var m in Modes) {
       var on = m.Key == Mode;
@@ -127,19 +158,7 @@ sealed class DashboardNextUp : Border {
     var box = new Border { Child = toggle, CornerRadius = new CornerRadius(14), Padding = new Thickness(3), BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center };
     box.SetResourceReference(BackgroundProperty, "Blastlog.Surface2"); box.SetResourceReference(BorderBrushProperty, "Blastlog.Line");
     System.Windows.Automation.AutomationProperties.SetName(box, "What kind of game");
-    Grid.SetColumn(box, 2); grid.Children.Add(box);
-    // Beside the cover there may not be room for both: the modes then go under the chip instead of being cut off.
-    grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-    grid.SizeChanged += (s, e) => {
-      try {
-        label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); box.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var under = e.NewSize.Width < label.DesiredSize.Width + box.DesiredSize.Width + 12;
-        Grid.SetColumn(box, under ? 0 : 2); Grid.SetRow(box, under ? 1 : 0); Grid.SetColumnSpan(box, under ? 3 : 1);
-        box.HorizontalAlignment = under ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
-        box.Margin = new Thickness(0, under ? 10 : 0, 0, 0);
-      } catch (Exception ex) { global::Playnite.SDK.LogManager.GetLogger().Error(ex, "Blastlog dashboard: next up modes layout"); }
-    };
-    return grid;
+    return box;
   }
 
   /// <summary>Length, platforms, then where you own it (once the game's page read arrives); the status is on the cover.</summary>
@@ -244,7 +263,13 @@ sealed class DashboardNextUp : Border {
     var row = new WrapPanel { Margin = new Thickness(0, 18, 0, 0) };
     var play = Dash.PlayButton(plugin, id);
     if (play != null) row.Children.Add(play);
-    var details = Kit.Button("View details", () => Dash.OpenEntry(plugin, id), play != null ? "Blastlog.Ghost" : "Blastlog.Primary");
+    var canStart = start != null && Startable(entry);
+    if (canStart) {
+      var go = Kit.Button("Start playing", () => start(entry), play != null ? "Blastlog.Ghost" : "Blastlog.Primary");
+      go.Content = Dash.IconLabel(Icons.Gamepad, "Start playing");
+      row.Children.Add(go);
+    }
+    var details = Kit.Button("View details", () => Dash.OpenEntry(plugin, id), play != null || canStart ? "Blastlog.Ghost" : "Blastlog.Primary");
     details.Content = Dash.IconLabel(Dash.Eye, "View details");
     row.Children.Add(details);
     var reviewed = !string.IsNullOrWhiteSpace((string)entry["review"]);
@@ -270,17 +295,6 @@ sealed class DashboardNextUp : Border {
     foreach (var m in Modes.Where(m => m.Key != showing)) row.Children.Add(Kit.Button("Try " + m.Label, () => Switch(m.Key), "Blastlog.Ghost"));
     panel.Children.Add(row);
     return panel;
-  }
-
-  /// <summary>The full cover with a shadow, its status on its top-right corner (the approved board).</summary>
-  FrameworkElement CoverBox(JObject entry, Blastlog.Sync.Core.Game game) {
-    var cover = Kit.Cover(plugin, game, 260, ArtworkContext.Cover, 18);
-    cover.Effect = new DropShadowEffect { BlurRadius = 30, ShadowDepth = 8, Opacity = 0.45, Color = Colors.Black };
-    cover.CacheMode = new BitmapCache(); // the shadow is drawn once, not on every scroll step
-    System.Windows.Automation.AutomationProperties.SetName(cover, "Cover of " + game?.Title);
-    var pill = Kit.StatusPill((string)entry["ownership"] == "wishlist" ? "wishlist" : (string)entry["status"]);
-    pill.HorizontalAlignment = HorizontalAlignment.Right; pill.VerticalAlignment = VerticalAlignment.Top; pill.Margin = new Thickness(12);
-    return new Grid { Margin = new Thickness(32, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Children = { cover, pill } };
   }
 }
 }

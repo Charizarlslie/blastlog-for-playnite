@@ -78,6 +78,17 @@ under a scrim, glow in the game's colour, full cover with its status at the top 
 chips, why it's up next, watch for, your own quote), Currently playing (two cards side by side in their game's colours on a wide card; under the links Finished it, Set aside as quiet text with its two
 choices, Still playing check-in, Guides ↗, Reddit ↗, the pager), Your library numbers in one row of four and How your stars split with five boxed cells,
 Recently finished with its next steps.
+**Top card (2026-11-08, the site's live order; Charlie: "now > later"):** whenever the Playing list has a game, the big
+card is **Now playing** (`DashboardPlaying` with `hero`, shell in `DashboardHero.cs`): the shown game's blurred art,
+title, time on the list and length chips, Guides ↗ / Reddit ↗, the still-playing check-in when due, Play or Install
+first, Finished it and Set aside; the page wears that game. Top right, **Also playing**: every playing game as a 44×58
+cover (the shown one ringed in its colour) and a dashed + for the start picker. Picking a cover shows it big and saves
+the pick on the account (`PUT now-playing/featured`, read back as `featuredEntryId`). After Finished it the card stays on
+the game as "Just finished" (Rate and review it, Later, Oops, still playing). **Next up** is then the medium card beside
+Your library (modes, cover, title, status, length, the one-line "predicted · because you like", Start playing, View
+details). With nothing playing, Next up keeps the top (now with Start playing) and Currently playing's small card offers
+to start something. Friends' dashboards get the same top card without buttons (View details; covers to look through,
+nothing saved).
 **Playnite adds:** a game you have in Playnite shows **Play** (installed) or **Install** (not installed) as the primary
 button on Next up, and as a square icon button (word in its tooltip) first on Currently playing cards. A Next up game that isn't in Playnite shows "Not in Playnite" and its stores.
 **Built** (`Screens/Dashboard*.cs`): everything above runs natively, including Finished it / Set aside / Still playing /

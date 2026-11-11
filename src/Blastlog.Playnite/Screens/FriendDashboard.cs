@@ -16,7 +16,8 @@ using static Blastlog.Playnite.Screens.TasteUi;
 namespace Blastlog.Playnite.Screens {
 /// <summary>
 /// A friend's dashboard (the site's Dashboard for /friends/:id/dashboard, read only): "Maya’s dashboard", a search of
-/// their library, Next up for them (with Recommended / Quick one / Long haul), Currently playing beside their library's
+/// their library, the top card (their Now playing while they're playing something, with Next up for them beside their
+/// library; otherwise Next up for them, with Currently playing beside it), their library's
 /// numbers, and Recently finished. No prompts, + New entry, co-op button or friend activity (the site leaves those to
 /// your own dashboard). Every game opens as their entry (Nav.FriendEntry); the numbers and Open library open their
 /// Library tab filtered (<c>openLibrary</c>, the site's query).
@@ -65,8 +66,13 @@ sealed class FriendDashboardView : StackPanel {
     next = answer ?? next; nextRead = true; DrawHero();
   }
 
-  void DrawAll() { DrawHero(); Draw(playing, Playing); Draw(library, () => DashboardLibrary.LibraryCard(plugin, stats, friend, openLibrary)); Draw(shelf, Shelf); }
-  void DrawHero() => Draw(hero, Hero);
+  void DrawAll() { DrawHero(); Draw(library, () => DashboardLibrary.LibraryCard(plugin, stats, friend, openLibrary)); Draw(shelf, Shelf); }
+  // The top spot (design.md 8 "Top card"): their Now playing while they're playing something, Next up for them beside their
+  // library; otherwise Next up on top and their (empty) Currently playing beside it.
+  void DrawHero() {
+    if (PlayingList().Count > 0) { Draw(hero, NowPlayingHero); Draw(playing, Hero); }
+    else { Draw(hero, Hero); Draw(playing, Playing); }
+  }
   static void Draw(ContentControl slot, Func<FrameworkElement> build) {
     try { slot.Content = build(); } catch (Exception e) { Log.Error(e, "Blastlog friend dashboard: drawing"); }
   }
@@ -140,6 +146,32 @@ sealed class FriendDashboardView : StackPanel {
     s.Children.Add(T(head, "Blastlog.Small", "Blastlog.Text", 0, FontWeights.Bold));
     foreach (var line in lines) s.Children.Add(Runs("Blastlog.Body", ("● ", false, brush), (line, false, null)).Also(t => t.Margin = new Thickness(0, 4, 0, 0)));
     return s;
+  }
+
+  // ---- Now playing for them: the same top card as your own, without the buttons (web PlayingHero, friend view) ----
+  string shownId;
+  /// <summary>Their Playing games in their library's order (newest change first; their own order and pick aren't shared).</summary>
+  List<Entry> PlayingList() => (entries ?? new List<Entry>()).Where(e => e.Status == "playing")
+    .OrderByDescending(e => e.UpdatedAt).ThenBy(e => e.Game?.Title, StringComparer.CurrentCulture).ToList();
+
+  FrameworkElement NowPlayingHero() {
+    var list = PlayingList();
+    var shown = list.FirstOrDefault(e => e.EntryId == shownId) ?? list[0];
+    var title = shown.Game?.Title ?? ""; var id = shown.EntryId;
+    // Covers to look through; nothing is saved for a friend's card.
+    var strip = list.Count > 1 ? DashHero.Strip(plugin, list.Select(e => new DashHero.StripGame { Id = e.EntryId, Game = e.Game, Title = e.Game?.Title ?? "" }).ToList(),
+      id, pick => { shownId = pick; Draw(hero, NowPlayingHero); }, null) : null;
+    var copy = new StackPanel();
+    copy.Children.Add(Dash.Text(title, "Blastlog.HeroTitle").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 26, 0, 14));
+    var length = shown.NoEnd ? "No end" : shown.Length != null ? "~" + shown.Length.Hours.ToString(CultureInfo.InvariantCulture) + "h" : null;
+    if (length != null) copy.Children.Add(Dash.Wrap(DashHero.Chip(Dash.Clock, length, "How long it takes to beat")).Margin(0, 0, 0, 6));
+    copy.Children.Add(DashHero.Links(title).Margin(0, 12, 0, 0));
+    var details = Kit.Button("View details", () => Nav.FriendEntry(plugin, id, friend.Name));
+    details.Content = Dash.IconLabel(Dash.Eye, "View details"); details.Margin = new Thickness(0, 18, 0, 0); details.HorizontalAlignment = HorizontalAlignment.Left;
+    Dash.AutomationName(details, $"View {friend.Name}’s {title}");
+    copy.Children.Add(details);
+    return DashHero.Frame(plugin, shown.Game, DashHero.TopRow(DashHero.Label("Now playing"), strip), copy, "playing", $"Cover of {title}",
+      () => Nav.FriendEntry(plugin, id, friend.Name), scope: true);
   }
 
   // ---- Currently playing: their Playing games, newest first ----

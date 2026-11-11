@@ -17,24 +17,50 @@ namespace Blastlog.Playnite.Screens {
 /// Still playing when the check-in is due, Finished it, and Set aside (quiet text) with its two choices. Two cards side by
 /// side when the card is wide. Finishing opens the rate-and-review card
 /// (Later, Oops, still playing). + Start another and the empty state's Pick from your backlog open the start picker.
+/// Since 2026-11-08 (Charlie: "now > later"; design.md 8 "Top card"; web NowPlaying.tsx PlayingHero) this is the
+/// dashboard's big card whenever something is being played: one game big in its colour (the page wears it), the time on
+/// the list and length, Guides and Reddit, the check-in when due, Play or Install first, Finished it and Set aside; the
+/// other playing games as "Also playing" covers to swap to (the pick saved on the account, featuredEntryId) and a dashed +
+/// for the start picker. After Finished it the card stays on that game as "Just finished". With nothing being played,
+/// the small card beside Your library offers to start something.
 /// </summary>
 sealed class DashboardPlaying : Border {
   const int Limit = 3;
   sealed class Finishing { public JObject Entry; public string Status; public string PreviousFinishedOn; }
   // Kept across the dashboard's redraws (a change re-reads everything), like the site's component state.
   static readonly List<Finishing> finishing = new List<Finishing>();
-  static string message; static int page; static string asideFor; static bool picking;
+  static string message; static int page; static string asideFor; static bool picking; static string focusId;
 
   readonly BlastlogPlugin plugin; readonly DashboardView view; readonly DashboardData data; readonly JObject suggestion;
+  readonly bool hero;
   readonly StackPanel body = new StackPanel();
   string busy;
 
-  public DashboardPlaying(BlastlogPlugin plugin, DashboardView view, DashboardData data, JObject suggestion) {
-    this.plugin = plugin; this.view = view; this.data = data; this.suggestion = suggestion;
-    Style = Kit.Style("Blastlog.Card");
-    Child = body;
+  /// <param name="hero">The big card at the top (only when <see cref="HasHero"/>); otherwise the small card.</param>
+  public DashboardPlaying(BlastlogPlugin plugin, DashboardView view, DashboardData data, JObject suggestion, bool hero = false) {
+    this.plugin = plugin; this.view = view; this.data = data; this.suggestion = suggestion; this.hero = hero;
+    if (!hero) { Style = Kit.Style("Blastlog.Card"); Child = body; }
     Render();
   }
+
+  /// <summary>Whether Now playing has the top: something on the Playing list, or a game just finished awaiting its review.</summary>
+  public static bool HasHero(DashboardData data) {
+    if (finishing.Count > 0) return true;
+    var done = new HashSet<string>(finishing.Select(f => (string)f.Entry["id"]));
+    return data.PlayingIds.Any(id => !done.Contains(id) && (!data.Pages.TryGetValue(id, out var p) || (string)p["entry"]?["status"] == "playing"));
+  }
+
+  /// <summary>
+  /// Next up's Start playing: onto the Playing list and shown big (web usePlaying start), then the dashboard reads again.
+  /// </summary>
+  public static void StartFromNextUp(BlastlogPlugin plugin, DashboardView view, JObject entry) => Dash.Safe(async () => {
+    var id = (string)entry["id"]; if (id == null) return;
+    if (await Patch(plugin, id, new JObject { ["status"] = "playing" }) == null) return;
+    picking = false; focusId = id;
+    message = $"{(string)entry["game"]?["title"]} is on your Playing list. Have fun.";
+    await plugin.WriteQuietly("now-playing/featured", new { entryId = id }, HttpMethod.Put);
+    view.Refresh();
+  }, "start from next up");
 
   List<JObject> Playing() {
     var done = new HashSet<string>(finishing.Select(f => (string)f.Entry["id"]));
@@ -43,6 +69,7 @@ sealed class DashboardPlaying : Border {
   }
 
   void Render() {
+    if (hero) { try { Child = Hero(); } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Error(e, "Blastlog dashboard: now playing"); } return; }
     body.Children.Clear();
     var playing = Playing();
     var head = new DockPanel { Margin = new Thickness(0, 0, 0, 14), LastChildFill = false };
@@ -82,6 +109,98 @@ sealed class DashboardPlaying : Border {
       body.Children.Add(empty);
     }
     if (picking) body.Children.Add(StartPicker());
+  }
+
+  // ---- The big card (Now playing / Just finished) ----
+  /// <summary>The playing games in the dashboard's order (check-in due first, then newest; the server's order) with pages.</summary>
+  List<(JObject Item, JObject Entry)> PlayingWithPages() => Playing().Select(i => (i, (JObject)data.Pages[(string)i["entryId"]]["entry"])).ToList();
+
+  /// <summary>Show this game big; saved on the account (site, phone and Playnite agree).</summary>
+  void Focus(string entryId) {
+    focusId = entryId; asideFor = null; message = null; picking = false;
+    Render();
+    Dash.Safe(() => plugin.WriteQuietly("now-playing/featured", new { entryId }, HttpMethod.Put), "save the shown game");
+  }
+
+  FrameworkElement Hero() {
+    var justFinished = finishing.LastOrDefault();
+    if (justFinished != null) return FinishedHero(justFinished);
+    var playing = PlayingWithPages();
+    if (playing.Count == 0) return Dash.Card(Dash.Text("Loading what you're playing…", "Blastlog.Muted")).Also(c => { c.Margin = new Thickness(0, 0, 0, 18); c.MinHeight = 420; });
+    var featured = (string)data.NowPlaying?["featuredEntryId"];
+    var shown = playing.FirstOrDefault(p => (string)p.Entry["id"] == focusId);
+    if (shown.Entry == null) shown = playing.FirstOrDefault(p => (string)p.Entry["id"] == featured);
+    if (shown.Entry == null) shown = playing[0];
+    var entry = shown.Entry; var item = shown.Item;
+    var id = (string)entry["id"]; var game = Dash.Game(entry["game"]); var title = game?.Title ?? (string)entry["game"]?["title"] ?? "";
+    var due = (bool?)item["checkInDue"] == true; var working = busy == id;
+    view.Wear(game);
+
+    var strip = DashHero.Strip(plugin, playing.Select(p => new DashHero.StripGame { Id = (string)p.Entry["id"], Game = Dash.Game(p.Entry["game"]), Title = (string)p.Entry["game"]?["title"] ?? "" }).ToList(),
+      id, Focus, () => { picking = !picking; Render(); });
+    var top = DashHero.TopRow(DashHero.Label("Now playing"), strip);
+
+    var copy = new StackPanel();
+    copy.Children.Add(Dash.Text(title, "Blastlog.HeroTitle").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 26, 0, 14));
+    var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+    chips.Children.Add(DashHero.Chip(Icons.Gamepad, OnListText(item)));
+    var hours = Dash.LengthText(entry["length"]); if (hours != null) chips.Children.Add(DashHero.Chip(Dash.Clock, hours, "How long it takes to beat"));
+    copy.Children.Add(chips);
+    if (due && asideFor != id) copy.Children.Add(Dash.Text(AskText(item, entry), "Blastlog.Body").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 6, 0, 0));
+    // design.md 8: the same question and answers for every game, with an end or without.
+    if (asideFor == id) copy.Children.Add(Dash.Text("Back to your backlog to pick up later, or done with it?", "Blastlog.Body", weight: FontWeights.SemiBold).Margin(0, 6, 0, 0));
+    copy.Children.Add(DashHero.Links(title).Margin(0, 12, 0, 0));
+    if (message != null) copy.Children.Add(Dash.Text(message, "Blastlog.Body", "Blastlog.GameText").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 12, 0, 0));
+
+    var actions = new WrapPanel { Margin = new Thickness(0, 18, 0, 0) };
+    if (asideFor == id) {
+      actions.Children.Add(Kit.Button("Back to backlog", () => SetAside(entry), "Blastlog.Ghost"));
+      actions.Children.Add(Kit.Button("Done with it", () => Finish(entry, "dnf"), "Blastlog.Ghost"));
+      actions.Children.Add(Kit.Button("Cancel", () => { asideFor = null; Render(); }, "Blastlog.TextButton"));
+    } else {
+      // Play or Install first: the Playnite addition (PLAYNITE_DESIGN 4.1).
+      var play = Dash.PlayButton(plugin, id); if (play != null) actions.Children.Add(play);
+      if (due) actions.Children.Add(Kit.Button("Still playing", () => StillPlaying(entry), play != null ? "Blastlog.Ghost" : "Blastlog.Primary"));
+      var done = Kit.Button("Finished it", () => Finish(entry, "done"), play != null || due ? "Blastlog.Ghost" : "Blastlog.Primary");
+      done.Content = Dash.IconLabel(PnKit.Check, "Finished it");
+      actions.Children.Add(done);
+      actions.Children.Add(Kit.Button("Set aside", () => { asideFor = id; Render(); }, "Blastlog.Ghost"));
+    }
+    // The site's button size on this card (14px, 16px sides), so Play, Finished it and Set aside share a line beside the cover.
+    foreach (var b in actions.Children.OfType<Button>()) { b.Margin = new Thickness(0, 0, 8, 8); b.IsEnabled = !working; b.FontSize = 14; b.Padding = new Thickness(16, 0, 16, 0); }
+    copy.Children.Add(actions);
+    if (picking) copy.Children.Add(PickerPanel());
+    return DashHero.Frame(plugin, game, top, copy, "playing", "Cover of " + title, () => Dash.OpenEntry(plugin, id), scope: true);
+  }
+
+  /// <summary>The start picker on the big card, on a plain panel so it reads over the art.</summary>
+  FrameworkElement PickerPanel() {
+    var box = new Border { Child = StartPicker(), CornerRadius = new CornerRadius(16), Padding = new Thickness(16, 8, 16, 16), Margin = new Thickness(0, 12, 0, 0), BorderThickness = new Thickness(1), MaxWidth = 560, HorizontalAlignment = HorizontalAlignment.Left };
+    box.SetResourceReference(BackgroundProperty, "Blastlog.Surface"); box.SetResourceReference(BorderBrushProperty, "Blastlog.Line");
+    return box;
+  }
+
+  /// <summary>"Just finished": the card stays on the game for its review prompt until it's answered or put off.</summary>
+  FrameworkElement FinishedHero(Finishing item) {
+    var entry = item.Entry; var id = (string)entry["id"]; var game = Dash.Game(entry["game"]); var title = game?.Title ?? (string)entry["game"]?["title"] ?? "";
+    var judged = entry["rating"] != null && entry["rating"].Type != JTokenType.Null || !string.IsNullOrWhiteSpace((string)entry["review"]);
+    view.Wear(game);
+    var copy = new StackPanel();
+    copy.Children.Add(Dash.Text(title, "Blastlog.HeroTitle").Also(t => t.TextWrapping = TextWrapping.Wrap).Margin(0, 26, 0, 14));
+    copy.Children.Add(Dash.Wrap(DashHero.Chip(PnKit.Check, item.Status == "done" ? "Marked finished" : "Marked didn't finish")).Margin(0, 0, 0, 6));
+    copy.Children.Add(Dash.Text(item.Status == "done" ? "Nice! How was it?" : "How was it, as far as you got?", "Blastlog.Body", weight: FontWeights.SemiBold).Margin(0, 8, 0, 2));
+    copy.Children.Add(Dash.Text("A few quick questions help Blastlog learn what you love and what loses you.", "Blastlog.Muted").Also(t => t.TextWrapping = TextWrapping.Wrap));
+    if (message != null) copy.Children.Add(Dash.Text(message, "Blastlog.Body", "Blastlog.GameText").Margin(0, 12, 0, 0));
+    var buttons = new WrapPanel { Margin = new Thickness(0, 18, 0, 0) };
+    buttons.Children.Add(Kit.Button(judged ? "Update your review" : "Rate and review it", () => Dash.Review(plugin, id)));
+    buttons.Children.Add(Kit.Button("Later", () => { finishing.Remove(item); message = null; view.RedrawTop(true); }, "Blastlog.Ghost"));
+    buttons.Children.Add(Kit.Button("Oops, still playing", () => Run(id, async () => {
+      if (await Patch(id, new JObject { ["status"] = "playing", ["finishedOn"] = item.PreviousFinishedOn == null ? JValue.CreateNull() : (JToken)item.PreviousFinishedOn }) == null) return;
+      finishing.Remove(item); focusId = id; message = $"{title} is back on your Playing list.";
+    }), "Blastlog.TextButton"));
+    foreach (var b in buttons.Children.OfType<Button>()) { b.Margin = new Thickness(0, 0, 10, 8); b.IsEnabled = busy == null; }
+    copy.Children.Add(buttons);
+    return DashHero.Frame(plugin, game, DashHero.TopRow(DashHero.Label("Just finished"), null), copy, (string)entry["status"], "Cover of " + title, () => Dash.OpenEntry(plugin, id), scope: true);
   }
 
   // ---- One game ----
@@ -191,7 +310,8 @@ sealed class DashboardPlaying : Border {
 
   // ---- Changes (the site's own write routes, through the token) ----
   /// <summary>PATCH /entries/:id with the entry's current version (read fresh first). Null after telling the player why.</summary>
-  async Task<JObject> Patch(string entryId, JObject changes) {
+  Task<JObject> Patch(string entryId, JObject changes) => Patch(plugin, entryId, changes);
+  static async Task<JObject> Patch(BlastlogPlugin plugin, string entryId, JObject changes) {
     var current = (await plugin.Mirror("entries/" + entryId + "?like=0", fresh: true)).Value;
     var version = (int?)current?["entry"]?["version"];
     if (version == null) { plugin.Api.Dialogs.ShowErrorMessage("Couldn't read that game from Blastlog just now. Try again in a moment.", "Blastlog"); return null; }
@@ -221,7 +341,8 @@ sealed class DashboardPlaying : Border {
   });
   Task Start(string entryId, string title) => Run(entryId, async () => {
     if (await Patch(entryId, new JObject { ["status"] = "playing" }) == null) return;
-    picking = false; message = $"{title} is on your Playing list. Have fun.";
+    picking = false; focusId = entryId; message = $"{title} is on your Playing list. Have fun.";
+    await plugin.WriteQuietly("now-playing/featured", new { entryId }, HttpMethod.Put);
   });
 
   /// <summary>Just finished: the way into the full review, whose questions teach Blastlog; Oops puts it back.</summary>
@@ -239,10 +360,10 @@ sealed class DashboardPlaying : Border {
     panel.Children.Add(Dash.Text("A few quick questions help Blastlog learn what you love and what loses you.", "Blastlog.Muted"));
     var buttons = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
     buttons.Children.Add(Kit.Button(judged ? "Update your review" : "Rate and review it", () => Dash.Review(plugin, id)));
-    buttons.Children.Add(Kit.Button("Later", () => { finishing.Remove(item); Render(); }, "Blastlog.Ghost"));
+    buttons.Children.Add(Kit.Button("Later", () => { finishing.Remove(item); view.RedrawTop(true); }, "Blastlog.Ghost"));
     buttons.Children.Add(Kit.Button("Oops, still playing", () => Run(id, async () => {
       if (await Patch(id, new JObject { ["status"] = "playing", ["finishedOn"] = item.PreviousFinishedOn == null ? JValue.CreateNull() : (JToken)item.PreviousFinishedOn }) == null) return;
-      finishing.Remove(item); message = $"{game?.Title} is back on your Playing list.";
+      finishing.Remove(item); focusId = id; message = $"{game?.Title} is back on your Playing list.";
     }), "Blastlog.TextButton"));
     foreach (FrameworkElement b in buttons.Children) b.Margin = new Thickness(0, 0, 8, 8);
     panel.Children.Add(buttons);

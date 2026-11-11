@@ -12,9 +12,10 @@ using Playnite.SDK;
 namespace Blastlog.Playnite.Screens {
 /// <summary>
 /// Dashboard (Blastlog design.md 8 "Dashboard", PLAYNITE_DESIGN.md 4.1): the header with Search, Find a co-op game and
-/// + New entry; the Rate games I know and New from Steam prompts; the Next up hero; Currently playing beside Your library;
+/// + New entry; the Rate games I know and New from Steam prompts; the top card (Now playing while something is being
+/// played, with Next up as the medium card beside Your library; otherwise Next up, with Currently playing's small card there);
 /// Recently finished; Friends lately; then the plugin's own sync controls. Games that are in Playnite get Play / Install.
-/// The page wears Next up's game. Reads are the site's own answers (mirror reads, cached), so it opens straight away.
+/// The page wears the top card's game. Reads are the site's own answers (mirror reads, cached), so it opens straight away.
 /// </summary>
 public sealed class DashboardScreen : IBlastlogScreen {
   public string Title => "Dashboard";
@@ -88,7 +89,7 @@ sealed class DashboardView : StackPanel {
     await Task.WhenAll(reads);
     if (id != renderId) return;
     finished = true;
-    Draw(Slot.Hero); Draw(Slot.Playing);
+    RedrawTop();
     sync.Content = SyncStrip();
   }
 
@@ -97,7 +98,7 @@ sealed class DashboardView : StackPanel {
     if (id != renderId) return;
     if (path.StartsWith("next-up")) nextRead = true;
     if (value != null && Store(path, value)) foreach (var s in SlotsFor(path)) Draw(s);
-    else if (path.StartsWith("next-up")) Draw(Slot.Hero);
+    else if (path.StartsWith("next-up")) RedrawTop();
     if (path == "dashboard") {
       // One page read per playing game, in parallel; the card fills in as they land.
       var ids = data.PlayingIds.ToList(); var changed = false;
@@ -106,7 +107,7 @@ sealed class DashboardView : StackPanel {
         if (id != renderId || page == null) return;
         if (!data.Pages.TryGetValue(e, out var old) || !JToken.DeepEquals(old, page)) { data.Pages[e] = page; changed = true; }
       }));
-      if (changed && id == renderId) Draw(Slot.Playing); // once, so the rows don't flicker through their colours per read
+      if (changed && id == renderId) RedrawTop(); // once, so the rows don't flicker through their colours per read
     }
   }
 
@@ -132,9 +133,9 @@ sealed class DashboardView : StackPanel {
   static IEnumerable<Slot> SlotsFor(string path) {
     switch (path) {
       case "me": case "friends": return new[] { Slot.Header };
-      case "dashboard": return new[] { Slot.Prompts, Slot.Playing, Slot.Library };
+      case "dashboard": return new[] { Slot.Prompts, Slot.Hero, Slot.Playing, Slot.Library };
       case "imports": return new[] { Slot.Prompts };
-      case "backlog": return new[] { Slot.Playing };
+      case "backlog": return new[] { Slot.Hero, Slot.Playing };
       case "recently-finished": case "taste-help": return new[] { Slot.Shelf };
       case "friend-activity": return new[] { Slot.Friends };
       default: return new[] { Slot.Hero, Slot.Playing };
@@ -147,13 +148,27 @@ sealed class DashboardView : StackPanel {
       switch (slot) {
         case Slot.Header: host.Content = Header(data); break;
         case Slot.Prompts: host.Content = Prompts(data); break;
+        // The top spot: Now playing while something is on (Charlie, 2026-11-08: "now > later"), Next up otherwise; the
+        // other one takes the medium slot beside Your library.
         case Slot.Hero:
-          if (data.Next != null) host.Content = new DashboardNextUp(plugin, this, data.Next);
+          if (data.Dashboard != null && DashboardPlaying.HasHero(data)) {
+            // Redrawn only when what it shows changed (each redraw reloads the art).
+            var key = HeroKey();
+            if (key == heroKey && host.Content is DashboardPlaying) break;
+            heroKey = key; host.Content = new DashboardPlaying(plugin, this, data, data.Next?["entry"] as JObject, hero: true);
+            break;
+          }
+          heroKey = null;
+          if (data.Next != null) host.Content = new DashboardNextUp(plugin, this, data.Next, start: StartPlaying);
           else if (finished && data.Stats == null) host.Content = Dash.Card(Dash.Text("Couldn't reach Blastlog, and there's no saved copy yet. Check your connection, then press Refresh."));
-          else if (nextRead && finished) host.Content = new DashboardNextUp(plugin, this, null);
+          else if (nextRead && finished) host.Content = new DashboardNextUp(plugin, this, null, start: StartPlaying);
           else host.Content = Dash.Card(Dash.Text("Loading your dashboard…", "Blastlog.Muted"));
           break;
-        case Slot.Playing: host.Content = data.Dashboard == null ? null : new DashboardPlaying(plugin, this, data, data.Next?["entry"] as JObject); break;
+        case Slot.Playing:
+          if (data.Dashboard == null) host.Content = null;
+          else if (DashboardPlaying.HasHero(data)) host.Content = data.Next != null || nextRead ? new DashboardNextUp(plugin, this, data.Next, compact: true, start: StartPlaying) : null;
+          else host.Content = new DashboardPlaying(plugin, this, data, data.Next?["entry"] as JObject);
+          break;
         case Slot.Library: host.Content = data.Dashboard == null ? null : DashboardLibrary.LibraryCard(plugin, data.Stats); break;
         case Slot.Shelf: host.Content = data.Shelf == null ? null : DashboardLibrary.RecentlyFinished(plugin, data); break;
         case Slot.Friends: host.Content = DashboardLibrary.FriendsLately(plugin, data.FriendActivity); break;
@@ -283,6 +298,16 @@ sealed class DashboardView : StackPanel {
   }
 
   /// <summary>Next up chose another game: the page wears it (design.md 2.3).</summary>
+  /// <summary>
+  /// The top card and the medium card, together: which one is on top depends on the Playing list. <paramref name="force"/>
+  /// rebuilds Now playing even when its data didn't change (a change made on the card itself).
+  /// </summary>
+  internal void RedrawTop(bool force = false) { if (force) heroKey = null; Draw(Slot.Hero); Draw(Slot.Playing); }
+  string heroKey;
+  string HeroKey() => string.Join("|", new[] { data.NowPlaying?.ToString(Newtonsoft.Json.Formatting.None), (string)data.Next?["entry"]?["id"] }
+    .Concat(data.PlayingIds.Select(e => data.Pages.TryGetValue(e, out var p) ? p["entry"]?["version"]?.ToString() + (string)p["entry"]?["status"] : "-")));
+  void StartPlaying(JObject entry) => DashboardPlaying.StartFromNextUp(plugin, this, entry);
+
   internal void Wear(Blastlog.Sync.Core.Game game) => Dash.Safe(async () => {
     if (plugin.Theme == null) return;
     plugin.Theme.WearPage(game == null ? null : await plugin.Theme.SeedFor(game));
