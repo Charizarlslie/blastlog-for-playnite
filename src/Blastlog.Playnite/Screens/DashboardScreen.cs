@@ -52,7 +52,7 @@ sealed class DashboardView : StackPanel {
 
   public DashboardView(BlastlogPlugin plugin) {
     this.plugin = plugin;
-    MaxWidth = 1500;
+    // No width cap: the site's dashboard fills the window (.dashboard{max-width:none}).
     foreach (Slot s in Enum.GetValues(typeof(Slot))) slots[s] = new ContentControl { Focusable = false, IsTabStop = false };
     Loaded += (s, e) => Dash.Safe(() => Render(false), "load");
   }

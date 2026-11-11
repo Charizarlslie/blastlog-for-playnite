@@ -34,7 +34,7 @@ sealed class FriendDashboardView : StackPanel {
 
   public FriendDashboardView(BlastlogPlugin plugin, FriendView friend, Action<string> openLibrary) {
     this.plugin = plugin; this.friend = friend; this.openLibrary = openLibrary;
-    MaxWidth = 1500;
+    // No width cap: the site's dashboard fills the window (.dashboard{max-width:none}).
     Children.Add(Header());
     Children.Add(hero);
     Children.Add(Columns(playing, library));
