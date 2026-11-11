@@ -39,19 +39,50 @@
                                 </StackPanel>
                             </Border>
 
-                            <ContentControl x:Name="Blastlog_SideFooter" DockPanel.Dock="Bottom" Margin="20,0,20,0"
-                                            Focusable="False" IsTabStop="False" />
+                            <!-- The footer (the site's .sidebar-footer): Completion rate stays in view under the scrolling menu. -->
+                            <StackPanel x:Name="SideFooter" DockPanel.Dock="Bottom" Margin="20,0,20,0">
+                                <ContentControl x:Name="Blastlog_SideCompletion" Focusable="False" IsTabStop="False" />
+                                <ContentControl x:Name="Blastlog_SideFooter" Focusable="False" IsTabStop="False" />
+                            </StackPanel>
 
+                            <!--
+                              The menu scrolls with its scrollbar laid over the right padding (shown on hover), so the rows
+                              never get narrower when it starts scrolling (the site's scrollbar-gutter, App.tsx keepScrollbarRoom).
+                            -->
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                                           DockPanel.Dock="Top" CanContentScroll="False" Padding="20,0,20,0"
                                           x:Name="ScrollSidebarItems" Focusable="False">
+                                <ScrollViewer.Template>
+                                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                                        <Grid Background="Transparent">
+                                            <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" Margin="{TemplateBinding Padding}"
+                                                                    CanContentScroll="{TemplateBinding CanContentScroll}" />
+                                            <ScrollBar x:Name="PART_VerticalScrollBar" HorizontalAlignment="Right" Margin="0,0,3,0" Opacity="0"
+                                                       Value="{TemplateBinding VerticalOffset}" Maximum="{TemplateBinding ScrollableHeight}"
+                                                       ViewportSize="{TemplateBinding ViewportHeight}"
+                                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" />
+                                            <ScrollBar x:Name="PART_HorizontalScrollBar" Orientation="Horizontal" VerticalAlignment="Bottom" Opacity="0"
+                                                       Value="{TemplateBinding HorizontalOffset}" Maximum="{TemplateBinding ScrollableWidth}"
+                                                       ViewportSize="{TemplateBinding ViewportWidth}"
+                                                       Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}" />
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="PART_VerticalScrollBar" Property="Opacity" Value="1" />
+                                                <Setter TargetName="PART_HorizontalScrollBar" Property="Opacity" Value="1" />
+                                            </Trigger>
+                                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                                <Setter TargetName="PART_VerticalScrollBar" Property="Opacity" Value="1" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ScrollViewer.Template>
                                 <StackPanel x:Name="SideColumn" Margin="0,40,0,12">
                                     <TextBlock x:Name="MenuLabel" Text="My Blastlog" Margin="10,0,10,12"
                                                FontFamily="{DynamicResource FontFamily}" FontSize="14" FontWeight="ExtraBold"
                                                Foreground="{DynamicResource Blastlog.TextMuted}" />
                                     <StackPanel x:Name="PART_PanelSideBarItems" Orientation="Vertical" />
                                     <ContentControl x:Name="Blastlog_SideFriends" Focusable="False" IsTabStop="False" />
-                                    <ContentControl x:Name="Blastlog_SideCompletion" Focusable="False" IsTabStop="False" />
                                 </StackPanel>
                             </ScrollViewer>
                         </DockPanel>
@@ -74,8 +105,7 @@
                             <Setter Property="Visibility" Value="Collapsed" TargetName="MenuLabel" />
                             <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideName" />
                             <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFriends" />
-                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideCompletion" />
-                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFooter" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="SideFooter" />
                         </DataTrigger>
                         <DataTrigger Binding="{Settings SidebarPosition}" Value="Bottom">
                             <Setter Property="Width" Value="NaN" TargetName="DockContentHolder" />
@@ -91,8 +121,7 @@
                             <Setter Property="Visibility" Value="Collapsed" TargetName="MenuLabel" />
                             <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideName" />
                             <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFriends" />
-                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideCompletion" />
-                            <Setter Property="Visibility" Value="Collapsed" TargetName="Blastlog_SideFooter" />
+                            <Setter Property="Visibility" Value="Collapsed" TargetName="SideFooter" />
                         </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
