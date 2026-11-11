@@ -203,10 +203,12 @@ sealed class TasteView : Grid {
     face.SetResourceReference(Border.BackgroundProperty, "Blastlog.Game");
     AutomationProperties.SetName(face, name);
     who.Children.Add(face);
-    // Pictures and account settings stay on the site (PLAYNITE_DESIGN 4: "Open in Blastlog").
+    // The picture and account settings are the native Settings window (Screens/SettingsWindow.cs); a change there
+    // (the length level, the picture) shows here once it closes.
     if (Own) {
-      who.Children.Add(Link("Change picture ↗", () => Site(plugin, "/profile")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
-      who.Children.Add(Link("Account settings ↗", () => Site(plugin, "/profile?settings=1")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
+      void Settings() => Nav.Settings(plugin, () => Run(async () => { await Read(true); Render(); }, "taste after settings"));
+      who.Children.Add(Link("Change picture", Settings).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
+      who.Children.Add(Link("Account settings", Settings).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
     }
     who.Children.Add(Link("Refresh", () => Run(async () => { await Read(true); Render(); }, "taste refresh")).Also(b => b.VerticalAlignment = VerticalAlignment.Center));
     var head = Stack(null, who);

@@ -262,7 +262,7 @@ sealed partial class ImportBatchView {
       var kept = (int?)result?.D("kept") ?? 0;
       return Card(null, null, Runs("Blastlog.Body", ("Undone. ", true, null), ($"Removed {Plural((int?)result?.D("undone") ?? 0, "game")} this import had added." +
           (kept > 0 ? $" Kept {Plural(kept, "game")} you’d changed since (or that another import also brought in)." : "") + " Games that were already in your library weren’t touched.", false, null)).Also(t => t.TextWrapping = TextWrapping.Wrap),
-        Actions(Kit.Button("Import again on Blastlog ↗", () => Nav.Site(plugin, "/library/import")), Kit.Button("Go to your library", () => { close(); Nav.Library(plugin); }, "Blastlog.TextButton")));
+        Actions(Kit.Button("Import again on Blastlog ↗", () => Nav.SiteOnly(plugin, "/library/import")), Kit.Button("Go to your library", () => { close(); Nav.Library(plugin); }, "Blastlog.TextButton")));
     }
     var never = rows.Count(r => r.Outcome == "committed" && r.Play?.Group == "never");
     var cards = Wishlist ? new List<ImportRow>() : ImportSort.CardRows(rows);

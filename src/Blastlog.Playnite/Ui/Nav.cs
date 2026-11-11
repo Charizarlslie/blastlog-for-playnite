@@ -135,10 +135,13 @@ public static class Nav {
   /// <summary>Sharpen your picks: the full list of games worth rating or reviewing.</summary>
   public static void Sharpen(BlastlogPlugin plugin) { if (!ScreenJump.To("Play next", "Sharpen your picks")) Site(plugin, "/recommendations#sharpen"); }
 
-  /// <summary>The sidebar's Settings: the plugin's settings until the native Blastlog settings land.</summary>
-  public static void Settings(BlastlogPlugin plugin) {
-    try { plugin.OpenSettingsView(); } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Error(e, "Blastlog settings"); }
-  }
+  /// <summary>
+  /// Settings: the site's Settings menu and Account settings in one native window (Screens/SettingsWindow.cs): your
+  /// picture, appearance, game lengths, subscriptions, comfort picks, sale alerts, notifications, Playnite sync tokens,
+  /// your data and signing out. The sidebar's Settings and Your taste's picture and Account settings open it.
+  /// <paramref name="done"/> runs after it closes.
+  /// </summary>
+  public static void Settings(BlastlogPlugin plugin, Action done = null) => global::Blastlog.Playnite.Screens.SettingsWindow.Open(plugin, done);
 
   /// <summary>Send feedback: an idea or a bug, with the screen it came from (native, Screens/FeedbackDialog.cs).</summary>
   public static void Feedback(BlastlogPlugin plugin, string page = null) => Blastlog.Playnite.Screens.FeedbackDialog.Open(plugin, page);
@@ -146,6 +149,12 @@ public static class Nav {
   /// <summary>Playnite's own library (installing and launching), for when its menu items are hidden.</summary>
   public static void PlayniteLibrary(BlastlogPlugin plugin) {
     try { plugin.Api.MainView.SwitchToLibraryView(); } catch (Exception e) { global::Playnite.SDK.LogManager.GetLogger().Error(e, "Blastlog: Playnite library"); }
+  }
+
+  /// <summary>Year in games (the site's /year/:year), native and read only (Screens/YearPage.cs); this year by default.</summary>
+  public static void Year(BlastlogPlugin plugin, int? year = null) {
+    if (plugin.Configured) { global::Blastlog.Playnite.Screens.YearPage.Open(plugin, year ?? DateTime.Now.Year); return; }
+    Site(plugin, "/year/" + (year ?? DateTime.Now.Year));
   }
 
   /// <summary>
@@ -159,7 +168,8 @@ public static class Nav {
   }
 
   /// <summary>
-  /// A page that stays on the site (account settings, the picture), unless Playnite has it: /library/import and
+  /// A page that stays on the site (making and revoking tokens, downloading your data, deleting the account, linked
+  /// sign-ins, taste history, guided start, the policies), unless Playnite has it: /library/import and
   /// /library/import/:id open natively (Import), so screens that still pass those paths get the native page.
   /// </summary>
   public static void Site(BlastlogPlugin plugin, string path) {

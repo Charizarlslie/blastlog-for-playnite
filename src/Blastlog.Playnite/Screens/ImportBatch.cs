@@ -142,7 +142,7 @@ sealed partial class ImportBatchView : StackPanel {
     else if (s == "undoing") body.Children.Add(Kit.Card(T("Undoing this import…", "Blastlog.Muted")));
     else if (s == "failed") body.Children.Add(Kit.Card(Stack(null,
       T($"This import didn’t finish ({batch.S("error") ?? "unknown error"}). Nothing was added.", "Blastlog.Body", "Blastlog.Danger").Also(t => t.TextWrapping = TextWrapping.Wrap),
-      Fingerprint.LinkButton("Start again on Blastlog ↗", () => Nav.Site(plugin, "/library/import"), game: true).Also(b => b.HorizontalAlignment = HorizontalAlignment.Left))).Also(c => c.Margin = new Thickness(0, 0, 0, 18)));
+      Fingerprint.LinkButton("Start again on Blastlog ↗", () => Nav.SiteOnly(plugin, "/library/import"), game: true).Also(b => b.HorizontalAlignment = HorizontalAlignment.Left))).Also(c => c.Margin = new Thickness(0, 0, 0, 18)));
     else if (s == "ready") { if (sortFirst) SortStep(); else AddStep(); }
     else if (s == "committed" && show == "cards") body.Children.Add(SortCards());
     else if (s == "committed" || s == "undone") body.Children.Add(Added());
