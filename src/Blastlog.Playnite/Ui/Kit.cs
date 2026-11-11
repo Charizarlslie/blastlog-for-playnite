@@ -131,9 +131,11 @@ public static class Kit {
     Set("Blastlog.Game", t.Game); Set("Blastlog.OnGame", t.OnGame); Set("Blastlog.GameText", t.GameText); Set("Blastlog.GameTint", t.GameTint);
     Set("Blastlog.GameTint2", t.GameTint2); Set("Blastlog.GameEdge", t.GameEdge); Set("Blastlog.GameBar", t.GameBar);
   }
-  /// <summary>Wears a Blastlog game's colour once it's known (page colour, else its cover's), Blastlog green meanwhile.</summary>
+  /// <summary>
+  /// Wears a Blastlog game's colour once it's known (page colour, else its cover's). Until then the element keeps the
+  /// page's colours, as the site's cards do (card-colour.tsx), so a loading card never looks like a colourless one.
+  /// </summary>
   public static async void GameScope(FrameworkElement element, BlastlogPlugin plugin, BlastlogGame game) {
-    GameScope(element, GameColour.BrandGreen);
     try { var seed = await plugin.Theme.SeedFor(game); GameScope(element, seed); } catch (Exception) { }
   }
 

@@ -145,9 +145,9 @@ static class PnKit {
     Wear(card, plugin, new BlastlogGame { Id = gameId, CoverUrl = coverUrl });
     return card;
   }
-  /// <summary>The card's own game colour once its cover is on disk (through the shared queue above), Blastlog green meanwhile.</summary>
+  /// <summary>The card's own game colour once its cover is on disk (through the shared queue above), neutral meanwhile.</summary>
   static async void Wear(FrameworkElement card, BlastlogPlugin plugin, BlastlogGame game) {
-    Kit.GameScope(card, GameColour.BrandGreen);
+    LibraryTile.Neutral(card);
     try {
       await Picture(plugin, Artwork.Url(game, ArtworkContext.Cover));
       Kit.GameScope(card, plugin, game);

@@ -81,7 +81,7 @@ public sealed class LibraryTile : PluginUserControl {
   /// A tile whose colour isn't known yet: Blastlog green for its buttons (with the checked ink for this board), and
   /// surface and line for the card, not the selected game's colours.
   /// </summary>
-  static void Neutral(FrameworkElement tile) {
+  internal static void Neutral(FrameworkElement tile) {
     Kit.GameScope(tile, GameColour.BrandGreen);
     void Use(string key, string token) { if (Application.Current?.TryFindResource(token) is Brush b) tile.Resources[key] = b; }
     Use("Blastlog.GameTint", "Blastlog.Surface"); Use("Blastlog.GameTint2", "Blastlog.Surface2"); Use("Blastlog.GameEdge", "Blastlog.Line");

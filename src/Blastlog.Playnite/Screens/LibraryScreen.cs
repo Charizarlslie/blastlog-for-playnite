@@ -593,7 +593,8 @@ sealed class LibraryView : StackPanel {
 
   /// <summary>The cover, then the card's own game colour (its page colour on Blastlog, else the cover's), through the shared picture queue.</summary>
   async void Wear(Border card, Border cover, Game game) {
-    Kit.GameScope(card, GameColour.BrandGreen);
+    // Until the cover is read the card is neutral (surface and line), so loading never looks like a colourless cover.
+    LibraryTile.Neutral(card);
     try {
       var url = Artwork.Url(game, ArtworkContext.Cover);
       var file = url != null ? await PnKit.Picture(plugin, url) : null;
