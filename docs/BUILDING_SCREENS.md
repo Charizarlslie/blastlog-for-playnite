@@ -82,6 +82,17 @@ How to add or restyle a screen. The look is Blastlog's design system (`design.md
   the browser (Playnite has no player).
 - **The character sheet's look** is native: a "Look" select on your own sheet on Compare saves with
   `PUT me/sheet-style` and reloads Compare; `Nav.SheetLook` opens Compare scrolled to it.
+- **The sidebar** matches the site's (App.tsx Brand, Navigation, FriendsNav, SidebarCompletion, FeedbackButton,
+  AccountMenu, SiteCredit). `theme/overrides/Views/Sidebar.xaml` lays it out with empty hosts by name
+  (`Blastlog_SideName`, `Blastlog_SideFriends`, `Blastlog_SideCompletion`, `Blastlog_SideFooter`) and the "My Blastlog"
+  label; `Ui/SidebarChrome.cs` finds them in the main window and fills them from the `me`, `friends` and `dashboard`
+  reads (friend links go through `Nav.FriendPage`, "Add or manage friends" `Nav.Friends`, Send feedback `Nav.Feedback`
+  → Screens/FeedbackDialog.cs posting `feedback`, Settings `Nav.Settings`). Playnite's own items (Library, Statistics,
+  other add-ons' views) sit after Blastlog's (Ui/SidebarOrder.cs) in one collapsible "Playnite" group under a divider,
+  closed by default and remembered in the plugin's `sidebar.json`; a selected Playnite item stays visible while it's
+  closed. The plugin setting "Hide Playnite's own menu items" hides the group's buttons only (the items stay in
+  Playnite's list, so `Nav.Entry` still switches to the Library view) and adds "Playnite library" to the footer.
+  Playnite redraws every sidebar button when its item list changes, so the group is re-applied by a 1-second check.
 - **Still on the site** because the mirror has no route for them yet: reporting a review, import sorting, account
   settings. Year in review
   (`/year/:year`) has no mirror read and nothing in the plugin links to it (the site links it from Support only), so it
