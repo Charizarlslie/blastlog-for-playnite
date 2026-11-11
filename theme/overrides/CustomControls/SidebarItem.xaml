@@ -29,7 +29,7 @@
                                 <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
                             </Viewbox>
                             <TextBlock x:Name="Label" Text="{Binding Title}" Margin="13,0,0,0" VerticalAlignment="Center"
-                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="38" LineHeight="18" LineStackingStrategy="BlockLineHeight" FontFamily="{DynamicResource FontFamily}"
+                                       TextWrapping="WrapWithOverflow" TextTrimming="CharacterEllipsis" MaxHeight="38" LineHeight="18" LineStackingStrategy="BlockLineHeight" FontFamily="{DynamicResource FontFamily}"
                                        FontSize="14" FontWeight="SemiBold" Foreground="{TemplateBinding Foreground}" />
                         </DockPanel>
                     </Grid>

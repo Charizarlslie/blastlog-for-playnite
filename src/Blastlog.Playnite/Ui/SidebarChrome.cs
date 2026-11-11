@@ -173,7 +173,10 @@ public static class SidebarChrome {
   static void Completion() {
     if (completionHost == null) return;
     if (rate == null || plugin?.Configured != true) { completionHost.Content = null; return; }
-    var box = new StackPanel { Margin = new Thickness(8, 16, 8, 12) };
+    // At the top of the footer, under its line (the site's .sidebar-footer .sidebar-completion), so it never scrolls away.
+    var box = new StackPanel();
+    var edge = new Border { Child = box, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(8, 14, 8, 6), Margin = new Thickness(0, 8, 0, 0) };
+    edge.SetResourceReference(Border.BorderBrushProperty, "Blastlog.Line");
     var meta = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
     var value = Words(rate.Value.ToString("0") + "%", 14, FontWeights.ExtraBold, "Blastlog.TextMuted"); DockPanel.SetDock(value, Dock.Right);
     meta.Children.Add(value); meta.Children.Add(Words("Completion rate", 14, FontWeights.ExtraBold, "Blastlog.TextMuted"));
@@ -187,14 +190,17 @@ public static class SidebarChrome {
     track.Children.Add(fill);
     AutomationProperties.SetName(track, $"Completion rate {rate.Value:0}%");
     box.Children.Add(track);
-    completionHost.Content = box;
+    completionHost.Content = edge;
   }
+  static bool CompletionShown => completionHost?.Content != null;
 
   // ---- Footer: Send feedback, Settings, Playnite library (when hidden), the IGDB credit ----
   static void Footer() {
     if (footerHost == null) return;
     var stack = new StackPanel();
-    var box = new Border { Child = stack, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(4, 12, 4, 4), Margin = new Thickness(0, 8, 0, 0) };
+    // The footer's line sits over Completion rate when it shows, else over this.
+    var box = CompletionShown ? new Border { Child = stack, Padding = new Thickness(4, 4, 4, 4) }
+      : new Border { Child = stack, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(4, 12, 4, 4), Margin = new Thickness(0, 8, 0, 0) };
     box.SetResourceReference(Border.BorderBrushProperty, "Blastlog.Line");
     // The site leaves feedback out of the demo, whose visitors' notes would reach no one.
     if (plugin?.Configured == true && !demo)
@@ -207,7 +213,12 @@ public static class SidebarChrome {
 
   static Button FooterRow(string icon, string label, string after, Action click) {
     var content = new DockPanel { LastChildFill = true };
-    if (after != null) { var a = Words(after, 14, FontWeights.Normal, "Blastlog.TextMuted"); DockPanel.SetDock(a, Dock.Right); content.Children.Add(a); }
+    if (after == "▸") {
+      // Outfit has no ▸ (it showed as a dot), so the site's disclosure arrow is drawn: a small right-pointing triangle.
+      var arrow = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L6,4.5 L0,9 Z"), Width = 6, Height = 9, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 2, 0) };
+      arrow.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Blastlog.TextMuted");
+      DockPanel.SetDock(arrow, Dock.Right); content.Children.Add(arrow);
+    } else if (after != null) { var a = Words(after, 14, FontWeights.Normal, "Blastlog.TextMuted"); DockPanel.SetDock(a, Dock.Right); content.Children.Add(a); }
     content.Children.Add(IconWords(icon, label, 18, 10, FontWeights.Bold));
     var b = Row(content, click, label, 10, new Thickness(10, 0, 10, 0));
     b.MinHeight = 44; b.SetResourceReference(Control.ForegroundProperty, "Blastlog.Text");
@@ -279,10 +290,14 @@ public static class SidebarChrome {
   /// <summary>Shows or hides Playnite's buttons for the group's state; a selected one shows while collapsed.</summary>
   static void Show() {
     if (panel == null) return;
+    var first = true;
     foreach (var b in panel.Children.OfType<FrameworkElement>()) {
       if (b == groupHeader || SidebarOrder.IsBlastlog(b.DataContext)) continue;
+      // Playnite's Library (always its first item) stays in view while the group is closed, one click away for
+      // installing and launching; the others show only while open, or while they're the selected view.
+      var library = first; first = false;
       var selected = b.DataContext?.GetType().GetProperty("Selected")?.GetValue(b.DataContext) as bool? == true;
-      b.Visibility = HidePlaynite ? Visibility.Collapsed : state.PlayniteOpen || selected ? Visibility.Visible : Visibility.Collapsed;
+      b.Visibility = HidePlaynite ? Visibility.Collapsed : state.PlayniteOpen || selected || library ? Visibility.Visible : Visibility.Collapsed;
     }
   }
 
@@ -332,10 +347,10 @@ public static class SidebarChrome {
   static TextBlock Label(string text) => Words(text, 14, FontWeights.ExtraBold, "Blastlog.TextMuted").Also(t => t.Margin = new Thickness(10, 0, 10, 10));
 
   static DockPanel IconWords(string svg, string text, double iconSize, double gap, FontWeight weight) {
-    var row = new DockPanel { LastChildFill = true }; // the text gets the rest of the width and wraps rather than being cut off
+    var row = new DockPanel { LastChildFill = true }; // the text gets the rest of the width; one line, trimmed with an ellipsis if it ever runs out
     var icon = Icons.Make(svg, iconSize); icon.VerticalAlignment = VerticalAlignment.Center; DockPanel.SetDock(icon, Dock.Left);
     row.Children.Add(icon);
-    row.Children.Add(Words(text, 14, weight).Also(t => { t.Margin = new Thickness(gap, 0, 0, 0); t.VerticalAlignment = VerticalAlignment.Center; t.TextWrapping = TextWrapping.Wrap; }));
+    row.Children.Add(Words(text, 14, weight).Also(t => { t.Margin = new Thickness(gap, 0, 0, 0); t.VerticalAlignment = VerticalAlignment.Center; t.TextTrimming = TextTrimming.CharacterEllipsis; }));
     return row;
   }
 
