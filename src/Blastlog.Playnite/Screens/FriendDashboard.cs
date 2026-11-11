@@ -101,7 +101,7 @@ sealed class FriendDashboardView : StackPanel {
     var panel = new StackPanel();
     var head = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 16) };
     head.Children.Add(Dash.Text("Next up for " + friend.Name, "Blastlog.CardTitle").Also(t => t.VerticalAlignment = VerticalAlignment.Center));
-    var modes = PnKit.Segmented("Next up", Modes.Select(m => Tuple.Create(m.key, m.label, (string)null)), mode, key => Run(() => SwitchMode(key), "friend next up mode"));
+    var modes = ModeBox();
     DockPanel.SetDock(modes, Dock.Right); head.Children.Add(modes);
     panel.Children.Add(head);
 
@@ -111,7 +111,7 @@ sealed class FriendDashboardView : StackPanel {
         : mode == "quick" ? $"Nothing in {friend.Name}’s backlog is short enough for a quick one."
         : mode == "long" ? $"Nothing in {friend.Name}’s backlog is long enough for a long haul."
         : $"{friend.Name} has nothing in their backlog to pick from.", "Blastlog.Muted"));
-      return Kit.Card(panel, game: true).Also(c => c.Margin = new Thickness(0, 0, 0, 18));
+      return HeroCard(panel);
     }
     var game = Dash.Game(entry["game"]); var title = game?.Title ?? ""; var id = S(entry, "id") ?? S(entry, "entryId");
     var row = new DockPanel { LastChildFill = true };
@@ -137,9 +137,36 @@ sealed class FriendDashboardView : StackPanel {
     body.Children.Add(Link("See their entry →", () => Nav.FriendEntry(plugin, id, friend.Name)).Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(-6, 12, 0, 0); }));
     row.Children.Add(body);
     panel.Children.Add(row);
-    var card = Kit.Card(panel, game: true); card.Margin = new Thickness(0, 0, 0, 18);
+    var card = HeroCard(panel);
     Kit.GameScope(card, plugin, game);
     return card;
+  }
+
+  /// <summary>
+  /// The site's .next-up card (as the own dashboard's Next up, DashboardNextUp): the plain panel colour with the game's
+  /// colour only on its edge, not a game-tinted fill.
+  /// </summary>
+  static Border HeroCard(UIElement content) {
+    var card = new Border { Child = content, CornerRadius = new CornerRadius(28), BorderThickness = new Thickness(1), Padding = new Thickness(28, 26, 28, 26), Margin = new Thickness(0, 0, 0, 18) };
+    card.SetResourceReference(Border.BackgroundProperty, "Blastlog.Surface"); card.SetResourceReference(Border.BorderBrushProperty, "Blastlog.GameEdge");
+    return card;
+  }
+
+  /// <summary>The three modes, as the own Next up's (web .mode-toggle): a quiet box, the picked one in the game's colour.</summary>
+  FrameworkElement ModeBox() {
+    var toggle = new StackPanel { Orientation = Orientation.Horizontal };
+    foreach (var (key, label) in Modes) {
+      var on = key == mode; var k = key;
+      var b = Kit.Button(label, () => Run(() => SwitchMode(k), "friend next up mode"), on ? "Blastlog.Primary" : "Blastlog.TextButton");
+      b.Margin = new Thickness(0); b.MinHeight = 44; b.Padding = new Thickness(16, 0, 16, 0);
+      if (!on) b.SetResourceReference(Control.ForegroundProperty, "Blastlog.TextMuted");
+      Dash.AutomationName(b, label + (on ? " (selected)" : ""));
+      toggle.Children.Add(b);
+    }
+    var box = new Border { Child = toggle, CornerRadius = new CornerRadius(14), Padding = new Thickness(3), BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center };
+    box.SetResourceReference(Border.BackgroundProperty, "Blastlog.Surface2"); box.SetResourceReference(Border.BorderBrushProperty, "Blastlog.Line");
+    System.Windows.Automation.AutomationProperties.SetName(box, "What kind of game");
+    return box;
   }
   static FrameworkElement Bullets(string head, List<string> lines, string brush) {
     var s = new StackPanel { Margin = new Thickness(0, 12, 0, 0) };
