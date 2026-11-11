@@ -39,20 +39,29 @@ static class YearPage {
       MaxWidth = 960; HorizontalAlignment = HorizontalAlignment.Left;
       CollectionUi.WearUsual(this, plugin);
       Children.Add(body);
-      body.Children.Add(T("Looking back at your year…", "Blastlog.Muted"));
       Loaded += (s, e) => { if (!loaded) { loaded = true; Run(Load, "year in games"); } };
     }
 
+    string Path => "year/" + year.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Shows the last copy of this year at once (any age) while Blastlog works the year out again, which takes it a few
+    /// seconds; the fresh answer replaces it when it differs. Settings asks for this year ahead (Your extras links here).
+    /// </summary>
     async Task Load() {
       if (!plugin.Configured) { Show(Hero("Add your Blastlog sync token in Add-ons, Extension settings, Blastlog to see your year.", null)); return; }
-      var view = (await plugin.Mirror("year/" + year.ToString(CultureInfo.InvariantCulture), false)).Value;
-      if (!(view?["card"] is JObject)) {
-        var hero = Hero("Your year couldn't be opened. Check your connection and try again.", null);
-        hero.Children.Add(Kit.Button("Try again", async () => { var v = await plugin.Mirror("year/" + year.ToString(CultureInfo.InvariantCulture), true); if (v.Value?["card"] is JObject) Build(v.Value); }, "Blastlog.Ghost")
-          .Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 12, 0, 0); }));
-        Show(hero); return;
-      }
-      Build(view);
+      var asked = year;
+      var shown = plugin.Cached(Path);
+      if (shown?["card"] is JObject) Build(shown);
+      else Show(T($"Looking back at your {year}… This can take a few seconds.", "Blastlog.Muted"));
+      var view = (await plugin.Mirror(Path, false)).Value;
+      if (asked != year) return; // another year was picked meanwhile
+      if (view?["card"] is JObject) { if (!JToken.DeepEquals(view, shown)) Build(view); return; }
+      if (shown?["card"] is JObject) return; // offline: the last copy stays
+      var hero = Hero("Your year couldn't be opened. Check your connection and try again.", null);
+      hero.Children.Add(Kit.Button("Try again", async () => { var v = await plugin.Mirror(Path, true); if (v.Value?["card"] is JObject) Build(v.Value); }, "Blastlog.Ghost")
+        .Also(b => { b.HorizontalAlignment = HorizontalAlignment.Left; b.Margin = new Thickness(0, 12, 0, 0); }));
+      Show(hero);
     }
 
     void Show(UIElement content) { body.Children.Clear(); body.Children.Add(content); }
@@ -107,14 +116,16 @@ static class YearPage {
       if (top.Count > 0) {
         inner.Children.Add(T("Top three", "Blastlog.Small", "Blastlog.TextMuted", 15, FontWeights.Bold).Also(t => t.Margin = new Thickness(0, 18, 0, 6)));
         var i = 0;
-        foreach (var p in top) inner.Children.Add(PnKit.Line("Blastlog.Body", PnKit.Run($"{++i}. "), PnKit.Run(S(p, "title") ?? "", null, FontWeights.Bold), PnKit.Run("  " + StarText(D(p, "rating")), "Blastlog.Star")).Also(t => { t.FontSize = 18; t.Margin = new Thickness(0, 2, 0, 0); }));
+        foreach (var p in top) inner.Children.Add(PnKit.Line("Blastlog.Body", PnKit.Run($"{++i}. "), PnKit.Run(S(p, "title") ?? "", null, FontWeights.Bold), PnKit.Run("  " + StarText(D(p, "rating")), "Blastlog.TextMuted")).Also(t => { t.FontSize = 18; t.Margin = new Thickness(0, 2, 0, 0); }));
       }
       var trait = card["definingTrait"] as JObject;
       if (trait != null) {
         inner.Children.Add(T("The trait that defined my year", "Blastlog.Small", "Blastlog.TextMuted", 15, FontWeights.Bold).Also(t => t.Margin = new Thickness(0, 18, 0, 4)));
         inner.Children.Add(T(S(trait, "label"), "Blastlog.Body", "Blastlog.GameText", 26, FontWeights.ExtraBold));
       }
-      inner.Children.Add(T("blastlog.games", "Blastlog.Body", "Blastlog.Brand", 16, FontWeights.Bold).Also(t => t.Margin = new Thickness(0, 22, 0, 0)));
+      // The site's .yr-brand: brand-text, which is the brand green on dark and a darker green on light (Blastlog.Brand
+      // is the bright green in both, too faint for words on light).
+      inner.Children.Add(T("blastlog.games", "Blastlog.Body", null, 16, FontWeights.Bold).Also(t => { t.Margin = new Thickness(0, 22, 0, 0); t.Foreground = TokenBrush("brand-text"); }));
       var bar = new Border { Height = 8, CornerRadius = new CornerRadius(18, 18, 0, 0) };
       bar.SetResourceReference(Border.BackgroundProperty, "Blastlog.Game");
       var stack = Stack(null, bar, inner);
@@ -175,7 +186,7 @@ static class YearPage {
       foreach (var p in picks) {
         var tile = Stack(new Thickness(0, 0, 18, 18), Cover(plugin, S(p, "coverUrl"), S(p, "title"), 132),
           T($"{++i}. {S(p, "title")}", "Blastlog.Body", null, 15, FontWeights.Bold).Also(t => { t.MaxWidth = 132; t.TextWrapping = TextWrapping.Wrap; t.Margin = new Thickness(0, 8, 0, 0); }),
-          T(StarText(D(p, "rating")), "Blastlog.Body", "Blastlog.Star", 14, FontWeights.Bold));
+          T(StarText(D(p, "rating")), "Blastlog.Body", "Blastlog.TextMuted", 14));
         row.Children.Add(tile);
       }
       return row;
